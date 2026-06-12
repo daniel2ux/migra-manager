@@ -1,0 +1,6473 @@
+/**
+ * SAP Fiori Horizon — shell (page header, toolbar)
+ */
+.fiori-page-header {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-negative: #bb0000;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: var(--fiori-radius);
+  --fiori-page-header-height: 3.5rem;
+
+  font-family: var(--font-72);
+  background: var(--fiori-shell);
+  border-bottom: 1px solid var(--fiori-border-light);
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.08);
+}
+
+.fiori-page-header .fiori-page-back-btn {
+  height: 2rem;
+  width: 2rem;
+  border-radius: var(--fiori-radius-button);
+  color: var(--fiori-label);
+  border: none;
+  box-shadow: none;
+}
+
+.fiori-page-header .fiori-page-back-btn:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-page-header .fiori-page-divider,
+.fiori-page-header .fiori-page-title-context-divider,
+.fiori-page-header .fiori-page-context-divider {
+  height: 1.5rem;
+  width: 1px;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-page-header .fiori-page-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
+  background: var(--fiori-brand-light);
+  color: var(--fiori-brand);
+  flex-shrink: 0;
+}
+
+.fiori-page-header .fiori-page-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fiori-text);
+  line-height: 1.25;
+}
+
+.fiori-page-header .fiori-page-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.fiori-page-header .fiori-page-title-row .fiori-page-title {
+  margin: 0;
+}
+
+.fiori-page-header .fiori-page-context--inline {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.fiori-page-header .fiori-page-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 0.125rem;
+  line-height: 1.3;
+}
+
+.page-header-context-field,
+.fiori-page-header .fiori-page-context-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.page-header-context-divider {
+  height: 1.5rem;
+  width: 1px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.page-header-context-label,
+.fiori-page-header .fiori-page-context-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.fiori-page-header .fiori-page-context-label {
+  color: var(--fiori-label);
+}
+
+.page-header-context-value,
+.fiori-page-header .fiori-page-context-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-page-header .fiori-page-context-value {
+  color: var(--fiori-text);
+}
+
+.fiori-page-header .fiori-page-context {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-negative);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 0.125rem;
+}
+
+.fiori-page-header .fiori-page-context-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--fiori-negative);
+  flex-shrink: 0;
+}
+
+.fiori-page-header .fiori-page-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.fiori-page-header .fiori-page-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.25rem;
+  padding: 0 0.4375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: var(--font-72);
+  line-height: 1;
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border: 1px solid #d4e8ff;
+  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.fiori-page-header .fiori-page-mock-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 10rem;
+  height: 1.25rem;
+  padding: 0 0.4375rem;
+  font-family: var(--font-72);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
+  text-transform: none;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-page-header .fiori-page-select-trigger {
+  height: 2rem !important;
+  min-width: 9rem;
+  max-width: 11rem;
+  padding: 0 0.5rem 0 0.625rem !important;
+  gap: 0.375rem;
+  font-size: 0.6875rem !important;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--fiori-text) !important;
+  background: #fff !important;
+  border: 1px solid var(--fiori-border) !important;
+  border-radius: var(--fiori-radius-button, 0.5rem) !important;
+  box-shadow: none !important;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-page-header .fiori-page-select-trigger > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-page-header .fiori-page-select-trigger:hover:not(:disabled) {
+  border-color: #aeb6bf !important;
+}
+
+.fiori-page-header .fiori-page-select-trigger:focus,
+.fiori-page-header .fiori-page-select-trigger:focus-visible,
+.fiori-page-header .fiori-page-select-trigger[data-state="open"] {
+  border-color: var(--fiori-brand) !important;
+  box-shadow: 0 0 0 1px var(--fiori-brand) !important;
+  outline: none !important;
+}
+
+.fiori-page-header .fiori-page-select-trigger:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: #f7f7f7 !important;
+}
+
+.fiori-page-header .fiori-page-select-trigger > svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--fiori-label);
+  opacity: 1;
+}
+
+.fiori-page-header .fiori-page-header-divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-page-header .fiori-page-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.375rem;
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 0.25rem;
+  border: 1px solid var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-page-header .fiori-page-status--icon-only {
+  gap: 0;
+  width: 1.375rem;
+  padding: 0;
+  justify-content: center;
+}
+
+.fiori-page-header .fiori-page-status--neutral {
+  color: #6a6d70;
+  background: #f5f6f7;
+}
+
+.fiori-page-header .fiori-page-status--success {
+  color: #107e3e;
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+}
+
+.fiori-page-header .fiori-page-status--active {
+  color: #e76500;
+  background: #fff4e5;
+  border-color: #ffd78a;
+}
+
+.fiori-page-header .fiori-page-status--warning {
+  color: #b44f00;
+  background: #fff8e5;
+  border-color: #ffd78a;
+}
+
+.fiori-page-header .fiori-page-status--icon-only {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.fiori-page-header .fiori-toolbar-selection {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-right: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  animation: fiori-toolbar-in 0.2s ease;
+}
+
+.fiori-page-header .fiori-toolbar-selection-count {
+  color: var(--fiori-text);
+}
+
+.fiori-page-header .fiori-toolbar-divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+@keyframes fiori-toolbar-in {
+  from {
+    opacity: 0;
+    transform: translateX(0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fiori-page-header-spacer--tall {
+  min-height: 4.5rem;
+  height: 4.5rem;
+}
+
+@media (max-width: 767px) {
+  .fiori-page-header-spacer--with-context {
+    min-height: 5.25rem;
+    height: 5.25rem;
+  }
+}
+
+.fiori-page-header.fiori-page-header--tall {
+  --fiori-page-header-height: 4.5rem;
+  min-height: 4.5rem;
+  height: auto;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  .fiori-page-header.fiori-page-header--with-context {
+    --fiori-page-header-height: 5.25rem;
+    min-height: 5.25rem;
+  }
+}
+
+.fiori-page-header .fiori-page-context--below-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.fiori-subtoolbar {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-shell-top: 4rem;
+  /* h-14 — header Fiori compacto (sem subtítulo); colado abaixo do page header */
+  --fiori-page-header-height: 3.5rem;
+
+  font-family: var(--font-72);
+  background: var(--fiori-shell);
+  border-bottom: 1px solid var(--fiori-border-light);
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.06);
+}
+
+.fiori-subtoolbar--below-page-header {
+  top: calc(var(--fiori-shell-top) + var(--fiori-page-header-height));
+}
+
+body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
+  --fiori-page-header-height: 4.5rem;
+}
+
+@media (max-width: 767px) {
+  body:has(.fiori-page-header--with-context) .fiori-subtoolbar--below-page-header {
+    --fiori-page-header-height: 5.25rem;
+  }
+}
+
+.fiori-subtoolbar-toggle,
+.fiori-page-header .fiori-subtoolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 2rem;
+  padding: 0 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-subtoolbar-toggle:hover,
+.fiori-page-header .fiori-subtoolbar-toggle:hover {
+  color: var(--fiori-brand);
+  background: #e8e8e8;
+}
+
+.fiori-subtoolbar-toggle--active,
+.fiori-page-header .fiori-subtoolbar-toggle--active {
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-subtoolbar-toggle--active:hover,
+.fiori-page-header .fiori-subtoolbar-toggle--active:hover {
+  background: #d9ebff;
+}
+
+/* Segmented On/Off (sap.m.SegmentedButton — binary) */
+.fiori-on-off,
+.fiori-page-header .fiori-on-off {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2rem;
+}
+
+.fiori-on-off__label,
+.fiori-page-header .fiori-on-off__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.fiori-on-off__group,
+.fiori-page-header .fiori-on-off__group {
+  display: inline-flex;
+  align-items: stretch;
+  height: 1.625rem;
+  padding: 0.125rem;
+  background: #f5f6f7;
+  border: 1px solid var(--fiori-border);
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+.fiori-on-off__btn,
+.fiori-page-header .fiori-on-off__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: var(--font-72);
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--fiori-radius-button, 0.5rem) - 0.125rem);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-on-off__btn:hover:not(.fiori-on-off__btn--selected),
+.fiori-page-header .fiori-on-off__btn:hover:not(.fiori-on-off__btn--selected) {
+  color: var(--fiori-text);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.fiori-on-off__btn:focus-visible,
+.fiori-page-header .fiori-on-off__btn:focus-visible {
+  outline: 2px solid var(--fiori-brand);
+  outline-offset: 1px;
+}
+
+.fiori-on-off__btn--selected,
+.fiori-page-header .fiori-on-off__btn--selected {
+  color: var(--fiori-brand);
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 112, 242, 0.12), 0 0.0625rem 0.125rem rgba(85, 107, 130, 0.08);
+}
+
+.fiori-on-off__btn--selected:hover,
+.fiori-page-header .fiori-on-off__btn--selected:hover {
+  background: var(--fiori-brand-light);
+}
+
+/* Toggle switch (sap.m.Switch — Fiori Horizon) */
+.fiori-switch {
+  --fiori-switch-track-w: 2.5rem;
+  --fiori-switch-track-h: 1.5rem;
+  --fiori-switch-thumb: 1.125rem;
+  --fiori-switch-inset: 0.1875rem;
+  --fiori-brand: #0070f2;
+
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: var(--fiori-switch-track-w);
+  height: var(--fiori-switch-track-h);
+  min-width: var(--fiori-switch-track-w);
+  min-height: var(--fiori-switch-track-h);
+  padding: var(--fiori-switch-inset);
+  flex-shrink: 0;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 0 0.125rem rgba(27, 144, 255, 0.16);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fiori-switch[data-state="unchecked"] {
+  background: #89919a;
+}
+
+.fiori-switch[data-state="checked"] {
+  background: var(--fiori-brand);
+  box-shadow: 0 0 0.125rem rgba(27, 144, 255, 0.16), 0 0.5rem 1rem rgba(27, 144, 255, 0.16);
+}
+
+.fiori-switch:focus-visible {
+  outline: 1.5px solid var(--fiori-brand);
+  outline-offset: 1px;
+}
+
+.fiori-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fiori-switch__thumb {
+  display: block;
+  width: var(--fiori-switch-thumb);
+  height: var(--fiori-switch-thumb);
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.24);
+  pointer-events: none;
+  transition: transform 0.2s ease;
+  transform: translateX(0);
+}
+
+.fiori-switch[data-state="checked"] .fiori-switch__thumb {
+  transform: translateX(
+    calc(
+      var(--fiori-switch-track-w) - var(--fiori-switch-thumb) -
+        (2 * var(--fiori-switch-inset))
+    )
+  );
+}
+
+.fiori-page-header .fiori-lock-row {
+  gap: 0.375rem;
+  height: auto;
+}
+
+.fiori-page-header .fiori-lock-row .fiori-field-label {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label, #6a6d70);
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fiori-page-header .fiori-switch {
+  --fiori-switch-track-w: 2.125rem;
+  --fiori-switch-track-h: 1.25rem;
+  --fiori-switch-thumb: 0.9375rem;
+  --fiori-switch-inset: 0.15625rem;
+  box-shadow: none;
+}
+
+.fiori-page-header .fiori-switch[data-state="checked"] {
+  box-shadow: none;
+}
+
+.fiori-filter-popover {
+  --fiori-brand: #0070f2;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-negative: #bb0000;
+
+  width: 20rem;
+  padding: 1rem;
+  border-radius: 0.25rem !important;
+  border: 1px solid var(--fiori-border) !important;
+  box-shadow: 0 0.125rem 0.5rem rgba(50, 54, 58, 0.15) !important;
+  background: #fff;
+  font-family: var(--font-72);
+}
+
+.fiori-filter-popover .fiori-input {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-filter-popover .fiori-input:focus,
+.fiori-filter-popover .fiori-input:focus-visible {
+  outline: none;
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-filter-popover-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+  margin-bottom: 0.75rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-filter-popover-section {
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-filter-popover-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  margin-bottom: 0.5rem;
+  text-transform: none;
+}
+
+.fiori-filter-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.375rem;
+}
+
+.fiori-filter-popover .fiori-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 1.75rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  border: 1px solid var(--fiori-border);
+  background: #fff;
+  color: var(--fiori-text);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-filter-popover .fiori-chip:hover:not(:disabled) {
+  border-color: var(--fiori-brand);
+}
+
+.fiori-filter-popover .fiori-chip.fiori-chip-selected {
+  color: #fff;
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+}
+
+.fiori-filter-popover .fiori-chip--success.fiori-chip-selected {
+  color: #107e3e;
+  background: #e8f5e9;
+  border-color: #107e3e;
+}
+
+.fiori-filter-popover .fiori-chip--warning.fiori-chip-selected {
+  color: #e76500;
+  background: #fff4e5;
+  border-color: #e76500;
+}
+
+.fiori-filter-popover .fiori-chip--critical.fiori-chip-selected {
+  color: #bb0000;
+  background: #ffeaf4;
+  border-color: #bb0000;
+}
+
+.fiori-filter-popover-clear {
+  width: 100%;
+  height: 1.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-filter-popover-clear:hover {
+  color: var(--fiori-negative);
+  background: #ffeaf4;
+}
+
+.fiori-filter-popover-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.fiori-filter-popover-row-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-filter-popover .fiori-select-trigger {
+  height: 2.25rem;
+  width: 100%;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  box-shadow: none;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-filter-popover .fiori-select-trigger:hover:not(:disabled) {
+  border-color: #aeb6bf;
+}
+
+.fiori-filter-popover .fiori-select-trigger:focus,
+.fiori-filter-popover .fiori-select-trigger[data-state="open"] {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  outline: none;
+}
+
+.fiori-filter-popover .fiori-select-trigger svg {
+  color: var(--fiori-label);
+  opacity: 1;
+}
+
+.fiori-filter-popover .fiori-select-content {
+  border-radius: 0.25rem;
+  border: 1px solid var(--fiori-border-light);
+  background: #fff;
+  box-shadow: 0 0.25rem 1rem rgba(85, 107, 130, 0.2);
+  font-family: var(--font-72);
+}
+
+.fiori-filter-popover .fiori-select-item {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  border-radius: 0.125rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-filter-popover .fiori-select-item[data-highlighted],
+.fiori-filter-popover .fiori-select-item[data-state="checked"] {
+  background: var(--fiori-brand-light);
+  color: var(--fiori-brand);
+}
+
+.fiori-filter-popover .fiori-percent-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fiori-filter-popover .fiori-percent-row .fiori-select-trigger {
+  width: 4.5rem;
+  flex-shrink: 0;
+}
+
+.fiori-filter-popover-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.fiori-filter-popover-submit {
+  width: 100%;
+  height: 2.25rem;
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-72);
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+  background: var(--fiori-brand);
+  border: none;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.fiori-filter-popover-submit:hover {
+  background: #0064d9;
+}
+
+/* Popover compacto de formulário (ex.: edição inline em cards) */
+.fiori-form-popover.fiori-filter-popover {
+  width: min(calc(100vw - 2rem), 20rem);
+  padding: 0;
+  overflow: hidden;
+}
+
+.fiori-form-popover-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-form-popover-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  background: #e8f3ff;
+  border-radius: 0.375rem;
+  color: var(--fiori-brand);
+}
+
+.fiori-form-popover-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  line-height: 1.25;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-form-popover-subtitle {
+  margin: 0.125rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  line-height: 1.3;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-form-popover-body {
+  padding: 1rem;
+}
+
+.fiori-form-popover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fiori-form-popover-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-form-popover-hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-form-popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-form-popover-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2rem;
+  padding: 0 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-72);
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fiori-form-popover-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-form-popover-btn--ghost {
+  color: var(--fiori-label);
+  background: transparent;
+}
+
+.fiori-form-popover-btn--ghost:hover:not(:disabled) {
+  color: var(--fiori-text);
+  background: #ededed;
+}
+
+.fiori-form-popover-btn--emphasized {
+  color: #fff;
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+}
+
+.fiori-form-popover-btn--emphasized:hover:not(:disabled) {
+  background: #0064d9;
+  border-color: #0064d9;
+}
+
+.fiori-page-header .fiori-toolbar,
+.fiori-subtoolbar .fiori-toolbar,
+.fiori-card-toolbar {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border-light: #e5e5e5;
+  --fiori-label: #6a6d70;
+  --fiori-negative: #bb0000;
+
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.fiori-page-header .fiori-toolbar,
+.fiori-subtoolbar .fiori-toolbar {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.fiori-card-toolbar {
+  gap: 0.0625rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.fiori-page-header .fiori-toolbar-btn,
+.fiori-subtoolbar .fiori-toolbar-btn,
+.fiori-card-toolbar-btn {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  color: var(--fiori-label);
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.fiori-card-toolbar-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn,
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn {
+  background: transparent;
+  border-radius: var(--fiori-radius-button, 0.5rem) !important;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn--labeled,
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn--labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: auto;
+  min-width: 0;
+  height: 2rem;
+  padding: 0 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-72);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn--labeled > span:not(.fiori-toolbar-dot),
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn--labeled > span:not(.fiori-toolbar-dot) {
+  color: inherit;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn:hover:not(:disabled),
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn:hover:not(:disabled) {
+  color: var(--fiori-text);
+  background: #f7f7f7 !important;
+  border-color: #aeb6bf !important;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn:focus-visible,
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn:focus-visible {
+  outline: 2px solid var(--fiori-brand);
+  outline-offset: 1px;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn:active:not(:disabled),
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn:active:not(:disabled) {
+  color: var(--fiori-brand);
+  background: #ededed !important;
+  border-color: #aeb6bf !important;
+}
+
+.fiori-card-toolbar .fiori-card-toolbar-btn {
+  background: transparent;
+  border-radius: var(--fiori-radius-button, 0.5rem) !important;
+}
+
+.fiori-card-toolbar .fiori-card-toolbar-btn:hover:not(:disabled) {
+  color: var(--fiori-brand);
+  background: #e8e8e8;
+}
+
+.fiori-card-toolbar .fiori-card-toolbar-btn:active:not(:disabled) {
+  color: var(--fiori-brand);
+  background: #d9d9d9;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn-active,
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn-active {
+  color: var(--fiori-brand);
+  background: transparent;
+}
+
+.fiori-card-toolbar .fiori-card-toolbar-btn-active {
+  color: var(--fiori-brand);
+  background: transparent;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn-danger:hover:not(:disabled) {
+  color: var(--fiori-negative);
+  background: #ffd0d0 !important;
+}
+
+.fiori-card-toolbar .fiori-card-toolbar-btn-danger:hover:not(:disabled) {
+  color: var(--fiori-negative);
+  background: #ffd0d0;
+}
+
+.fiori-card-toolbar-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fiori-page-header .fiori-toolbar-dot,
+.fiori-subtoolbar .fiori-toolbar-dot {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--fiori-negative);
+}
+
+.fiori-page-header .fiori-toolbar-filter-group,
+.fiori-subtoolbar .fiori-toolbar-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.0625rem;
+}
+
+.fiori-page-header .fiori-toolbar-filter-group--active,
+.fiori-subtoolbar .fiori-toolbar-filter-group--active {
+  padding: 0.0625rem;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  background: #fff;
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn-clear-filter,
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn-clear-filter {
+  color: var(--fiori-label);
+}
+
+.fiori-page-header .fiori-toolbar .fiori-toolbar-btn-clear-filter:hover:not(:disabled),
+.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn-clear-filter:hover:not(:disabled) {
+  color: var(--fiori-negative);
+  background: #ffeaf4 !important;
+}
+
+.fiori-page-header .fiori-toolbar-search {
+  --fiori-border: #d9d9d9;
+  --fiori-text: #32363a;
+
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  width: 0;
+  opacity: 0;
+  margin-right: 0;
+  pointer-events: none;
+}
+
+.fiori-page-header .fiori-toolbar-search--open {
+  width: 12.5rem;
+  opacity: 1;
+  margin-right: 0.25rem;
+  pointer-events: auto;
+}
+
+.fiori-page-header .fiori-toolbar-search .fiori-search-shell {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.fiori-page-header .fiori-toolbar-search .fiori-search-icon {
+  position: absolute;
+  left: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--fiori-label);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fiori-page-header .fiori-toolbar-search .fiori-search-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 2rem;
+  padding: 0 2rem 0 2rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  box-shadow: none;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-page-header .fiori-toolbar-search .fiori-search-input::placeholder {
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-page-header .fiori-toolbar-search .fiori-search-input:focus,
+.fiori-page-header .fiori-toolbar-search .fiori-search-input:focus-visible {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  outline: none;
+}
+
+.fiori-page-header .fiori-toolbar-search .fiori-search-clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+}
+
+.fiori-page-header .fiori-toolbar-search .fiori-search-clear:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-card-footer {
+  border-top: 1px solid #e5e5e5;
+  padding-top: 0.5rem;
+}
+
+.fiori-card-footer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  color: #6a6d70;
+}
+
+.fiori-tooltip {
+  z-index: 80;
+  font-family: var(--font-72);
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.fiori-tooltip-panel {
+  --fiori-panel-bg: #ffffff;
+  --fiori-brand-accent: var(--color-SkyBlue-500, #3b82f6);
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-positive: #107e3e;
+  --fiori-negative: #bb0000;
+  --fiori-warning: #e76500;
+
+  font-family: var(--font-72);
+  background: var(--fiori-panel-bg);
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 0.5rem;
+  box-shadow:
+    0 0.375rem 1.25rem rgba(50, 54, 58, 0.16),
+    0 0.125rem 0.5rem rgba(50, 54, 58, 0.1) !important;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+body.dashboard-plaque-focus {
+  overflow: hidden;
+}
+
+.dashboard-plaque-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(245, 246, 247, 0.62);
+  cursor: default;
+}
+
+body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active) {
+  pointer-events: none;
+  user-select: none;
+}
+
+.fiori-dashboard-object-card,
+.fiori-migration-object-card {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-radius: 0.5rem;
+  border-radius: var(--fiori-radius, 0.5rem) !important;
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.08);
+}
+
+.fiori-migration-object-card {
+  font-family: var(--font-72);
+  background: var(--fiori-shell);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.fiori-migration-object-card:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target),
+.fiori-dashboard-object-card:hover:not(.card-static-border) {
+  background: #f7f7f7 !important;
+}
+
+.fiori-dashboard-object-card {
+  font-family: var(--font-72);
+}
+
+.fiori-dashboard-object-card-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--fiori-text, #32363a);
+}
+
+.fiori-migration-object-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  background: #f5f6f7;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.fiori-migration-object-card:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target) .fiori-migration-object-card-icon {
+  background: #ebecee;
+}
+
+.fiori-migration-object-card-stat-value {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  transform-origin: left center;
+}
+
+.fiori-migration-object-card-stat-value--end {
+  transform-origin: right center;
+}
+
+.fiori-migration-object-card:hover:not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target) .fiori-migration-object-card-stat-value {
+  transform: scale(1.12);
+}
+
+.fiori-migration-object-card-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--fiori-text, #32363a);
+}
+
+.fiori-migration-object-card-metrics {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.fiori-migration-object-card-metric-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--fiori-border-light, #e5e5e5);
+  flex-shrink: 0;
+}
+
+.fiori-migration-object-card-metric {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 0;
+  transition: opacity 0.15s ease;
+}
+
+.fiori-migration-object-card-metric-label {
+  font-size: 6.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  color: #94a3b8;
+}
+
+.fiori-migration-object-card-metric-value {
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: #1e293b;
+}
+
+.fiori-migration-object-card-metric-icon {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.5rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  color: #e2e8f0;
+}
+
+body.dashboard-plaque-focus .fiori-card-plaque-active {
+  position: relative;
+  z-index: 240;
+  pointer-events: auto;
+}
+
+body.dashboard-plaque-focus .fiori-card-plaque-active .group {
+  position: relative;
+  z-index: 2;
+}
+
+/* Suporte — nasce debaixo do card e sobe até a plaqueta */
+.fiori-card-plaque-active {
+  --fiori-plaque-stem: 12px;
+  --fiori-plaque-stem-under: 5px;
+}
+
+.fiori-card-plaque-active[data-plaque-variant="brand"] {
+  --fiori-emerge-accent: var(--color-SkyBlue-500, #3b82f6);
+}
+
+.fiori-card-plaque-active[data-plaque-variant="warning"] {
+  --fiori-emerge-accent: #e76500;
+}
+
+.fiori-card-plaque-active[data-plaque-variant="positive"] {
+  --fiori-emerge-accent: #107e3e;
+}
+
+.fiori-card-plaque-active::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * (var(--fiori-plaque-stem) - var(--fiori-plaque-stem-under)));
+  left: 50%;
+  z-index: 1;
+  width: 0.875rem;
+  height: var(--fiori-plaque-stem);
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #ffffff 0%, #f0f2f4 48%, #e4e7ea 100%);
+  border: 1px solid #c5cad0;
+  border-bottom: none;
+  border-radius: 0.125rem 0.125rem 0 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 0.0625rem 0.125rem rgba(50, 54, 58, 0.06);
+  pointer-events: none;
+}
+
+.fiori-card-plaque-active::after {
+  content: "";
+  position: absolute;
+  top: calc(-1 * (var(--fiori-plaque-stem) - var(--fiori-plaque-stem-under)) - 0.0625rem);
+  left: 50%;
+  z-index: 1;
+  width: 0.875rem;
+  height: 0.125rem;
+  transform: translateX(-50%);
+  background: var(--fiori-emerge-accent, #3b82f6);
+  border-radius: 0.0625rem 0.0625rem 0 0;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.fiori-card-plaque-active .group {
+  box-shadow:
+    0 -2px 0 0 #ffffff,
+    0 3px 8px rgba(50, 54, 58, 0.1);
+}
+
+body.dashboard-plaque-focus .fiori-card-plaque-active > div {
+  transform: none !important;
+}
+
+body.dashboard-plaque-focus .fiori-card-plaque-active .group {
+  transform: none !important;
+  scale: 1 !important;
+}
+
+body.dashboard-plaque-focus .fiori-card-plaque {
+  z-index: 250 !important;
+}
+
+/* Encaixe visível na borda superior do card */
+.fiori-card-plaque-slot::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 3;
+  width: 1.125rem;
+  height: 0.3125rem;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #d8dde2 0%, #eef0f2 100%);
+  border-radius: 0 0 0.25rem 0.25rem;
+  box-shadow: inset 0 0.125rem 0.1875rem rgba(50, 54, 58, 0.18);
+  pointer-events: none;
+}
+
+/* Plaqueta de identificação — emerge do topo do card */
+.fiori-tooltip-panel--emerge-top,
+.fiori-card-plaque {
+  --fiori-plaque-stem: 10px;
+  --fiori-emerge-accent: var(--fiori-brand-accent);
+  position: relative;
+  overflow: visible;
+  margin-top: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f8f9 100%) !important;
+  border: 1px solid #c5cad0 !important;
+  box-shadow:
+    0 0.625rem 1.75rem rgba(50, 54, 58, 0.2),
+    0 0.25rem 0.625rem rgba(50, 54, 58, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.fiori-tooltip-panel--emerge-top.fiori-tooltip-panel--brand,
+.fiori-card-plaque.fiori-tooltip-panel--brand {
+  --fiori-emerge-accent: var(--fiori-brand-accent);
+}
+
+.fiori-tooltip-panel--emerge-top.fiori-tooltip-panel--warning,
+.fiori-card-plaque.fiori-tooltip-panel--warning {
+  --fiori-emerge-accent: var(--fiori-warning);
+}
+
+.fiori-tooltip-panel--emerge-top.fiori-tooltip-panel--positive,
+.fiori-card-plaque.fiori-tooltip-panel--positive {
+  --fiori-emerge-accent: var(--fiori-positive);
+}
+
+/* Plaqueta acima do card — base plana; suporte fica no card */
+.fiori-tooltip-panel--emerge-top[data-side="top"],
+.fiori-card-plaque[data-side="top"] {
+  border-radius: 0.5rem 0.5rem 0.375rem 0.375rem;
+  border-bottom: 1px solid #c5cad0 !important;
+  transform-origin: bottom center;
+  margin-bottom: -1px;
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="top"]::before,
+.fiori-card-plaque[data-side="top"]::before {
+  content: none;
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="top"]::after,
+.fiori-card-plaque[data-side="top"]::after {
+  content: none;
+}
+
+.fiori-tooltip-panel--emerge-top .fiori-tooltip-panel-body,
+.fiori-card-plaque .fiori-tooltip-panel-body {
+  position: relative;
+  z-index: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.fiori-tooltip-panel--emerge-top .fiori-tooltip-panel-section-title,
+.fiori-card-plaque .fiori-tooltip-panel-section-title {
+  margin: 0;
+  padding: 0.4375rem 0.75rem;
+  border-bottom: 1px solid #e4e7ea;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--fiori-emerge-accent) 12%, #ffffff) 0%,
+    #ffffff 100%
+  );
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="top"] .fiori-tooltip-panel-section-title,
+.fiori-card-plaque[data-side="top"] .fiori-tooltip-panel-section-title {
+  border-radius: 0.4375rem 0.4375rem 0 0;
+}
+
+.fiori-tooltip-panel--emerge-top .fiori-tooltip-panel-badge,
+.fiori-card-plaque .fiori-tooltip-panel-badge {
+  min-width: 1.125rem;
+  height: 1.125rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--fiori-emerge-accent);
+}
+
+.fiori-tooltip-panel--emerge-top .fiori-tooltip-panel-dep-list,
+.fiori-card-plaque .fiori-tooltip-panel-dep-list {
+  padding: 0.375rem 0.75rem 0.625rem;
+}
+
+.fiori-tooltip-panel--emerge-top .fiori-tooltip-panel-dep-item,
+.fiori-card-plaque .fiori-tooltip-panel-dep-item {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="top"] .fiori-tooltip-panel-body,
+.fiori-card-plaque[data-side="top"] .fiori-tooltip-panel-body {
+  animation: fiori-plaque-emerge-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Plaqueta abaixo do card (fallback) */
+.fiori-tooltip-panel--emerge-top[data-side="bottom"],
+.fiori-card-plaque[data-side="bottom"] {
+  border-radius: 0.125rem 0.125rem 0.5rem 0.5rem;
+  border-top: none !important;
+  transform-origin: top center;
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="bottom"]::before,
+.fiori-card-plaque[data-side="bottom"]::before {
+  content: "";
+  position: absolute;
+  top: calc(-1 * var(--fiori-plaque-stem));
+  left: 50%;
+  z-index: -1;
+  width: 1rem;
+  height: var(--fiori-plaque-stem);
+  transform: translateX(-50%);
+  background: linear-gradient(0deg, #f3f4f6 0%, #ffffff 100%);
+  border: 1px solid #c5cad0;
+  border-bottom: none;
+  border-radius: 0.125rem 0.125rem 0 0;
+  box-shadow: 0 -0.125rem 0.25rem rgba(50, 54, 58, 0.08);
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="bottom"]::after,
+.fiori-card-plaque[data-side="bottom"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  width: 1.125rem;
+  height: 0.1875rem;
+  transform: translateX(-50%);
+  background: var(--fiori-emerge-accent);
+  border-radius: 0.0625rem 0.0625rem 0 0;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="bottom"] .fiori-tooltip-panel-section-title,
+.fiori-card-plaque[data-side="bottom"] .fiori-tooltip-panel-section-title {
+  border-radius: 0 0 0 0;
+}
+
+.fiori-tooltip-panel--emerge-top[data-side="bottom"] .fiori-tooltip-panel-body,
+.fiori-card-plaque[data-side="bottom"] .fiori-tooltip-panel-body {
+  animation: fiori-plaque-emerge-down 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fiori-plaque-emerge-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem) scaleY(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes fiori-plaque-emerge-down {
+  from {
+    opacity: 0;
+    transform: translateY(-0.375rem) scaleY(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.fiori-tooltip-panel--warning,
+.fiori-tooltip-panel--positive,
+.fiori-tooltip-panel--brand {
+  --fiori-panel-bg: #ffffff;
+  background: var(--fiori-panel-bg);
+}
+
+.fiori-tooltip-panel--warning > svg,
+.fiori-tooltip-panel--positive > svg,
+.fiori-tooltip-panel--brand > svg {
+  fill: #ffffff;
+}
+
+.fiori-tooltip-panel--warning .fiori-tooltip-panel-section-title svg {
+  color: var(--fiori-warning);
+}
+
+.fiori-tooltip-panel--positive .fiori-tooltip-panel-section-title svg {
+  color: var(--fiori-positive);
+}
+
+.fiori-tooltip-panel--brand .fiori-tooltip-panel-section-title svg {
+  color: var(--fiori-brand-accent);
+}
+
+.fiori-tooltip-panel-body {
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.fiori-tooltip-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.625rem;
+  margin-bottom: 0.625rem;
+}
+
+.fiori-tooltip-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: uppercase;
+}
+
+.fiori-tooltip-panel-title svg {
+  color: var(--fiori-brand-accent);
+  flex-shrink: 0;
+}
+
+.fiori-tooltip-panel-seq {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.fiori-tooltip-panel-seq-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+}
+
+.fiori-tooltip-panel-seq-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+}
+
+.fiori-tooltip-panel-desc {
+  margin-bottom: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-label);
+}
+
+.fiori-tooltip-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.625rem 1rem;
+}
+
+.fiori-tooltip-panel-metric-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.125rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-tooltip-panel-metric-label svg {
+  flex-shrink: 0;
+  color: var(--fiori-label);
+}
+
+.fiori-tooltip-panel-metric-label--success svg {
+  color: var(--fiori-positive);
+}
+
+.fiori-tooltip-panel-metric-label--error svg {
+  color: var(--fiori-negative);
+}
+
+.fiori-tooltip-panel-metric-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+}
+
+.fiori-tooltip-panel-metric-value--success {
+  color: var(--fiori-positive);
+}
+
+.fiori-tooltip-panel-metric-value--error {
+  color: var(--fiori-negative);
+}
+
+.fiori-tooltip-panel-metric-value--active {
+  color: var(--fiori-warning);
+}
+
+.fiori-tooltip-panel-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+}
+
+.fiori-tooltip-panel-footer--better {
+  color: var(--fiori-positive);
+}
+
+.fiori-tooltip-panel-footer--worse {
+  color: var(--fiori-negative);
+}
+
+.fiori-tooltip-panel-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  margin-bottom: 0.375rem;
+  border-bottom: 1px solid #f0f1f2;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+}
+
+.fiori-tooltip-panel-section-title svg {
+  flex-shrink: 0;
+}
+
+.fiori-tooltip-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.3125rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--fiori-label);
+  background: #f5f6f7;
+  border: none;
+  border-radius: 9999px;
+}
+
+.fiori-tooltip-panel-dep-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.fiori-tooltip-panel-dep-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3125rem 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.fiori-tooltip-panel-dep-item + .fiori-tooltip-panel-dep-item {
+  border-top: 1px solid #f5f6f7;
+}
+
+.fiori-tooltip-panel-dep-dot {
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 50%;
+  background: var(--fiori-brand-accent);
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.fiori-tooltip-panel--warning .fiori-tooltip-panel-dep-dot {
+  background: var(--fiori-warning);
+}
+
+.fiori-tooltip-panel--positive .fiori-tooltip-panel-dep-dot {
+  background: var(--fiori-positive);
+}
+
+/* Dashboard — tooltip de logs/comentários nos cards */
+.fiori-logs-tooltip {
+  padding: 0 !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fiori-logs-tooltip > svg {
+  fill: #fff;
+}
+
+.fiori-logs-tooltip-header {
+  padding: 0.75rem 0.875rem;
+  background: var(--color-SkyBlue-100, #e0effe);
+  color: #32363a;
+  border-bottom: 1px solid var(--color-SkyBlue-300, #7cc2fc);
+  flex-shrink: 0;
+}
+
+.fiori-logs-tooltip-header-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.fiori-logs-tooltip-header-name {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-SkyBlue-500, #3b82f6);
+  line-height: 1.2;
+}
+
+.fiori-logs-tooltip-header-count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.25rem;
+  padding: 0 0.4375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: var(--color-SkyBlue-500, #3b82f6);
+  border-radius: 0;
+  line-height: 1;
+}
+
+.fiori-logs-tooltip-header-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-SkyBlue-600, #0963e9);
+  line-height: 1.2;
+}
+
+.fiori-logs-tooltip-header-sub svg {
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+.fiori-logs-tooltip-body {
+  max-height: 11.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #c5cad0 #f5f6f7;
+  background: #fff;
+}
+
+.fiori-logs-tooltip-body.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fiori-logs-tooltip-body.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f5f6f7;
+}
+
+.fiori-logs-tooltip-body.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c5cad0;
+  border-radius: 3px;
+}
+
+.fiori-logs-tooltip-body.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #89919a;
+}
+
+.fiori-logs-tooltip-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.fiori-logs-tooltip-item {
+  padding: 0.625rem 0.75rem;
+  background: #fff;
+}
+
+.fiori-logs-tooltip-item + .fiori-logs-tooltip-item {
+  border-top: 1px solid #eef0f2;
+}
+
+.fiori-logs-tooltip-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.fiori-logs-tooltip-item-author {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  min-width: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #32363a;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-logs-tooltip-item-author svg {
+  flex-shrink: 0;
+  color: var(--color-SkyBlue-500, #3b82f6);
+}
+
+.fiori-logs-tooltip-item-date {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 400;
+  color: #89919a;
+  font-variant-numeric: tabular-nums;
+}
+
+.fiori-logs-tooltip-item-date svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.fiori-logs-tooltip-item-text {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #32363a;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.4375rem 0.5625rem;
+  background: #f7f9fa;
+  border-radius: 0 0.25rem 0.25rem 0;
+  border: 1px solid #eef0f2;
+  border-left: 2px solid var(--color-SkyBlue-500, #3b82f6);
+}
+
+.fiori-logs-tooltip-item-text--user {
+  font-style: normal;
+  color: #515559;
+  border-left-color: #c5cad0;
+  background: #fafbfc;
+}
+
+/* Dashboard — resumo de ciclo (Fiori layout + paleta BI existente) */
+.consolidated-tooltip-panel {
+  background: #fff !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.consolidated-tooltip-panel > svg {
+  fill: #fff;
+}
+
+.consolidated-tooltip-panel-header {
+  padding: 1rem;
+  background: var(--color-SkyBlue-100, #e0effe);
+  color: #32363a;
+  border-bottom: 1px solid var(--color-SkyBlue-300, #7cc2fc);
+}
+
+.consolidated-tooltip-panel-header-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.consolidated-tooltip-panel-header-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-SkyBlue-500, #3b82f6);
+}
+
+.consolidated-tooltip-panel-header-pct {
+  flex-shrink: 0;
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  border-radius: 0;
+  line-height: 1.2;
+}
+
+.consolidated-tooltip-panel-header-pct--success {
+  background: #10b981;
+  color: #fff;
+}
+
+.consolidated-tooltip-panel-header-pct--warning {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.consolidated-tooltip-panel-header-pct--critical {
+  background: #ef4444;
+  color: #fff;
+}
+
+.consolidated-tooltip-panel-header-sub {
+  margin-top: 0.25rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-SkyBlue-600, #0963e9);
+}
+
+.consolidated-tooltip-panel-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #fff;
+}
+
+.consolidated-tooltip-panel-times {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.consolidated-tooltip-panel-time-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.consolidated-tooltip-panel-time-label--end {
+  justify-content: flex-end;
+}
+
+.consolidated-tooltip-panel-time-value {
+  margin-top: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #334155;
+}
+
+.consolidated-tooltip-panel-time-value--end {
+  text-align: right;
+}
+
+.consolidated-tooltip-panel-time-value--active {
+  color: #0ea5e9;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.consolidated-tooltip-panel-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.consolidated-tooltip-panel-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.consolidated-tooltip-panel-metric-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.consolidated-tooltip-panel-metric-label svg.icon-sky {
+  color: #0ea5e9;
+}
+
+.consolidated-tooltip-panel-metric-label svg.icon-success {
+  color: #10b981;
+}
+
+.consolidated-tooltip-panel-metric-label svg.icon-error {
+  color: #ef4444;
+}
+
+.consolidated-tooltip-panel-metric-value {
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+  text-align: right;
+}
+
+.consolidated-tooltip-panel-metric-value--success {
+  color: #059669;
+}
+
+.consolidated-tooltip-panel-metric-value--error {
+  color: #dc2626;
+}
+
+.consolidated-tooltip-panel-metric-sub {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.consolidated-tooltip-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.consolidated-tooltip-panel-footer-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.consolidated-tooltip-panel-footer-label svg {
+  color: #0ea5e9;
+}
+
+.consolidated-tooltip-panel-footer-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0284c7;
+}
+
+/* Objetos — painel de KPI (Fiori, layout limpo) */
+.fiori-object-tooltip {
+  --fiori-object-tooltip-bg: #ffffff;
+  --fiori-object-tooltip-header: #f7f9fa;
+  --fiori-object-tooltip-border: #e5e5e5;
+  --fiori-object-tooltip-divider: #eef0f2;
+  --fiori-object-tooltip-text: #32363a;
+  --fiori-object-tooltip-label: #6a6d70;
+  --fiori-object-tooltip-positive: #107e3e;
+  --fiori-object-tooltip-negative: #bb0000;
+  --fiori-object-tooltip-warning: #e76500;
+
+  width: 17.5rem;
+  max-width: min(17.5rem, 85vw);
+  padding: 0 !important;
+  overflow: hidden;
+  background: var(--fiori-object-tooltip-bg) !important;
+  border: 1px solid var(--fiori-object-tooltip-border) !important;
+  border-radius: 0.375rem !important;
+  box-shadow:
+    0 0.25rem 0.75rem rgba(50, 54, 58, 0.1),
+    0 0.0625rem 0.25rem rgba(50, 54, 58, 0.06) !important;
+}
+
+.fiori-object-tooltip > svg {
+  fill: var(--fiori-object-tooltip-bg);
+}
+
+.fiori-object-tooltip-header {
+  padding: 0.625rem 0.75rem;
+  background: var(--fiori-object-tooltip-header);
+  border-bottom: 1px solid var(--fiori-object-tooltip-divider);
+}
+
+.fiori-object-tooltip-name {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--fiori-object-tooltip-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-object-tooltip-meta {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--fiori-object-tooltip-label);
+}
+
+.fiori-object-tooltip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.fiori-object-tooltip-desc {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-object-tooltip-label);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fiori-object-tooltip-times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid var(--fiori-object-tooltip-divider);
+}
+
+.fiori-object-tooltip-label {
+  display: block;
+  margin-bottom: 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--fiori-object-tooltip-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-object-tooltip-value {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fiori-object-tooltip-text);
+  word-break: break-word;
+}
+
+.fiori-object-tooltip-value--mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.fiori-object-tooltip-value--active {
+  color: var(--fiori-object-tooltip-warning);
+}
+
+.fiori-object-tooltip-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fiori-object-tooltip-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.fiori-object-tooltip-row .fiori-object-tooltip-label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.fiori-object-tooltip-row .fiori-object-tooltip-value {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.fiori-object-tooltip-row--separated {
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--fiori-object-tooltip-divider);
+}
+
+.fiori-object-tooltip-value--success {
+  color: var(--fiori-object-tooltip-positive);
+}
+
+.fiori-object-tooltip-value--error {
+  color: var(--fiori-object-tooltip-negative);
+}
+
+.fiori-object-tooltip-delta {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-top: 0.5rem;
+  margin-top: 0.125rem;
+  border-top: 1px solid var(--fiori-object-tooltip-divider);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fiori-object-tooltip-label);
+}
+
+.fiori-object-tooltip-delta svg {
+  flex-shrink: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.fiori-object-tooltip-delta--better {
+  color: var(--fiori-object-tooltip-positive);
+}
+
+.fiori-object-tooltip-delta--worse {
+  color: var(--fiori-object-tooltip-negative);
+}
+
+/* ── Shell bar do dashboard (topo fixo) ── */
+.dashboard-mobile-header {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: var(--fiori-radius);
+
+  font-family: var(--font-72);
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-border-light) !important;
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.08);
+}
+
+.dashboard-mobile-header .fiori-shell-brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
+  background: var(--color-SkyBlue-500, #3b82f6);
+  color: #fff;
+  box-shadow: 0 1px 2px var(--color-SkyBlue-200, #badffd);
+}
+
+.dashboard-mobile-header .fiori-shell-brand-icon svg {
+  fill: currentColor;
+}
+
+.dashboard-mobile-header .fiori-horizontal-nav-item {
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  cursor: pointer;
+  color: var(--fiori-label);
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  outline: none;
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dashboard-mobile-header button.fiori-horizontal-nav-item,
+.dashboard-mobile-header a.fiori-horizontal-nav-item {
+  border-width: 1px;
+  border-style: solid;
+}
+
+.dashboard-mobile-header .fiori-horizontal-nav-item:hover:not(.fiori-horizontal-nav-item--disabled):not(:disabled) {
+  color: var(--fiori-text);
+  background: #f7f7f7;
+  border-color: #aeb6bf;
+}
+
+.dashboard-mobile-header .fiori-horizontal-nav-item:focus-visible {
+  outline: 2px solid var(--fiori-brand);
+  outline-offset: 1px;
+}
+
+.dashboard-mobile-header .fiori-horizontal-nav-item--active,
+.dashboard-mobile-header .fiori-horizontal-nav-item[data-state="open"] {
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border-color: transparent;
+}
+
+.dashboard-mobile-header .fiori-horizontal-nav-item--active:hover:not(.fiori-horizontal-nav-item--disabled):not(:disabled),
+.dashboard-mobile-header .fiori-horizontal-nav-item[data-state="open"]:hover:not(:disabled) {
+  color: var(--fiori-brand-hover);
+  background: #d9ebff;
+  border-color: #aeb6bf;
+}
+
+.dashboard-mobile-header .fiori-horizontal-nav-item--disabled {
+  cursor: not-allowed;
+  color: #d9d9d9;
+  opacity: 0.6;
+}
+
+/* ── Menu de navegação (mobile sheet) ── */
+.fiori-nav-sheet-overlay {
+  background: rgba(50, 54, 58, 0.45) !important;
+}
+
+.fiori-nav-sheet {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-negative: #bb0000;
+
+  font-family: var(--font-72);
+  background: var(--fiori-shell);
+  border-left: 1px solid var(--fiori-border-light);
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.12), 0 0.0625rem 0.125rem 0 rgba(85, 107, 130, 0.16);
+}
+
+.fiori-nav-sheet > button.absolute {
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  color: var(--fiori-label);
+  opacity: 1;
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-nav-sheet > button.absolute:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-nav-sheet-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #fafafa;
+}
+
+.fiori-nav-sheet-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.fiori-nav-sheet-brand:hover {
+  opacity: 0.85;
+}
+
+.fiori-nav-sheet-brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  background: var(--fiori-brand-light);
+  color: var(--fiori-brand);
+}
+
+.fiori-nav-sheet-brand-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+}
+
+.fiori-side-nav {
+  background: var(--fiori-shell);
+}
+
+.fiori-side-nav-item {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-side-nav-account {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-side-nav-section-label {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-side-nav-account-btn {
+  display: flex;
+  width: 100%;
+  cursor: pointer;
+  align-items: center;
+  border-radius: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+  background: transparent;
+  border: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-side-nav-account-btn:hover {
+  background: #f5f6f7;
+}
+
+.fiori-side-nav-account-btn--danger {
+  color: var(--fiori-negative);
+}
+
+.fiori-side-nav-account-btn--danger:hover {
+  background: #ffebeb;
+}
+
+.fiori-side-nav-divider {
+  height: 1px;
+  margin: 0.25rem 0.5rem;
+  background: var(--fiori-border-light);
+}
+
+/* ── Cards de projeto ── */
+.fiori-project-card {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: 0.5rem;
+
+  font-family: var(--font-72);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border-light);
+  border-radius: var(--fiori-radius);
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.08);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.fiori-project-card:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging),
+.fiori-project-card[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+  background: var(--fiori-brand-light);
+  border-color: #b8d4f5;
+  box-shadow:
+    0 0 0.125rem 0 rgba(0, 112, 242, 0.08),
+    0 0.25rem 0.75rem rgba(0, 112, 242, 0.12);
+}
+
+.fiori-project-card--neutral-hover:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging),
+.fiori-project-card--neutral-hover[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+  background: #f7f7f7 !important;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.08);
+}
+
+.fiori-project-card--neutral-hover:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
+.fiori-project-card--neutral-hover:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--inline,
+.fiori-project-card--neutral-hover[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
+.fiori-project-card--neutral-hover[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--inline {
+  background: transparent;
+}
+
+.fiori-project-card--neutral-hover:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-drag,
+.fiori-project-card--neutral-hover[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-drag {
+  background: #ebecee;
+  color: var(--fiori-label);
+}
+
+.fiori-project-card--neutral-hover.fiori-project-card--active:hover:not(.fiori-project-card--dragging),
+.fiori-project-card--neutral-hover.fiori-project-card--active[data-state="open"]:not(.fiori-project-card--dragging) {
+  background: #f7f7f7 !important;
+  border-color: var(--fiori-brand);
+  box-shadow:
+    0 0 0 1px var(--fiori-brand),
+    0 0.25rem 0.875rem rgba(0, 112, 242, 0.16);
+}
+
+.fiori-project-card--neutral-hover.fiori-project-card--active:hover:not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
+.fiori-project-card--neutral-hover.fiori-project-card--active:hover:not(.fiori-project-card--dragging) .fiori-project-card-metrics--inline,
+.fiori-project-card--neutral-hover.fiori-project-card--active[data-state="open"]:not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
+.fiori-project-card--neutral-hover.fiori-project-card--active[data-state="open"]:not(.fiori-project-card--dragging) .fiori-project-card-metrics--inline {
+  background: transparent;
+}
+
+.fiori-project-card--neutral-hover.fiori-project-card--active:hover:not(.fiori-project-card--dragging) .fiori-project-card-drag,
+.fiori-project-card--neutral-hover.fiori-project-card--active[data-state="open"]:not(.fiori-project-card--dragging) .fiori-project-card-drag {
+  background: #ebecee;
+  color: var(--fiori-label);
+}
+
+.fiori-project-card:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
+.fiori-project-card:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--inline,
+.fiori-project-card[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
+.fiori-project-card[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--inline {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.fiori-project-card:focus-visible {
+  outline: 2px solid var(--fiori-brand);
+  outline-offset: 2px;
+}
+
+.fiori-project-card--active:hover:not(.fiori-project-card--dragging) {
+  border-color: var(--fiori-brand);
+  box-shadow:
+    0 0 0 1px var(--fiori-brand),
+    0 0.25rem 0.875rem rgba(0, 112, 242, 0.16);
+}
+
+.fiori-project-card--active {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+body:has([role="alertdialog"][data-state="open"]) .fiori-project-card--active {
+  box-shadow:
+    0 0 0 1px var(--fiori-brand),
+    0 0.25rem 0.875rem rgba(0, 112, 242, 0.14);
+}
+
+body:has([role="alertdialog"][data-state="open"]) .fiori-project-card:not(.fiori-project-card--active) {
+  opacity: 0.82;
+}
+
+.fiori-project-card--dragging {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0.125rem 0 rgba(0, 112, 242, 0.25);
+  transform: scale(1.01);
+}
+
+.fiori-project-card-drag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  background: #f5f6f7;
+  color: var(--fiori-label);
+  cursor: grab;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-project-card-drag:hover {
+  background: var(--fiori-brand-light);
+  color: var(--fiori-brand);
+}
+
+.fiori-project-card-drag:active {
+  cursor: grabbing;
+}
+
+.fiori-project-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fiori-text);
+  line-height: 1.25;
+}
+
+.fiori-project-card-status-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: help;
+  line-height: 0;
+}
+
+/* Semáforo de status (cards de projeto / mock) — apenas o farol vigente */
+.fiori-semaphore {
+  --fiori-semaphore-glow: transparent;
+  --fiori-semaphore-ring: transparent;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.fiori-semaphore__light {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 38% 32%,
+    color-mix(in srgb, var(--fiori-semaphore-active, #6a6d70) 45%, white) 0%,
+    var(--fiori-semaphore-active, #6a6d70) 78%
+  );
+  box-shadow:
+    inset 0 -1px 2px rgba(15, 23, 42, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.42),
+    0 0 0 1px var(--fiori-semaphore-ring),
+    0 0 0.5rem var(--fiori-semaphore-glow);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fiori-semaphore__light::after {
+  content: "";
+  position: absolute;
+  inset: 0.0625rem 0.125rem auto 0.125rem;
+  height: 38%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent);
+  pointer-events: none;
+}
+
+.fiori-semaphore--critical {
+  --fiori-semaphore-active: #bb0000;
+  --fiori-semaphore-ring: rgba(187, 0, 0, 0.28);
+  --fiori-semaphore-glow: rgba(187, 0, 0, 0.55);
+}
+
+.fiori-semaphore--warning {
+  --fiori-semaphore-active: #e76500;
+  --fiori-semaphore-ring: rgba(231, 101, 0, 0.28);
+  --fiori-semaphore-glow: rgba(231, 101, 0, 0.55);
+}
+
+.fiori-semaphore--positive {
+  --fiori-semaphore-active: #107e3e;
+  --fiori-semaphore-ring: rgba(16, 126, 62, 0.28);
+  --fiori-semaphore-glow: rgba(16, 126, 62, 0.5);
+}
+
+.fiori-semaphore--informative {
+  --fiori-semaphore-active: #0070f2;
+  --fiori-semaphore-ring: rgba(0, 112, 242, 0.28);
+  --fiori-semaphore-glow: rgba(0, 112, 242, 0.5);
+}
+
+.fiori-semaphore--neutral {
+  --fiori-semaphore-active: #6a6d70;
+  --fiori-semaphore-ring: rgba(106, 109, 112, 0.22);
+  --fiori-semaphore-glow: rgba(106, 109, 112, 0.35);
+}
+
+.fiori-semaphore--pulse .fiori-semaphore__light {
+  animation: fiori-semaphore-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes fiori-semaphore-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow:
+      inset 0 -1px 2px rgba(15, 23, 42, 0.18),
+      inset 0 1px 1px rgba(255, 255, 255, 0.42),
+      0 0 0 1px var(--fiori-semaphore-ring),
+      0 0 0.5rem var(--fiori-semaphore-glow);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: brightness(1.08);
+    box-shadow:
+      inset 0 -1px 2px rgba(15, 23, 42, 0.18),
+      inset 0 1px 1px rgba(255, 255, 255, 0.42),
+      0 0 0 1px var(--fiori-semaphore-ring),
+      0 0 0.75rem var(--fiori-semaphore-glow);
+  }
+}
+
+.fiori-project-card-status-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1;
+}
+
+.fiori-project-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.25rem 0.5rem;
+}
+
+.fiori-project-card-metrics--inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
+  background: #f5f6f7;
+}
+
+.fiori-project-card-metrics--panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
+  background: #f5f6f7;
+}
+
+.fiori-project-card-metrics--panel .fiori-project-card-metric {
+  padding: 0;
+  min-width: 0;
+}
+
+.fiori-project-card-metrics-h-divider {
+  height: 1px;
+  background: var(--fiori-border-light, #e5e5e5);
+  flex-shrink: 0;
+}
+
+.fiori-project-card-metrics-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.fiori-project-card-metrics-row .fiori-project-card-metric {
+  flex: 1 1 0;
+}
+
+.fiori-project-card-metrics-row .fiori-project-card-metric-divider {
+  height: auto;
+  align-self: stretch;
+  min-height: 1.5rem;
+}
+
+.fiori-project-card-metrics--inline .fiori-project-card-metric {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0;
+}
+
+.fiori-project-card-metric-divider {
+  height: 1.25rem;
+  width: 1px;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-project-card-metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0;
+}
+
+.fiori-project-card-metric--full {
+  grid-column: 1 / -1;
+}
+
+.fiori-project-card-metric-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.fiori-project-card-metric-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-project-card-mocks-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.75rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fiori-brand);
+  background: transparent;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fiori-project-card-mocks-btn:hover {
+  background: var(--fiori-brand-light);
+  border-color: #d4e8ff;
+}
+
+/* ── Cards de profissional (RH) ── */
+.fiori-user-card-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 272px), 1fr));
+}
+
+.fiori-user-card-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  background: #f5f6f7;
+  flex-shrink: 0;
+}
+
+.fiori-user-card-you-badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  line-height: 1;
+  margin-top: 0.125rem;
+}
+
+.fiori-activity-group-swatch {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--fiori-border-light);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.fiori-activity-group-swatch--table {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: none;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.fiori-activity-group-swatch--dialog {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.125rem;
+  border: none;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.fiori-activity-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  max-width: 100%;
+  min-width: 0;
+  height: 1.125rem;
+  padding: 0 0.375rem 0 0.3125rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  cursor: default;
+}
+
+.fiori-activity-group-badge-swatch {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fiori-activity-group-badge-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--fiori-label, #6a6d70);
+  text-transform: uppercase;
+}
+
+.fiori-activity-group-badge--overflow {
+  padding: 0 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--fiori-label, #6a6d70);
+  text-transform: none;
+}
+
+.fiori-activity-groups-panel {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --ag-col-objects: 5.5rem;
+  --ag-col-order: 4.5rem;
+  --ag-col-actions: 6.5rem;
+  --ag-pad-x: 1rem;
+  --ag-row-pad-y: 0.4375rem;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  font-family: var(--font-72);
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  box-shadow: none;
+}
+
+.fiori-activity-groups-panel--flush {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.fiori-activity-groups-panel--flush .fiori-activity-groups-panel-header {
+  padding-left: var(--ag-pad-x);
+  padding-right: var(--ag-pad-x);
+  border-top: none;
+}
+
+@media (min-width: 768px) {
+  .fiori-activity-groups-panel {
+    --ag-pad-x: 2rem;
+  }
+}
+
+.fiori-activity-groups-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 0;
+  padding: 0.625rem var(--ag-pad-x) 0.5rem;
+  border-bottom: none;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.fiori-activity-groups-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.fiori-activity-groups-panel-title-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fiori-text);
+  line-height: 1.25;
+}
+
+.fiori-activity-groups-panel-count {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.fiori-activity-groups-table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  margin-top: 0;
+  padding-top: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fiori-activity-groups-scroll-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-activity-groups-list-header,
+.fiori-activity-groups-list-row {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--ag-col-objects)
+    var(--ag-col-order)
+    var(--ag-col-actions);
+  align-items: center;
+  width: 100%;
+  padding-left: var(--ag-pad-x);
+  padding-right: var(--ag-pad-x);
+  box-sizing: border-box;
+}
+
+.fiori-activity-groups-list-header {
+  flex-shrink: 0;
+  min-height: 2rem;
+  background: #f5f6f7;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-activity-groups-list-header .fiori-activity-groups-list-cell {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fiori-label);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.fiori-activity-groups-list-header .fiori-activity-groups-list-cell--numeric,
+.fiori-activity-groups-list-header .fiori-activity-groups-list-cell--actions {
+  color: var(--fiori-label);
+}
+
+.fiori-activity-groups-table-scroll [role="rowgroup"] {
+  background: #fff;
+}
+
+.fiori-activity-groups-list-row {
+  position: relative;
+  min-height: 2.5rem;
+  padding-top: var(--ag-row-pad-y);
+  padding-bottom: var(--ag-row-pad-y);
+  background: #fff;
+  border-bottom: 1px solid var(--fiori-border-light);
+  transition: background 0.12s ease;
+}
+
+.fiori-activity-groups-list-row:hover {
+  background: var(--fiori-brand-light);
+}
+
+.fiori-activity-groups-list-row:last-child {
+  border-bottom: none;
+}
+
+.fiori-activity-groups-list-cell {
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--fiori-text);
+}
+
+.fiori-activity-groups-list-cell--numeric {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.fiori-activity-groups-list-header .fiori-activity-groups-list-cell--numeric {
+  justify-content: center;
+  text-align: center;
+}
+
+.fiori-activity-groups-list-cell--actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.fiori-activity-groups-list-header .fiori-activity-groups-list-cell--actions {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.fiori-activity-groups-group-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.fiori-activity-groups-group-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.fiori-activity-groups-name {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.fiori-activity-groups-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-activity-groups-desc:not(.fiori-activity-groups-desc--empty)::before {
+  content: "·";
+  margin-right: 0.375rem;
+  color: #c4c4c4;
+  font-weight: 600;
+}
+
+.fiori-activity-groups-desc--empty {
+  font-style: normal;
+  color: #a9b4be;
+}
+
+.fiori-activity-groups-metric-value {
+  font-size: 0.875rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--fiori-text);
+}
+
+.fiori-activity-groups-order {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--fiori-text);
+}
+
+.fiori-activity-groups-list-row .fiori-card-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  opacity: 0.45;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  transition: opacity 0.12s ease;
+}
+
+.fiori-activity-groups-list-row:hover .fiori-card-toolbar {
+  opacity: 1;
+  background: transparent;
+}
+
+.fiori-activity-groups-list-row .fiori-card-toolbar .fiori-card-toolbar-btn {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.fiori-activity-groups-list-row:hover .fiori-card-toolbar .fiori-card-toolbar-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.fiori-activity-groups-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  background: #fff;
+}
+
+.fiori-activity-groups-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.25rem;
+  color: #d5dadd;
+}
+
+button.fiori-project-card-metric--editable {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 0.15s ease;
+}
+
+button.fiori-project-card-metric--editable:hover {
+  background: #f7f9fa;
+}
+
+button.fiori-project-card-metric--editable[data-state="open"] {
+  background: #e8f3ff;
+}
+
+/* ── Página Configurações (formulários) ── */
+.fiori-settings-page {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-shell: #ffffff;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: var(--fiori-radius);
+  --fe-header-btn-radius: 0.375rem;
+  --fiori-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.12), 0 0.0625rem 0.125rem 0 rgba(85, 107, 130, 0.16);
+
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: var(--font-72);
+}
+
+.fiori-settings-panel {
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: var(--fiori-radius);
+  box-shadow: var(--fiori-shadow);
+  overflow: hidden;
+}
+
+.fiori-settings-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-settings-panel-header--rich,
+.fiori-settings-panel-header--actions {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fiori-settings-panel-header--actions {
+  align-items: center;
+}
+
+.fiori-settings-panel-header--actions .fiori-settings-panel-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.fiori-settings-panel-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.fiori-settings-panel-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.fiori-settings-panel-header-text .fiori-field-hint {
+  margin: 0;
+}
+
+.fiori-settings-panel-header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.fiori-settings-page .fiori-settings-panel-header-btn.fiori-btn-emphasized,
+.fiori-settings-page .fiori-settings-panel-header-btn.fiori-btn-transparent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: var(--fe-header-btn-radius) !important;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fiori-settings-page .fiori-settings-panel-header-btn.fiori-btn-transparent {
+  color: var(--fiori-brand);
+  background: #fff;
+  border: 1px solid var(--fiori-brand);
+  box-shadow: none;
+}
+
+.fiori-settings-page .fiori-settings-panel-header-btn.fiori-btn-transparent:hover:not(:disabled) {
+  color: var(--fiori-brand-hover);
+  background: var(--fiori-brand-light);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-settings-page .fiori-settings-panel-header-btn.fiori-btn-transparent:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-settings-panel-header-main > svg,
+.fiori-settings-panel-header:not(.fiori-settings-panel-header--rich) > svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: var(--fiori-brand);
+}
+
+.fiori-settings-page .fiori-settings-panel-header-btn svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.fiori-settings-panel-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+  text-transform: none;
+}
+
+.fiori-settings-panel-body {
+  padding: 1.25rem;
+}
+
+.fiori-settings-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.fiori-settings-notes {
+  padding: 1rem 1.25rem;
+  background: #f7f9fa;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: var(--fiori-radius);
+}
+
+.fiori-settings-notes-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-settings-notes-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--fiori-label);
+}
+
+.fiori-settings-notes-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+}
+
+.fiori-settings-notes-list li::before {
+  content: "›";
+  flex-shrink: 0;
+  color: var(--fiori-brand);
+  font-weight: 600;
+}
+
+.fiori-settings-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.fiori-settings-empty-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--fiori-label);
+  opacity: 0.45;
+}
+
+.fiori-settings-empty-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+}
+
+.fiori-settings-empty-desc {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  line-height: 1.4;
+}
+
+.fiori-settings-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 5rem;
+  font-size: 0.75rem;
+  color: var(--fiori-label);
+}
+
+.fiori-file-alias-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+}
+
+.fiori-file-alias-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: var(--fiori-radius-button);
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.fiori-file-alias-item:hover {
+  background: var(--fiori-brand-light);
+  border-color: #d4e8ff;
+}
+
+.fiori-file-alias-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.fiori-file-alias-object {
+  display: inline-flex;
+  align-items: center;
+  height: 1.375rem;
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border: 1px solid #d4e8ff;
+  border-radius: var(--fiori-radius-button);
+}
+
+.fiori-file-alias-patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+}
+
+.fiori-file-alias-pattern {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.4375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--fiori-text);
+  background: #f5f6f7;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: calc(var(--fiori-radius-button) - 0.125rem);
+}
+
+.fiori-file-alias-item .fiori-card-toolbar {
+  opacity: 0.45;
+  transition: opacity 0.12s ease;
+}
+
+.fiori-file-alias-item:hover .fiori-card-toolbar,
+.fiori-file-alias-item:focus-within .fiori-card-toolbar {
+  opacity: 1;
+}
+
+/* ── Página Cadastrar e-mails ── */
+.fiori-emails-page {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-shell: #ffffff;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: var(--fiori-radius);
+  --fiori-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.12), 0 0.0625rem 0.125rem 0 rgba(85, 107, 130, 0.16);
+  --fe-pad-x: 1rem;
+  --fe-row-height: 2.5rem;
+  --fe-header-btn-radius: 0.375rem;
+  --fe-col-actions: 3.5rem;
+  --fe-col-email: minmax(12rem, 1.25fr);
+  --fe-col-groups: minmax(10rem, 1fr);
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  font-family: var(--font-72);
+  background: #fff;
+}
+
+@media (min-width: 768px) {
+  .fiori-emails-page {
+    --fe-pad-x: 2rem;
+  }
+}
+
+.fiori-emails-page .fiori-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+}
+
+.fiori-emails-page .fiori-input {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-emails-page .fiori-input:focus,
+.fiori-emails-page .fiori-input:focus-visible {
+  outline: none;
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-emails-page .fiori-btn-ghost {
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: var(--fiori-radius-button);
+  cursor: pointer;
+}
+
+.fiori-emails-page .fiori-btn-ghost:hover:not(:disabled) {
+  color: var(--fiori-text);
+  background: #ededed;
+}
+
+.fiori-emails-page .fiori-btn-emphasized {
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--fiori-brand);
+  border: 1px solid var(--fiori-brand);
+  border-radius: var(--fiori-radius-button);
+  cursor: pointer;
+}
+
+.fiori-emails-page .fiori-btn-emphasized:hover:not(:disabled) {
+  background: var(--fiori-brand-hover);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-emails-page .fiori-btn-emphasized:disabled,
+.fiori-emails-page .fiori-btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-emails-page-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem var(--fe-pad-x) 1.5rem;
+}
+
+.fiori-emails-page-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .fiori-emails-page-grid {
+    flex-direction: row;
+    align-items: stretch;
+    min-height: 18rem;
+  }
+
+  .fiori-emails-page-grid > .fiori-emails-panel {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+  }
+}
+
+.fiori-emails-page-grid > .fiori-emails-panel + .fiori-emails-panel {
+  margin-top: 0;
+}
+
+.fiori-emails-page-grid > .fiori-emails-panel > .fiori-emails-panel-header {
+  align-items: center;
+  min-height: 4.375rem;
+  padding: 1rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.fiori-emails-page-grid > .fiori-emails-panel .fiori-emails-panel-icon {
+  width: auto;
+  height: auto;
+  padding: 0.625rem;
+}
+
+.fiori-emails-page-grid > .fiori-emails-panel .fiori-emails-panel-title-text {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.fiori-emails-page-grid > .fiori-emails-panel .fiori-emails-panel-heading {
+  justify-content: center;
+}
+
+.fiori-emails-panel--contacts {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fiori-emails-page-grid .fiori-emails-table-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.fiori-emails-page-grid .fiori-emails-list-header--contacts,
+.fiori-emails-page-grid .fiori-emails-list-row--contacts {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.1fr)
+    minmax(0, 0.9fr)
+    var(--fe-col-actions);
+}
+
+.fiori-emails-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: var(--fiori-radius);
+  box-shadow: var(--fiori-shadow);
+  overflow: hidden;
+}
+
+.fiori-emails-panel--flush {
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+}
+
+.fiori-emails-panel + .fiori-emails-panel {
+  margin-top: 1rem;
+}
+
+.fiori-emails-scroll-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-emails-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.625rem var(--fe-pad-x);
+  border-bottom: none;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.fiori-emails-panel > .fiori-emails-panel-header {
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-emails-panel-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.fiori-emails-panel-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  background: var(--fiori-brand-light);
+  border-radius: 0.375rem;
+  color: var(--fiori-brand);
+}
+
+.fiori-emails-panel-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.fiori-emails-panel-title-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+  line-height: 1.25;
+}
+
+.fiori-emails-panel-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-emails-panel-subtitle--hint {
+  color: var(--fiori-label);
+}
+
+.fiori-emails-panel-count {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.fiori-emails-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.fiori-emails-page .fiori-emails-panel-header-btn.fiori-btn-emphasized,
+.fiori-emails-page .fiori-emails-panel-header-btn.fiori-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: var(--fe-header-btn-radius) !important;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.fiori-emails-page .fiori-emails-panel-header-btn.fiori-btn-emphasized {
+  border: 1px solid var(--fiori-brand);
+}
+
+.fiori-emails-panel--form > .fiori-emails-panel-header {
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.fiori-emails-panel--contact {
+  height: 100%;
+  min-height: 0;
+}
+
+.fiori-emails-contact-form-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  background: #fff;
+}
+
+.fiori-emails-contact-form-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fiori-emails-contact-field-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  min-height: 3rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-emails-contact-field-row:last-child {
+  border-bottom: none;
+}
+
+.fiori-emails-contact-field-label {
+  width: 5rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+}
+
+.fiori-emails-contact-field-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.fiori-emails-panel--contact .fiori-input {
+  background: #fff;
+  border-color: var(--fiori-border-light);
+}
+
+.fiori-emails-panel--contact .fiori-input:focus,
+.fiori-emails-panel--contact .fiori-input:focus-visible {
+  background: #fff;
+}
+
+.fiori-emails-group-item-label-only {
+  cursor: default;
+  pointer-events: none;
+  padding: 0.5rem var(--fe-pad-x);
+}
+
+.fiori-emails-contact-dialog .fiori-dialog-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1rem 1.25rem;
+}
+
+.fiori-emails-contact-dialog-fields {
+  flex-shrink: 0;
+}
+
+.fiori-emails-contact-dialog-groups {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-emails-contact-dialog-groups .fiori-master-picker-header {
+  flex-shrink: 0;
+}
+
+.fiori-emails-contact-dialog .fiori-emails-contact-dialog-outline-btn.fiori-btn-transparent {
+  height: 1.625rem;
+  min-height: 1.625rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--fiori-brand);
+  background: #fff;
+  border-color: var(--fiori-brand);
+}
+
+.fiori-emails-contact-dialog .fiori-emails-contact-dialog-outline-btn.fiori-btn-transparent:hover:not(:disabled) {
+  color: var(--fiori-brand-hover);
+  background: var(--fiori-brand-light);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-emails-contact-dialog-picker {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.75rem;
+}
+
+.fiori-emails-contact-dialog-picker .fiori-emails-group-toolbar {
+  flex-shrink: 0;
+}
+
+.fiori-emails-contact-dialog-picker-loading {
+  flex: 1;
+  min-height: 0;
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  background: #fafafa;
+}
+
+.fiori-emails-group-list--dialog {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+.fiori-dialog .fiori-emails-group-item--dialog {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4375rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  background: #fff;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.fiori-dialog .fiori-emails-group-item--dialog:hover {
+  border-color: var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-emails-group-item--dialog.fiori-emails-group-item--selected {
+  background: var(--fiori-brand-light);
+  border-color: #d4e8ff;
+}
+
+.fiori-emails-panel--form .fiori-emails-panel-icon {
+  width: auto;
+  height: auto;
+  padding: 0.625rem;
+}
+
+.fiori-emails-panel--form .fiori-emails-panel-title-text {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.fiori-emails-form-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+
+.fiori-emails-form-content {
+  flex: 1;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.fiori-emails-panel--form .fiori-form-section + .fiori-form-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-emails-panel--form .fiori-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-emails-panel--form .fiori-section-title svg {
+  color: var(--fiori-brand);
+}
+
+.fiori-emails-group-picker {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  background: #fafafa;
+}
+
+.fiori-emails-group-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #f5f6f7;
+}
+
+.fiori-emails-selection-hint {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+}
+
+.fiori-emails-selection-hint--empty {
+  font-weight: 400;
+  color: var(--fiori-label);
+}
+
+.fiori-emails-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-height: 11rem;
+  overflow: auto;
+  padding: 0.375rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.fiori-emails-panel--groups {
+  height: 100%;
+  min-height: 0;
+}
+
+.fiori-emails-groups-picker-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  background: #fff;
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-toolbar {
+  flex-shrink: 0;
+  min-height: 2rem;
+  padding: 0.375rem var(--fe-pad-x);
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #f5f6f7;
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  padding: 0;
+  gap: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-item {
+  min-height: var(--fe-row-height);
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--fiori-border-light);
+  border-radius: 0;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-item:last-child {
+  border-bottom: none;
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-item-select {
+  min-height: var(--fe-row-height);
+  padding: 0 var(--fe-pad-x);
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-item--selected {
+  background: var(--fiori-brand-light);
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-item:hover {
+  background: #f5faff;
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-item--selected:hover {
+  background: var(--fiori-brand-light);
+}
+
+.fiori-emails-panel--groups .fiori-emails-group-item-actions {
+  padding-right: 0.5rem;
+}
+
+.fiori-emails-panel--groups .fiori-emails-picker-loading {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.fiori-emails-panel--groups .fiori-emails-picker-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  grid-column: auto;
+  padding: 2rem var(--fe-pad-x);
+}
+
+.fiori-emails-form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--fiori-border-light);
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.fiori-emails-group-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.125rem 0.25rem 0.125rem 0.125rem;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  background: #fff;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.fiori-emails-panel--form .fiori-emails-group-item {
+  background: transparent;
+}
+
+.fiori-emails-group-item:hover {
+  border-color: var(--fiori-border-light);
+}
+
+.fiori-emails-group-item-select {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.3125rem 0.375rem;
+  border: none;
+  border-radius: 0.1875rem;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.fiori-emails-group-item-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.fiori-emails-group-item:hover .fiori-emails-group-item-actions,
+.fiori-emails-group-item:focus-within .fiori-emails-group-item-actions {
+  opacity: 1;
+}
+
+.fiori-emails-group-item--selected {
+  background: var(--fiori-brand-light);
+  border-color: #d4e8ff;
+}
+
+.fiori-emails-group-item-label {
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-emails-group-item--selected .fiori-emails-group-item-label {
+  font-weight: 600;
+  color: var(--fiori-brand);
+}
+
+.fiori-emails-page .fiori-object-row-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border: 1px solid #d9d9d9;
+  border-radius: 0.125rem;
+  background: #fff;
+  color: transparent;
+}
+
+.fiori-emails-page .fiori-object-row-checkbox-checked {
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+  color: #fff;
+}
+
+.fiori-emails-table-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: 25rem;
+  overflow: auto;
+}
+
+.fiori-emails-list-header,
+.fiori-emails-list-row {
+  display: grid;
+  align-items: center;
+  width: 100%;
+  padding-left: var(--fe-pad-x);
+  padding-right: var(--fe-pad-x);
+  box-sizing: border-box;
+}
+
+.fiori-emails-list-header--contacts,
+.fiori-emails-list-row--contacts {
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--fe-col-email)
+    var(--fe-col-groups)
+    var(--fe-col-actions);
+}
+
+.fiori-emails-list-header {
+  flex-shrink: 0;
+  min-height: 2rem;
+  background: #f5f6f7;
+  border-bottom: none;
+}
+
+.fiori-emails-list-header .fiori-emails-list-cell {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  white-space: nowrap;
+}
+
+.fiori-emails-list-row {
+  min-height: var(--fe-row-height);
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom: 1px solid var(--fiori-border-light);
+  transition: background 0.12s ease;
+  box-sizing: border-box;
+}
+
+.fiori-emails-list-row:hover {
+  background: var(--fiori-brand-light);
+}
+
+.fiori-emails-list-row:last-child {
+  border-bottom: none;
+}
+
+.fiori-emails-list-cell {
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--fiori-text);
+}
+
+.fiori-emails-list-cell--actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.fiori-emails-list-header .fiori-emails-list-cell--actions {
+  justify-content: flex-end;
+}
+
+.fiori-emails-contact-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-emails-contact-email {
+  font-variant-numeric: tabular-nums;
+  color: var(--fiori-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-emails-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  max-width: 100%;
+}
+
+.fiori-emails-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 1.25rem;
+  padding: 0 0.4375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border: 1px solid #d4e8ff;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-emails-tag--empty {
+  font-weight: 400;
+  font-style: normal;
+  color: #a9b4be;
+  background: transparent;
+  border: none;
+  padding: 0;
+  height: auto;
+}
+
+.fiori-emails-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--fiori-label);
+}
+
+.fiori-emails-empty-icon {
+  color: #d5dadd;
+}
+
+.fiori-emails-list-row .fiori-card-toolbar {
+  opacity: 0.45;
+  transition: opacity 0.12s ease;
+}
+
+.fiori-emails-list-row:hover .fiori-card-toolbar {
+  opacity: 1;
+}
+
+.fiori-emails-list-row .fiori-card-toolbar .fiori-card-toolbar-btn {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.fiori-emails-picker-empty,
+.fiori-emails-picker-loading {
+  grid-column: 1 / -1;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--fiori-label);
+}
+
+.fiori-emails-picker-loading {
+  min-height: 6rem;
+  background: #f5f6f7;
+  border-radius: 0.25rem;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── Cards de mock (janela) ── */
+.fiori-mock-card-desc {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.3;
+  min-height: calc(0.6875rem * 1.3 * 2);
+  margin-top: 0.125rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.fiori-mock-card-metrics {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.fiori-mock-card-info .fiori-mock-card-metrics {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.fiori-mock-card-metrics .fiori-project-card-metric-divider {
+  align-self: stretch;
+  height: auto;
+}
+
+.fiori-mock-card-metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 0.125rem;
+  padding: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ── Resumo consolidado da mock (grid / performance) ── */
+.fiori-mock-summary {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-positive: #107e3e;
+  --fiori-negative: #bb0000;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  background: #e8eaed;
+  border: 1px solid #d9d9d9;
+  border-radius: 0.375rem;
+  box-shadow: none;
+  font-family: var(--font-72);
+}
+
+@media (min-width: 640px) {
+  .fiori-mock-summary {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.fiori-mock-summary-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.fiori-mock-summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  background: #f7f9fa;
+  border: 1px solid #d9d9d9;
+  color: var(--fiori-brand);
+  flex-shrink: 0;
+}
+
+.fiori-mock-summary-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.fiori-mock-summary-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-mock-summary-subtitle {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 0.125rem;
+}
+
+.fiori-mock-summary-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.fiori-mock-summary-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+@media (min-width: 640px) {
+  .fiori-mock-summary-metric {
+    align-items: flex-start;
+  }
+}
+
+.fiori-mock-summary-metric-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.fiori-mock-summary-metric-label--success {
+  color: #3d8f63;
+}
+
+.fiori-mock-summary-metric-label--error {
+  color: #c35555;
+}
+
+.fiori-mock-summary-metric-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.fiori-mock-summary-metric-value--success {
+  color: var(--fiori-positive);
+}
+
+.fiori-mock-summary-metric-value--error {
+  color: var(--fiori-negative);
+}
+
+.fiori-mock-summary-divider {
+  width: 1px;
+  height: 1.5rem;
+  background: #c5cad0;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.fiori-mock-summary-sync {
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border: 1px solid #d4e8ff;
+  border-radius: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.fiori-mock-summary-sticky-slot {
+  --fiori-mock-summary-bar-height: 3.3125rem;
+
+  height: var(--fiori-mock-summary-bar-height);
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 639px) {
+  .fiori-mock-summary-sticky-slot {
+    --fiori-mock-summary-bar-height: 6.75rem;
+  }
+}
+
+.fiori-mock-summary--sticky {
+  --fiori-shell-top: 4rem;
+  --fiori-page-header-height: 3.5rem;
+
+  position: fixed;
+  top: calc(var(--fiori-shell-top) + var(--fiori-page-header-height));
+  left: 0;
+  right: 0;
+  z-index: 55;
+  width: 100%;
+  margin: 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+@media (min-width: 768px) {
+  .fiori-mock-summary--sticky {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
+  --fiori-page-header-height: 4.5rem;
+}
+
+@media (max-width: 767px) {
+  body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
+    --fiori-page-header-height: 5.25rem;
+  }
+}
+
+.fiori-mock-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem)) !important;
+  background: #f5f6f7;
+}
+
+.fiori-mock-card-info-divider {
+  height: 1px;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-mock-summary--dock {
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  box-shadow: 0 -1px 0 0 #d9d9d9;
+  z-index: 10;
+}
+
+.fiori-mock-card-metric-time {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--fiori-label);
+}
+
+.fiori-mock-card-duration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.fiori-mock-card-info .fiori-mock-card-duration {
+  padding: 0;
+}
+
+.fiori-mock-card-duration-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-mock-card-duration-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: ui-monospace, monospace;
+  line-height: 1.25;
+  color: var(--fiori-text);
+}
+
+.fiori-mock-card-duration-value span {
+  font-size: inherit;
+}
+
+.fiori-mock-card-gestao-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  color: var(--fiori-brand);
+  border: 1px solid var(--fiori-border-light);
+  background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fiori-mock-card-gestao-btn:hover {
+  background: var(--fiori-brand-light);
+  border-color: #d4e8ff;
+}
+
+/* ── Message Toast (Fiori Horizon) ── */
+.fiori-toast-viewport {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 500;
+  display: flex;
+  width: min(20rem, calc(100vw - 2rem));
+  max-height: 100vh;
+  flex-direction: column-reverse;
+  gap: 0.375rem;
+  padding: 0;
+  font-family: var(--font-72);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.fiori-toast-viewport > * {
+  pointer-events: auto;
+}
+
+.fiori-toast {
+  --fiori-toast-accent: #0070f2;
+  --fiori-shadow: 0 0 0 0.0625rem rgba(85, 107, 130, 0.08),
+    0 0.125rem 0.375rem rgba(85, 107, 130, 0.12);
+
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  background: #fff;
+  color: #32363a;
+  border: 1px solid #d9d9d9;
+  border-left: 0.25rem solid var(--fiori-toast-accent);
+  border-radius: 0.375rem;
+  box-shadow: var(--fiori-shadow);
+  transition: box-shadow 0.15s ease;
+}
+
+.fiori-toast:hover {
+  box-shadow:
+    0 0 0 0.0625rem rgba(85, 107, 130, 0.1),
+    0 0.25rem 0.625rem rgba(85, 107, 130, 0.14);
+}
+
+.fiori-toast--success {
+  --fiori-toast-accent: #107e3e;
+}
+
+.fiori-toast--error {
+  --fiori-toast-accent: #bb0000;
+}
+
+.fiori-toast--warning {
+  --fiori-toast-accent: #e76500;
+}
+
+.fiori-toast--info {
+  --fiori-toast-accent: #0070f2;
+}
+
+.fiori-toast-inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.6875rem 0.625rem 0.6875rem 0.75rem;
+}
+
+.fiori-toast-glyph {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+.fiori-toast-glyph--success {
+  color: #107e3e;
+}
+
+.fiori-toast-glyph--error {
+  color: #bb0000;
+}
+
+.fiori-toast-glyph--warning {
+  color: #e76500;
+}
+
+.fiori-toast-glyph--info {
+  color: #0070f2;
+}
+
+.fiori-toast-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.fiori-toast-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #32363a;
+  text-transform: none;
+  letter-spacing: 0;
+  word-break: break-word;
+}
+
+.fiori-toast-message,
+.fiori-toast-description {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #32363a;
+  text-transform: none;
+  letter-spacing: 0;
+  word-break: break-word;
+}
+
+.fiori-toast-description {
+  color: #6a6d70;
+}
+
+.fiori-toast-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  color: #6a6d70;
+  background: transparent;
+  opacity: 0.7;
+  transition: color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.fiori-toast:hover .fiori-toast-close,
+.fiori-toast-close:focus-visible {
+  opacity: 1;
+}
+
+.fiori-toast-close:hover {
+  color: #32363a;
+  background: #f5f6f7;
+}
+
+.fiori-toast-action {
+  display: inline-flex;
+  height: 1.625rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  margin-top: 0.375rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #0070f2;
+  background: transparent;
+  border: none;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  transition: background 0.15s ease;
+}
+
+.fiori-toast-action:hover {
+  background: #e8f3ff;
+}
+
+.fiori-toast[data-state="open"] {
+  animation: fiori-toast-enter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fiori-toast[data-state="closed"] {
+  animation: fiori-toast-exit 0.18s ease-in forwards;
+}
+
+@keyframes fiori-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fiori-toast-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+}
+
+/* Consulta de logs — painel de filtros */
+.fiori-log-filter-panel {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: var(--fiori-radius);
+
+  flex-shrink: 0;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-72);
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+@media (min-width: 768px) {
+  .fiori-log-filter-panel {
+    padding: 0.75rem 2rem;
+  }
+}
+
+.fiori-log-filter-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .fiori-log-filter-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .fiori-log-filter-fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.fiori-log-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.fiori-log-filter-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.fiori-log-filter-panel .fiori-select-trigger {
+  height: 2rem;
+  font-size: 0.8125rem;
+  border-radius: var(--fiori-radius-button);
+}
+
+.fiori-log-filter-date-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2rem;
+  padding: 0 0.625rem 0 0.75rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: var(--fiori-radius-button);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-log-filter-date-trigger:hover {
+  border-color: #aeb6bf;
+}
+
+.fiori-log-filter-date-trigger:focus-visible {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  outline: none;
+}
+
+.fiori-log-filter-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.fiori-log-filter-search.fiori-search-shell {
+  position: relative;
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 20rem;
+}
+
+.fiori-log-filter-search .fiori-search-icon {
+  position: absolute;
+  left: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--fiori-label);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fiori-log-filter-search .fiori-search-input {
+  display: block;
+  width: 100%;
+  height: 2rem;
+  padding: 0 2rem 0 2rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: var(--fiori-radius-button);
+  box-shadow: none;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-log-filter-search .fiori-search-input::placeholder {
+  color: var(--fiori-label);
+}
+
+.fiori-log-filter-search .fiori-search-input:focus,
+.fiori-log-filter-search .fiori-search-input:focus-visible {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  outline: none;
+}
+
+.fiori-log-filter-search .fiori-search-clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+}
+
+.fiori-log-filter-search .fiori-search-clear:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-log-filter-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.fiori-log-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2rem;
+  padding: 0 0.875rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fiori-log-filter-btn--emphasized {
+  color: #fff;
+  background: var(--fiori-brand);
+  border: 1px solid var(--fiori-brand);
+}
+
+.fiori-log-filter-btn--emphasized:hover:not(:disabled) {
+  background: var(--fiori-brand-hover);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-log-filter-btn--ghost {
+  color: var(--fiori-label);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.fiori-log-filter-btn--ghost:hover:not(:disabled) {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-log-filter-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-log-filter-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.fiori-log-filter-pager-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fiori-log-filter-pager-nav {
+  display: inline-flex;
+  align-items: stretch;
+  height: 2rem;
+  border: 1px solid var(--fiori-border);
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  overflow: hidden;
+  background: #fff;
+}
+
+.fiori-log-filter-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 100%;
+  padding: 0;
+  color: var(--fiori-label);
+  background: #fff;
+  border: none;
+  border-right: 1px solid var(--fiori-border-light);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-log-filter-pager-btn:last-child {
+  border-right: none;
+}
+
+.fiori-log-filter-pager-btn:hover:not(:disabled) {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-log-filter-pager-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Login — SAP Fiori Horizon */
+.fiori-login-page {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-negative: #bb0000;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: var(--fiori-radius);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 1.5rem 1rem;
+  overflow: hidden;
+  font-family: var(--font-72);
+  background: linear-gradient(to bottom right, var(--color-SkyBlue-600), var(--color-SkyBlue-700), #0f172a);
+}
+
+.fiori-login-page-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fiori-login-page-bg-glow {
+  position: absolute;
+  width: 40%;
+  height: 40%;
+  border-radius: 50%;
+  filter: blur(120px);
+}
+
+.fiori-login-page-bg-glow--top {
+  top: -10%;
+  left: -10%;
+  background: color-mix(in srgb, var(--color-SkyBlue-400) 20%, transparent);
+}
+
+.fiori-login-page-bg-glow--bottom {
+  right: -10%;
+  bottom: -10%;
+  background: rgb(148 163 184 / 0.1);
+}
+
+.fiori-login-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.fiori-login-brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1.25rem;
+  color: #fff;
+  background: rgb(255 255 255 / 0.1);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.15);
+}
+
+.fiori-login-brand-icon svg {
+  fill: currentColor;
+}
+
+.fiori-login-brand-title {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.fiori-login-brand-subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--color-SkyBlue-100) 80%, transparent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fiori-login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 27.5rem;
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 0 0.125rem 0 rgba(85, 107, 130, 0.12),
+    0 0.25rem 0.75rem rgba(50, 54, 58, 0.08);
+  overflow: hidden;
+}
+
+.fiori-login-header {
+  padding: 1.5rem 1.5rem 0;
+}
+
+.fiori-login-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.fiori-login-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+.fiori-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.fiori-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fiori-login-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  letter-spacing: 0;
+}
+
+.fiori-login-input-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-login-input-shell:focus-within {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-login-input-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: var(--fiori-label);
+}
+
+.fiori-login-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  font-family: var(--font-72);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: transparent;
+  border: none;
+  outline: none;
+  letter-spacing: 0;
+}
+
+.fiori-login-input::placeholder {
+  color: #a9b4be;
+}
+
+.fiori-login-input-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-login-input-action:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-login-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  border-radius: 0.25rem;
+  letter-spacing: 0;
+}
+
+.fiori-login-message p {
+  margin: 0;
+}
+
+.fiori-login-message--info {
+  color: #0064d9;
+  background: var(--fiori-brand-light);
+  border: 1px solid #d4e8ff;
+}
+
+.fiori-login-message--error {
+  color: var(--fiori-negative);
+  background: #fff8f8;
+  border: 1px solid #ffc2c2;
+}
+
+.fiori-login-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.25rem;
+  margin-top: 0.25rem;
+  padding: 0 1rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--fiori-brand);
+  border: 1px solid var(--fiori-brand);
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  cursor: pointer;
+  letter-spacing: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fiori-login-submit:hover:not(:disabled) {
+  background: var(--fiori-brand-hover);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-login-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fiori-login-footer {
+  padding: 0.75rem 1.5rem;
+  text-align: center;
+  background: #fafafa;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-login-footer p {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  letter-spacing: 0;
+}
+
+.fiori-login-credit {
+  position: relative;
+  z-index: 1;
+  margin: 2rem 0 0;
+  font-size: 0.5625rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.5);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Wizard de utilitários (ex.: clonar projeto) */
+.fiori-wizard-body {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-negative: #bb0000;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  font-family: var(--font-72);
+  background: #f5f6f7;
+}
+
+.fiori-wizard-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1rem 1rem 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .fiori-wizard-inner {
+    padding: 1.25rem 2rem 1.5rem;
+  }
+}
+
+.fiori-wizard-steps {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.fiori-page-header .fiori-wizard-steps,
+.fiori-wizard-steps--header {
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.fiori-page-header .fiori-wizard-step-connector,
+.fiori-wizard-steps--header .fiori-wizard-step-connector {
+  margin: 0 0.375rem;
+  align-self: center;
+}
+
+.fiori-page-header .fiori-wizard-step-marker,
+.fiori-wizard-steps--header .fiori-wizard-step-marker {
+  width: auto;
+  height: auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.fiori-page-header .fiori-wizard-step--active .fiori-wizard-step-marker,
+.fiori-wizard-steps--header .fiori-wizard-step--active .fiori-wizard-step-marker {
+  color: var(--fiori-brand);
+  background: transparent;
+  border: none;
+}
+
+.fiori-page-header .fiori-wizard-step--done .fiori-wizard-step-marker,
+.fiori-wizard-steps--header .fiori-wizard-step--done .fiori-wizard-step-marker {
+  color: #107e3e;
+  background: transparent;
+  border: none;
+}
+
+@media (max-width: 1023px) {
+  .fiori-page-header .fiori-wizard-step-label {
+    display: none;
+  }
+
+  .fiori-page-header .fiori-wizard-step {
+    min-width: auto;
+    max-width: none;
+  }
+}
+
+.fiori-wizard-step-wrap {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.fiori-wizard-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 4.5rem;
+  max-width: 6.5rem;
+  text-align: center;
+}
+
+.fiori-wizard-step-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  background: #f5f6f7;
+  border: 1px solid var(--fiori-border);
+  border-radius: 50%;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fiori-wizard-step-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--fiori-label);
+  letter-spacing: 0;
+}
+
+.fiori-wizard-step--active .fiori-wizard-step-marker {
+  color: #fff;
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+}
+
+.fiori-wizard-step--active .fiori-wizard-step-label {
+  color: var(--fiori-brand);
+}
+
+.fiori-wizard-step--done .fiori-wizard-step-marker {
+  color: #107e3e;
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+}
+
+.fiori-wizard-step--done .fiori-wizard-step-label {
+  color: var(--fiori-text);
+}
+
+.fiori-wizard-step-connector {
+  width: 2rem;
+  height: 1px;
+  margin: 0.875rem 0.375rem 0;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-wizard-step-connector--done {
+  background: #c8e6c9;
+}
+
+.fiori-wizard-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 1.25rem 1.25rem 1rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.06);
+}
+
+.fiori-wizard-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  letter-spacing: 0;
+}
+
+.fiori-wizard-panel-title svg {
+  color: var(--fiori-brand);
+}
+
+.fiori-wizard-panel-desc {
+  flex-shrink: 0;
+  margin: 0.375rem 0 1rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-label);
+}
+
+.fiori-wizard-search-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+}
+
+.fiori-wizard-search.fiori-search-shell {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.fiori-wizard-search .fiori-search-icon {
+  position: absolute;
+  left: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--fiori-label);
+  pointer-events: none;
+}
+
+.fiori-wizard-search .fiori-search-input {
+  display: block;
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.75rem 0 2rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-wizard-search .fiori-search-input:focus {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-wizard-object-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+}
+
+.fiori-wizard-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 0;
+  overflow-y: auto;
+}
+
+.fiori-wizard-chip-grid .fiori-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fiori-wizard-chip-grid .fiori-chip:hover {
+  border-color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-wizard-chip-grid .fiori-chip.fiori-chip-selected {
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border-color: var(--fiori-brand);
+}
+
+.fiori-wizard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+  padding: 2.5rem 1rem;
+  margin-bottom: 0;
+  font-size: 0.75rem;
+  color: var(--fiori-label);
+  text-align: center;
+  background: #fafafa;
+  border: 1px dashed var(--fiori-border);
+  border-radius: 0.25rem;
+}
+
+.fiori-wizard-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .fiori-wizard-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fiori-wizard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fiori-wizard-label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+}
+
+.fiori-wizard-input {
+  height: 2.25rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 400 !important;
+  color: var(--fiori-text) !important;
+  background: #fff !important;
+  border: 1px solid var(--fiori-border) !important;
+  border-radius: 0.25rem !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.fiori-wizard-input:focus-visible {
+  border-color: var(--fiori-brand) !important;
+  box-shadow: 0 0 0 1px var(--fiori-brand) !important;
+}
+
+.fiori-wizard-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #b44f00;
+  background: #fff8e5;
+  border: 1px solid #ffd78a;
+  border-radius: 0.25rem;
+}
+
+.fiori-wizard-warning-title {
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.fiori-wizard-warning-text {
+  margin: 0;
+  font-weight: 400;
+}
+
+.fiori-wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-wizard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fiori-wizard-btn--ghost {
+  color: var(--fiori-label);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.fiori-wizard-btn--ghost:hover:not(:disabled) {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-wizard-btn--emphasized {
+  color: #fff;
+  background: var(--fiori-brand);
+  border: 1px solid var(--fiori-brand);
+}
+
+.fiori-wizard-btn--emphasized:hover:not(:disabled) {
+  background: var(--fiori-brand-hover);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-wizard-btn--success {
+  color: #fff;
+  background: #107e3e;
+  border: 1px solid #107e3e;
+}
+
+.fiori-wizard-btn--success:hover:not(:disabled) {
+  background: #0d6a34;
+  border-color: #0d6a34;
+}
+
+.fiori-wizard-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-wizard-panel--success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.fiori-wizard-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+  background: #e8f5e9;
+  border-radius: 50%;
+}
+
+.fiori-wizard-success-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+}
+
+.fiori-wizard-success-desc {
+  max-width: 28rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--fiori-label);
+}
+
+.fiori-wizard-success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 16rem;
+  margin-top: 1.5rem;
+}
+
+/* Backup & restore (utilitários) */
+.fiori-wizard-panel .fiori-backup-create {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-wizard-panel .fiori-backup-type-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.fiori-wizard-panel .fiori-backup-type-toggle,
+.fiori-wizard-panel .fiori-backup-dest-toggle {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.fiori-wizard-panel .fiori-backup-mock-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fiori-wizard-panel .fiori-backup-mock-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.fiori-wizard-panel .fiori-backup-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--fiori-label);
+}
+
+.fiori-wizard-panel .fiori-backup-execute-btn {
+  height: 1.75rem;
+  padding: 0 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.fiori-wizard-panel .fiori-backup-execute-btn svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}

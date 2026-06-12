@@ -1,0 +1,4563 @@
+/**
+ * SAP Fiori Horizon — formulários e diálogos
+ */
+.fiori-dialog {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-negative: #bb0000;
+  --fiori-radius: 0.5rem;
+  --fiori-radius-button: var(--fiori-radius);
+  --fiori-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.12), 0 0.0625rem 0.125rem 0 rgba(85, 107, 130, 0.16);
+
+  font-family: var(--font-72);
+  color: var(--fiori-text);
+  border-radius: var(--fiori-radius);
+  border: 1px solid var(--fiori-border-light);
+  box-shadow: var(--fiori-shadow);
+}
+
+.fiori-dialog .fiori-dialog-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-dialog-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fiori-text);
+  line-height: 1.25;
+}
+
+.fiori-dialog .fiori-dialog-footer {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--fiori-border-light);
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-field-hint {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.fiori-dialog .fiori-shortcut-hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  line-height: 1.4;
+}
+
+.fiori-dialog .fiori-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  padding: 0.0625rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--fiori-text);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 0 var(--fiori-border-light);
+  line-height: 1.4;
+}
+
+/* Radix Select (padrão Fiori Select / ComboBox) */
+.fiori-select-trigger,
+.fiori-dialog .fiori-select-trigger {
+  height: 2.25rem;
+  width: 100%;
+  padding: 0 0.625rem 0 0.75rem;
+  gap: 0.5rem;
+  font-family: var(--font-72);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  box-shadow: none;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.fiori-select-trigger > span:not(.fiori-select-status-dot),
+.fiori-dialog .fiori-select-trigger > span:not(.fiori-select-status-dot) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-select-trigger:hover:not(:disabled),
+.fiori-dialog .fiori-select-trigger:hover:not(:disabled) {
+  border-color: #aeb6bf;
+  background: #fff;
+}
+
+.fiori-select-trigger:focus,
+.fiori-select-trigger[data-state="open"],
+.fiori-dialog .fiori-select-trigger:focus,
+.fiori-dialog .fiori-select-trigger[data-state="open"] {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  outline: none;
+  background: #fff;
+}
+
+.fiori-select-trigger:disabled,
+.fiori-dialog .fiori-select-trigger:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  background: #f7f7f7;
+}
+
+.fiori-select-trigger > svg,
+.fiori-dialog .fiori-select-trigger > svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--fiori-label);
+  opacity: 1;
+}
+
+.fiori-select-trigger--status {
+  padding-left: 0.625rem;
+}
+
+.fiori-select-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: #6a6d70;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.fiori-select-status-dot--neutral {
+  background: #6a6d70;
+}
+
+.fiori-select-status-dot--warning {
+  background: #e76500;
+}
+
+.fiori-select-status-dot--success {
+  background: #107e3e;
+}
+
+.fiori-select-status-dot--critical {
+  background: #bb0000;
+}
+
+.fiori-select-content,
+.fiori-dialog .fiori-select-content {
+  --fiori-shell: #ffffff;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--fiori-border-light);
+  background: #ffffff;
+  box-shadow: none;
+  font-family: var(--font-72);
+  color: var(--fiori-text);
+}
+
+.fiori-select-viewport {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  background: #ffffff;
+}
+
+.fiori-select-item,
+.fiori-dialog .fiori-select-item {
+  min-height: 2rem;
+  padding: 0.4375rem 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--fiori-text);
+  border-radius: 0.125rem;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-select-item[data-highlighted]:not([data-state="checked"]),
+.fiori-dialog .fiori-select-item[data-highlighted]:not([data-state="checked"]) {
+  background: #f5f6f7;
+  color: var(--fiori-text);
+}
+
+.fiori-select-item[data-state="checked"],
+.fiori-dialog .fiori-select-item[data-state="checked"] {
+  background: var(--fiori-brand-light);
+  color: var(--fiori-brand);
+  font-weight: 600;
+}
+
+.fiori-select-item[data-state="checked"][data-highlighted],
+.fiori-dialog .fiori-select-item[data-state="checked"][data-highlighted] {
+  background: #d9ebff;
+  color: var(--fiori-brand);
+}
+
+.fiori-select-item > span:first-child,
+.fiori-dialog .fiori-select-item > span:first-child {
+  width: 1rem;
+  height: 1rem;
+}
+
+.fiori-select-item svg,
+.fiori-dialog .fiori-select-item svg {
+  color: var(--fiori-brand);
+}
+
+.fiori-select-item--status,
+.fiori-dialog .fiori-select-item--status {
+  gap: 0.5rem;
+}
+
+.fiori-select-item--status > span:first-child,
+.fiori-dialog .fiori-select-item--status > span:first-child {
+  display: none;
+}
+
+.fiori-select-item--status::before,
+.fiori-dialog .fiori-select-item--status::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.fiori-select-item--status-neutral::before,
+.fiori-dialog .fiori-select-item--status-neutral::before {
+  background: #6a6d70;
+}
+
+.fiori-select-item--status-warning::before,
+.fiori-dialog .fiori-select-item--status-warning::before {
+  background: #e76500;
+}
+
+.fiori-select-item--status-success::before,
+.fiori-dialog .fiori-select-item--status-success::before {
+  background: #107e3e;
+}
+
+.fiori-select-item--status-critical::before,
+.fiori-dialog .fiori-select-item--status-critical::before {
+  background: #bb0000;
+}
+
+.fiori-select-content--status,
+.fiori-dialog .fiori-select-content--status {
+  min-width: var(--radix-select-trigger-width);
+}
+
+.fiori-dialog .fiori-input,
+.fiori-dialog .fiori-textarea {
+  width: 100%;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-dialog .fiori-input {
+  height: 2.25rem;
+  padding: 0 0.75rem;
+}
+
+.fiori-dialog .fiori-textarea {
+  min-height: 5rem;
+  padding: 0.5rem 0.75rem;
+  resize: vertical;
+}
+
+.fiori-dialog .fiori-input:focus,
+.fiori-dialog .fiori-input:focus-visible,
+.fiori-dialog .fiori-textarea:focus,
+.fiori-dialog .fiori-textarea:focus-visible {
+  outline: none;
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-input.fiori-invalid,
+.fiori-dialog .fiori-input.fiori-invalid:focus-visible {
+  border-color: var(--fiori-negative);
+  box-shadow: 0 0 0 1px var(--fiori-negative);
+}
+
+.fiori-dialog .fiori-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fiori-brand);
+  border-radius: 0.25rem;
+  padding: 0.125rem;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-dialog .fiori-icon-btn:hover {
+  color: var(--fiori-brand-hover);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-icon-btn-bordered {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  color: var(--fiori-label);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+}
+
+.fiori-dialog .fiori-icon-btn-bordered:hover {
+  color: var(--fiori-text);
+  border-color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-icon-btn-bordered:focus-visible {
+  outline: none;
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-icon-btn-bordered:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fiori-dialog .fiori-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.625rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 0.25rem;
+  border: 1px solid var(--fiori-border);
+  background: var(--fiori-shell);
+  color: var(--fiori-text);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-dialog .fiori-chip:hover:not(:disabled) {
+  border-color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-chip.fiori-chip-selected {
+  color: #fff;
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-message-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 1.25rem 0;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #b44f00;
+  background: #fff8e5;
+  border: 1px solid #ffd78a;
+  border-radius: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-id-preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background: #f5f6f7;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+}
+
+.fiori-dialog .fiori-id-preview-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-id-preview-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+}
+
+.fiori-dialog .fiori-id-preview-seq {
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-picker-zone {
+  max-height: 6rem;
+  overflow-y: auto;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  background: #fafafa;
+  padding: 0.5rem;
+}
+
+.fiori-lock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fiori-dialog .fiori-lock-row {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-message-error {
+  margin: 0.5rem 1.25rem 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-negative);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.25rem;
+}
+
+.fiori-dialog .fiori-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--fiori-label);
+  background: transparent;
+  border-radius: 0.25rem;
+}
+
+.fiori-dialog .fiori-btn-ghost:hover {
+  color: var(--fiori-text);
+  background: #ededed;
+}
+
+.fiori-dialog .fiori-btn-emphasized {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: #fff;
+  background: var(--fiori-brand);
+  border: 1px solid var(--fiori-brand);
+  border-radius: 0.25rem;
+  box-shadow: none;
+}
+
+.fiori-dialog .fiori-btn-ghost svg,
+.fiori-dialog .fiori-btn-emphasized svg,
+.fiori-dialog .fiori-btn-transparent svg {
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-btn-emphasized:hover:not(:disabled) {
+  background: var(--fiori-brand-hover);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-dialog .fiori-btn-emphasized:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-dialog .fiori-btn-compact.fiori-btn-ghost,
+.fiori-dialog .fiori-btn-compact.fiori-btn-emphasized {
+  height: 1.625rem !important;
+  min-height: 1.625rem !important;
+  padding: 0 0.625rem !important;
+  font-size: 0.6875rem !important;
+  line-height: 1;
+}
+
+/* SAP Fiori Horizon — bordas arredondadas em botões */
+.fiori-dialog :is(
+  .fiori-btn-ghost,
+  .fiori-btn-emphasized,
+  .fiori-btn-transparent,
+  .fiori-dialog-back-btn,
+  .fiori-icon-btn,
+  .fiori-chip,
+  .fiori-color-swatch,
+  .fiori-stat-export-group,
+  .fiori-stat-export-btn,
+  .fiori-stat-clear-btn,
+  .fiori-pick-chip
+) {
+  border-radius: var(--fiori-radius-button);
+}
+
+.fiori-datetime-popover :is(.fiori-calendar-nav-btn, .fiori-calendar-day-btn) {
+  border-radius: var(--fiori-radius-button);
+}
+
+.fiori-dialog .fiori-comment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.375rem;
+}
+
+/* ── Fullscreen / Object Page explorer ── */
+.fiori-dialog.fiori-dialog-fullscreen {
+  max-width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  border: none;
+}
+
+.fiori-dialog .fiori-dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem;
+  background: var(--fiori-brand-light);
+  border-radius: 0.375rem;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-dialog-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 0.25rem;
+}
+
+.fiori-dialog .fiori-dialog-subtitle--empty {
+  color: #a9b4be;
+}
+
+.fiori-dialog .fiori-dialog-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-dialog-title-row .fiori-dialog-title {
+  margin: 0;
+  line-height: 1.25;
+}
+
+.fiori-dialog .fiori-dialog-title-context-divider {
+  height: 1.25rem;
+  width: 1px;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-dialog-context {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.fiori-dialog .fiori-dialog-context--inline {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-dialog-context-divider {
+  height: 1.25rem;
+  width: 1px;
+  background: var(--fiori-border-light);
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-dialog-context-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-dialog-context-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.fiori-dialog .fiori-dialog-context-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-dialog-meta {
+  margin-top: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.fiori-dialog .fiori-color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fiori-dialog .fiori-color-swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.fiori-dialog .fiori-color-swatch:hover:not(:disabled) {
+  box-shadow: 0 0 0 1px var(--fiori-border);
+}
+
+.fiori-dialog .fiori-color-swatch--selected {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-color-swatch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fiori-dialog .fiori-dialog-info {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 1rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--fiori-brand);
+}
+
+.fiori-dialog-overlay {
+  background: rgba(50, 54, 58, 0.45) !important;
+}
+
+/* Fiori message box (AlertDialog) */
+.fiori-message-box {
+  font-family: var(--font-72);
+  color: var(--fiori-text);
+  background: #fff;
+}
+
+.fiori-message-box .fiori-dialog-header {
+  padding: 1rem 1.25rem;
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-message-box .fiori-dialog-icon--warning {
+  background: #fff8e5;
+  color: #e76500;
+}
+
+.fiori-message-box .fiori-dialog-icon--critical {
+  background: #ffeaf4;
+  color: var(--fiori-negative, #bb0000);
+}
+
+.fiori-message-box .fiori-dialog-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #32363a;
+  line-height: 1.25;
+}
+
+.fiori-message-box .fiori-dialog-subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fiori-brand, #0070f2);
+}
+
+.fiori-message-box .fiori-message-box-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem 1.25rem;
+  background: #fff;
+}
+
+.fiori-message-box-object-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: #f7f9fa;
+  border: 1px solid #eef0f2;
+  border-radius: 0.375rem;
+}
+
+.fiori-message-box-object-label {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #89919a;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fiori-message-box-object-value {
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #32363a;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-message-box-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: #515559;
+}
+
+.fiori-message-box-context {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--fiori-text);
+  background: #f7f9fa;
+  border: 1px solid #eef0f2;
+  border-radius: 0.25rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.fiori-message-box-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #eef0f2;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.fiori-message-box-effects li {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #32363a;
+  background: #fff;
+}
+
+.fiori-message-box-effects li + li {
+  border-top: 1px solid #eef0f2;
+}
+
+.fiori-message-box .fiori-dialog-footer {
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background: #fafafa;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-btn-emphasized--warning {
+  color: #fff;
+  background: #e76500;
+  border-color: #e76500;
+}
+
+.fiori-dialog .fiori-btn-emphasized--warning:hover:not(:disabled) {
+  background: #d45e00;
+  border-color: #d45e00;
+}
+
+.fiori-dialog .fiori-btn-emphasized--negative {
+  color: #fff;
+  background: var(--fiori-negative, #bb0000);
+  border-color: var(--fiori-negative, #bb0000);
+}
+
+.fiori-dialog .fiori-btn-emphasized--negative:hover:not(:disabled) {
+  background: #a30000;
+  border-color: #a30000;
+}
+
+/* Dashboard: modal={false} evita scroll jump; overlay continua visível e clicável */
+.fiori-dashboard-dialog-overlay {
+  background: rgba(50, 54, 58, 0.45) !important;
+  pointer-events: auto !important;
+}
+
+/* Message boxes em listas (mocks/projetos): não obscurecer cards de contexto */
+.fiori-message-box-overlay {
+  background: rgba(255, 255, 255, 0.1) !important;
+  pointer-events: none !important;
+}
+
+.fiori-dialog .fiori-search-shell {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-search-shell .fiori-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: var(--fiori-label);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fiori-dialog .fiori-search-shell .fiori-search-input {
+  display: block;
+  height: 2.25rem;
+  width: 100%;
+  padding: 0 0.75rem 0 2.25rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  box-shadow: none;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-dialog .fiori-search-shell .fiori-search-input::placeholder {
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-search-shell .fiori-search-input:focus,
+.fiori-dialog .fiori-search-shell .fiori-search-input:focus-visible {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  outline: none;
+}
+
+.fiori-dialog .fiori-filter-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.fiori-dialog .fiori-search-results {
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-list-item {
+  justify-content: flex-start;
+  height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+  border-radius: 0.25rem;
+}
+
+.fiori-dialog .fiori-list-item:hover {
+  background: var(--fiori-brand-light);
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-canvas {
+  flex: 1;
+  min-height: 0;
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-empty-hint {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-legend {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-legend-line {
+  width: 0.75rem;
+  height: 2px;
+  background: var(--fiori-brand);
+  border-radius: 1px;
+}
+
+.fiori-dialog .fiori-btn-transparent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  box-shadow: none;
+}
+
+.fiori-dialog .fiori-btn-transparent:hover {
+  background: #f7f7f7;
+  border-color: #aeb6bf;
+}
+
+/* ── Relatório fullscreen (tabela analítica) ── */
+.fiori-dialog .fiori-dialog-back-btn {
+  height: 2rem;
+  width: 2rem;
+  border-radius: 0.25rem;
+  color: var(--fiori-label);
+  border: none;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-dialog-back-btn:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-dialog-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fiori-dialog .fiori-dialog-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-dialog-header-search {
+  width: 16rem;
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-dialog-header-search .fiori-search-input {
+  height: 2rem;
+  padding-right: 2rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  background: #fff;
+}
+
+.fiori-dialog .fiori-dialog-header-search .fiori-search-icon {
+  left: 0.625rem;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.fiori-dialog .fiori-dialog-header-search .fiori-search-clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+}
+
+.fiori-dialog .fiori-dialog-header-search .fiori-search-clear:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-dialog-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-stat-migrador-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 2rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-stat-migrador-label {
+  font-weight: 600;
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-stat-migrador-value {
+  font-weight: 600;
+  color: var(--fiori-text);
+}
+
+.fiori-dialog .fiori-stat-export-group {
+  display: inline-flex;
+  align-items: stretch;
+  height: 2rem;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: none;
+}
+
+.fiori-dialog .fiori-stat-export-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 100%;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  background: #fff;
+  border: none;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.fiori-dialog .fiori-stat-export-btn:hover:not(:disabled) {
+  background: #f5f6f7;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-stat-export-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fiori-dialog .fiori-stat-export-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--fiori-border-light);
+  background: #fff;
+  color: var(--fiori-label);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-dialog .fiori-stat-export-menu-btn:hover:not(:disabled) {
+  background: #f5f6f7;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-stat-export-menu-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fiori-dialog .fiori-stat-action-btn {
+  height: 2rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  gap: 0.375rem;
+}
+
+/* Estatística de carga — corpo (sidebar + tabela) */
+.fiori-dialog .fiori-stat-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+}
+
+.fiori-dialog .fiori-stat-sidebar {
+  width: 13.5rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--fiori-border-light);
+  background: #fff;
+}
+
+.fiori-dialog .fiori-stat-sidebar-search {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-stat-sidebar-search .fiori-search-shell .fiori-search-icon {
+  left: 0.5rem;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.fiori-dialog .fiori-stat-sidebar-search .fiori-search-shell .fiori-search-input {
+  height: 2rem;
+  padding: 0 0.5rem 0 1.75rem;
+  font-size: 0.75rem;
+}
+
+.fiori-dialog .fiori-stat-select-all-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 1rem;
+  background: #fff;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-stat-select-all {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.fiori-dialog .fiori-stat-select-all:hover {
+  background: transparent;
+}
+
+.fiori-dialog .fiori-stat-select-all--all {
+  background: transparent;
+  box-shadow: none;
+}
+
+.fiori-dialog .fiori-stat-select-all--all:hover {
+  background: transparent;
+}
+
+.fiori-dialog .fiori-stat-select-all--partial {
+  background: transparent;
+}
+
+.fiori-dialog .fiori-stat-select-all-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-stat-select-all-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-stat-select-all--all .fiori-stat-select-all-label {
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-stat-select-all-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.125rem;
+  padding: 0 0.3125rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--fiori-label);
+  background: #f5f6f7;
+  border: none;
+  border-radius: 9999px;
+}
+
+.fiori-dialog .fiori-stat-select-all--all .fiori-stat-select-all-count {
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-stat-clear-btn {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0.375rem;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 0.25rem;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.fiori-dialog .fiori-stat-clear-btn:hover {
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-object-row-checkbox-indeterminate {
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+  color: #fff;
+}
+
+.fiori-dialog .fiori-stat-object-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.125rem 0.5rem 0.375rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.fiori-dialog .fiori-stat-object-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.625rem;
+  padding: 0.125rem 0.375rem;
+  border: none;
+  border-bottom: none;
+  border-radius: 0.125rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.fiori-dialog .fiori-stat-object-row:last-child {
+  border-bottom: none;
+}
+
+.fiori-dialog .fiori-stat-object-row:hover {
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-stat-object-row--selected {
+  background: var(--fiori-brand-light);
+  box-shadow: inset 0.125rem 0 0 var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-stat-object-row--selected:hover {
+  background: #dceeff;
+}
+
+.fiori-dialog .fiori-stat-object-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-stat-object-row--selected .fiori-stat-object-name {
+  font-weight: 600;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-stat-object-empty {
+  padding: 2rem 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.fiori-dialog .fiori-report-table .fiori-num {
+  text-align: right;
+}
+
+.fiori-dialog .fiori-report-table .fiori-object-col {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-report-empty {
+  padding: 4rem 1.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Compor e-mail — campos e preview */
+.fiori-dialog .fiori-email-compose-fields {
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-email-field-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1.25rem;
+  min-height: 2.75rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-email-field-row:last-child {
+  border-bottom: none;
+}
+
+.fiori-dialog .fiori-email-field-row--tall {
+  align-items: flex-start;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.fiori-dialog .fiori-email-field-row--tall .fiori-email-field-label {
+  padding-top: 0.375rem;
+}
+
+.fiori-dialog .fiori-email-field-label {
+  width: 5.5rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-email-field-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-email-field-inline-input {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-dialog .fiori-email-field-inline-input::placeholder {
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-email-field-inline-input:focus,
+.fiori-dialog .fiori-email-field-inline-input:focus-visible {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  outline: none;
+}
+
+.fiori-dialog .fiori-email-preview {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #f5f6f7;
+  padding: 1.25rem;
+}
+
+.fiori-dialog .fiori-email-preview-body {
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fiori-dialog .fiori-email-preview-text {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--fiori-text);
+}
+
+.fiori-dialog .fiori-email-preview-table-wrap {
+  overflow-x: auto;
+}
+
+.fiori-dialog .fiori-email-preview-signature {
+  padding-top: 1rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-email-preview-signature-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fiori-text);
+}
+
+.fiori-dialog .fiori-email-preview-signature-line {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-email-preview-signature-img {
+  display: block;
+  max-height: 3.75rem;
+  width: auto;
+  height: auto;
+}
+
+/* EmailMultiSelect — variante Fiori */
+.fiori-email-multiselect--fiori .fiori-email-multiselect-trigger {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-trigger:hover:not(.fiori-email-multiselect-trigger--disabled) {
+  border-color: #aeb6bf;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-trigger--open {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-trigger--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-placeholder {
+  font-size: 0.8125rem;
+  color: var(--fiori-label);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.375rem;
+  padding: 0 0.5rem !important;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  border: 1px solid var(--fiori-border-light) !important;
+  box-shadow: none !important;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-badge--contact {
+  background: var(--fiori-brand-light) !important;
+  color: var(--fiori-brand) !important;
+  border-color: #d4e8ff !important;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-badge--group {
+  background: #fff8e5 !important;
+  color: #b44f00 !important;
+  border-color: #ffd78a !important;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-badge--more {
+  background: #f5f6f7 !important;
+  color: var(--fiori-label) !important;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-footer-text {
+  font-size: 0.6875rem;
+  color: var(--fiori-label);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-chevron {
+  width: 1rem;
+  height: 1rem;
+  color: var(--fiori-label);
+  transition: transform 0.15s ease;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-chevron--open {
+  transform: rotate(180deg);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-panel {
+  position: absolute;
+  z-index: 50;
+  width: 100%;
+  margin-top: 0.25rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  box-shadow: 0 0.25rem 1rem rgba(85, 107, 130, 0.2);
+  max-height: 25rem;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-72);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-search {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-search .fiori-search-shell .fiori-search-input {
+  height: 2rem;
+  font-size: 0.75rem;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-section-label {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  background: #f5f6f7;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-option:hover {
+  background: #f5f6f7;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-option--selected {
+  background: var(--fiori-brand-light);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-option--selected:hover {
+  background: #d9ebff;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-option--group.fiori-email-multiselect-option--selected {
+  background: #fff8e5;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-option-name {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-option-meta {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--fiori-label);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-empty {
+  padding: 2rem 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--fiori-label);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-panel-footer {
+  padding: 0.5rem 0.75rem;
+  background: #f5f6f7;
+  border-top: 1px solid var(--fiori-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-panel-footer-text {
+  font-size: 0.6875rem;
+  color: var(--fiori-label);
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-clear-btn {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-negative);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.fiori-email-multiselect--fiori .fiori-email-multiselect-clear-btn:hover {
+  color: #a30000;
+}
+
+/* Dropdown / menu popover (portal — fora do .fiori-dialog) */
+.fiori-dropdown-menu {
+  --fiori-brand: #0070f2;
+  --fiori-brand-hover: #0064d9;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-family: var(--font-72);
+  min-width: 13.75rem;
+  padding: 0.375rem !important;
+  border-radius: var(--fiori-radius-button, 0.5rem) !important;
+  border: 1px solid var(--fiori-border-light) !important;
+  background: #fff !important;
+  box-shadow:
+    0 0 0.125rem 0 rgba(85, 107, 130, 0.08),
+    0 0.5rem 1.5rem rgba(85, 107, 130, 0.16) !important;
+  color: var(--fiori-text);
+}
+
+.fiori-dropdown-menu--nav {
+  min-width: 13.75rem;
+  padding: 0 !important;
+  gap: 0;
+  overflow: hidden;
+}
+
+.fiori-dropdown-menu--nav .fiori-dropdown-menu-label {
+  padding: 0.625rem 0.875rem 0.5rem;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--fiori-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dropdown-menu--nav .fiori-dropdown-menu-items,
+.fiori-dropdown-menu--nav [role="group"].fiori-dropdown-menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.375rem;
+}
+
+.fiori-dropdown-menu button.fiori-dropdown-menu-item {
+  border: 1px solid transparent;
+  background: transparent;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--fiori-text);
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item[data-highlighted],
+.fiori-dropdown-menu .fiori-dropdown-menu-item:hover:not([data-disabled]),
+.fiori-dropdown-menu button.fiori-dropdown-menu-item:hover:not(:disabled),
+.fiori-dropdown-menu a.fiori-dropdown-menu-item:hover {
+  background: #f7f7f7 !important;
+  border-color: #aeb6bf !important;
+  color: var(--fiori-text) !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item:focus-visible {
+  outline: 2px solid var(--fiori-brand);
+  outline-offset: 1px;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item[data-state="checked"] {
+  background: var(--fiori-brand-light) !important;
+  border-color: transparent !important;
+  color: var(--fiori-brand) !important;
+  font-weight: 600;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item[data-state="checked"][data-highlighted] {
+  background: #d9ebff !important;
+  border-color: #aeb6bf !important;
+  color: var(--fiori-brand-hover) !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item[data-state="checked"] svg {
+  color: var(--fiori-brand);
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--selected,
+.fiori-dropdown-menu .fiori-dropdown-menu-item--active {
+  background: var(--fiori-brand-light) !important;
+  border-color: transparent !important;
+  color: var(--fiori-brand) !important;
+  font-weight: 600;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--selected[data-highlighted],
+.fiori-dropdown-menu .fiori-dropdown-menu-item--active[data-highlighted],
+.fiori-dropdown-menu .fiori-dropdown-menu-item--selected:hover:not([data-disabled]),
+.fiori-dropdown-menu .fiori-dropdown-menu-item--active:hover:not([data-disabled]) {
+  background: #d9ebff !important;
+  border-color: #aeb6bf !important;
+  color: var(--fiori-brand-hover) !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item svg {
+  color: var(--fiori-brand);
+  flex-shrink: 0;
+}
+
+.fiori-dropdown-menu [role="option"].fiori-dropdown-menu-item > span:first-child {
+  flex-shrink: 0;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item-desc {
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  line-height: 1.35;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--selected .fiori-dropdown-menu-item-desc {
+  color: #0064d9;
+  opacity: 0.9;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-label {
+  padding: 0.375rem 0.625rem 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-dropdown-menu [role="separator"] {
+  margin: 0.25rem 0;
+  height: 1px;
+  background: var(--fiori-border-light);
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--warning {
+  color: #e76500 !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--warning[data-highlighted],
+.fiori-dropdown-menu .fiori-dropdown-menu-item--warning:hover:not([data-disabled]),
+.fiori-dropdown-menu button.fiori-dropdown-menu-item--warning:hover:not(:disabled),
+.fiori-dropdown-menu a.fiori-dropdown-menu-item--warning:hover {
+  background: #fff8e5 !important;
+  color: #e76500 !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--warning svg {
+  color: #e76500 !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--critical {
+  color: #bb0000 !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--critical[data-highlighted],
+.fiori-dropdown-menu .fiori-dropdown-menu-item--critical:hover:not([data-disabled]),
+.fiori-dropdown-menu button.fiori-dropdown-menu-item--critical:hover:not(:disabled),
+.fiori-dropdown-menu a.fiori-dropdown-menu-item--critical:hover {
+  background: #ffebeb !important;
+  color: #bb0000 !important;
+}
+
+.fiori-dropdown-menu .fiori-dropdown-menu-item--critical svg {
+  color: #bb0000 !important;
+}
+
+.fiori-dialog .fiori-report-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--fiori-shell);
+}
+
+.fiori-dialog .fiori-report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fiori-dialog .fiori-report-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.fiori-dialog .fiori-report-table th {
+  padding: 0.5rem 1rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+  background: #f5f6f7;
+  border-bottom: 1px solid var(--fiori-border-light);
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-report-table .fiori-report-table-col-check {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  padding-left: 1.25rem;
+  padding-right: 0.5rem;
+}
+
+.fiori-dialog .fiori-report-table td {
+  padding: 0.375rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  border-bottom: 1px solid var(--fiori-border-light);
+  vertical-align: middle;
+}
+
+.fiori-dialog .fiori-report-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-report-table tbody tr:hover {
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-report-table .fiori-mono {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+
+.fiori-dialog .fiori-report-table .fiori-mono-muted {
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-object-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-object-status--running {
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-object-status--success {
+  color: #107e3e;
+  background: #e8f5e9;
+}
+
+.fiori-dialog .fiori-object-status--error {
+  color: var(--fiori-negative);
+  background: #ffeaf4;
+}
+
+/* Relatório de erros (log viewer) */
+.fiori-dialog .fiori-dialog-icon--critical {
+  background: #fce8e8;
+  color: var(--fiori-negative);
+}
+
+.fiori-dialog .fiori-log-viewer-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: #fff;
+}
+
+.fiori-dialog .fiori-log-viewer-summary {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #fff;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-warning {
+  margin: 0;
+  border-radius: 0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+  padding: 0.625rem 1.25rem 0.625rem 2rem;
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-log-viewer-summary-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-title svg {
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-log-viewer-summary-count {
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.4375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border: 1px solid #d4e8ff;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-hint {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-scroll {
+  width: 100%;
+  min-width: 0;
+  max-height: 10rem;
+  overflow: auto;
+  background: var(--fiori-shell);
+}
+
+.fiori-dialog .fiori-log-viewer-summary-table .fiori-col-id,
+.fiori-dialog .fiori-log-viewer-summary-table .fiori-col-code {
+  width: 7rem;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-table .fiori-col-count {
+  width: 6.5rem;
+  text-align: center;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-table .fiori-col-message {
+  min-width: 14rem;
+  width: 45%;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-table thead th {
+  box-shadow: 0 1px 0 0 var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-log-viewer-summary-table tbody tr.fiori-report-table-row--selected {
+  box-shadow: inset 0.125rem 0 0 var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-log-viewer-summary-table th:first-child,
+.fiori-dialog .fiori-log-viewer-summary-table td:first-child {
+  padding-left: 2rem;
+}
+
+.fiori-dialog .fiori-log-viewer-detail-table th:first-child,
+.fiori-dialog .fiori-log-viewer-detail-table td:first-child {
+  padding-left: 1.25rem;
+}
+
+.fiori-dialog .fiori-log-viewer-summary-table th:last-child,
+.fiori-dialog .fiori-log-viewer-summary-table td:last-child,
+.fiori-dialog .fiori-log-viewer-detail-table th:last-child,
+.fiori-dialog .fiori-log-viewer-detail-table td:last-child {
+  padding-right: 1.25rem;
+}
+
+.fiori-dialog .fiori-log-viewer-detail {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fiori-dialog .fiori-log-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #fff;
+}
+
+.fiori-dialog .fiori-log-viewer-search.fiori-search-shell {
+  flex: 1;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-log-viewer-search .fiori-search-icon {
+  left: 0.625rem;
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.fiori-dialog .fiori-log-viewer-search .fiori-search-input {
+  height: 2rem;
+  padding: 0 2rem;
+  font-family: var(--font-72);
+  font-size: 0.8125rem;
+  background: #fff;
+}
+
+.fiori-dialog .fiori-log-viewer-search .fiori-search-input:disabled {
+  cursor: not-allowed;
+  color: var(--fiori-label);
+  background: #f5f6f7;
+  border-color: var(--fiori-border-light);
+  opacity: 1;
+}
+
+.fiori-dialog .fiori-log-viewer-search .fiori-search-input:disabled::placeholder {
+  color: #a9b4be;
+}
+
+.fiori-dialog .fiori-log-viewer-search .fiori-search-clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+}
+
+.fiori-dialog .fiori-log-viewer-search .fiori-search-clear:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-log-viewer-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-log-viewer-truncate-warning {
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.fiori-dialog .fiori-log-viewer-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--fiori-shell);
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-log-viewer-detail-table .fiori-col-key {
+  min-width: 9rem;
+  max-width: 14rem;
+}
+
+.fiori-dialog .fiori-log-viewer-detail-table .fiori-col-message {
+  min-width: 16rem;
+  width: 40%;
+}
+
+.fiori-dialog .fiori-log-viewer-detail-table thead th {
+  box-shadow: 0 1px 0 0 var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-log-viewer-detail-table tbody tr.fiori-report-table-row--empty:hover {
+  background: transparent;
+}
+
+.fiori-dialog .fiori-log-viewer-detail-table tbody tr.fiori-report-table-row--empty td {
+  background: transparent;
+  border-bottom: none;
+}
+
+.fiori-dialog .fiori-report-table tbody tr.fiori-report-table-row--clickable {
+  cursor: pointer;
+}
+
+.fiori-dialog .fiori-report-table tbody tr.fiori-report-table-row--selected {
+  background: var(--fiori-brand-light) !important;
+}
+
+.fiori-dialog .fiori-report-table tbody tr.fiori-report-table-row--selected td {
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-report-table .fiori-error-code {
+  color: var(--fiori-negative);
+  font-weight: 600;
+}
+
+.fiori-dialog .fiori-report-table .fiori-num-center {
+  text-align: center;
+  font-weight: 600;
+}
+
+.fiori-dialog .fiori-log-viewer-loading,
+.fiori-dialog .fiori-log-viewer-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 10rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-object-status--neutral {
+  color: var(--fiori-label);
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-object-status-dot {
+  position: relative;
+  display: flex;
+  width: 0.375rem;
+  height: 0.375rem;
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-object-status-dot::before,
+.fiori-dialog .fiori-object-status-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-object-status-dot::before {
+  animation: fiori-status-pulse 1.5s ease-out infinite;
+  opacity: 0.6;
+}
+
+.fiori-dialog .fiori-object-status-dot::after {
+  opacity: 1;
+}
+
+@keyframes fiori-status-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.fiori-dialog .fiori-pct--complete {
+  color: #107e3e;
+}
+
+.fiori-dialog .fiori-pct--partial {
+  color: #e76500;
+}
+
+.fiori-dialog .fiori-pct--empty {
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-pct--error {
+  color: var(--fiori-negative);
+}
+
+/* ── React Flow — legenda do grafo ── */
+.fiori-graph-legend {
+  --fiori-brand: #0070f2;
+  --fiori-brand-light: #e8f3ff;
+  --fiori-shell: #ffffff;
+  --fiori-border: #d9d9d9;
+  --fiori-border-light: #e5e5e5;
+  --fiori-text: #32363a;
+  --fiori-label: #6a6d70;
+  --fiori-positive: #107e3e;
+  --fiori-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.12), 0 0.0625rem 0.125rem 0 rgba(85, 107, 130, 0.16);
+
+  font-family: var(--font-72);
+  padding: 0.75rem;
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.5rem;
+  box-shadow: var(--fiori-shadow);
+  min-width: 11rem;
+}
+
+.fiori-graph-legend-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fiori-graph-legend-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  background: var(--fiori-brand-light);
+  border-radius: 0.25rem;
+  color: var(--fiori-brand);
+}
+
+.fiori-graph-legend-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  line-height: 1.2;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-legend-subtitle {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-legend-body {
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--fiori-border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fiori-graph-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-legend-section {
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-graph-legend-section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 0.375rem;
+  display: block;
+}
+
+.fiori-graph-legend-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fiori-graph-legend-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.fiori-graph-legend-line {
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.fiori-graph-legend-node {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  border-width: 2px;
+  border-style: solid;
+  flex-shrink: 0;
+}
+
+/* ── React Flow — canvas, nós e controles ── */
+.fiori-graph-flow {
+  background: #f5f6f7 !important;
+}
+
+.fiori-graph-flow .react-flow__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: none;
+  border: none;
+}
+
+.fiori-graph-flow .react-flow__controls-button {
+  width: 2rem;
+  height: 2rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  color: var(--fiori-label);
+  box-shadow: var(--fiori-shadow);
+  fill: var(--fiori-label);
+}
+
+.fiori-graph-flow .react-flow__controls-button:hover {
+  background: #f5f6f7;
+  color: var(--fiori-text);
+  fill: var(--fiori-text);
+}
+
+.fiori-graph-flow .react-flow__minimap {
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  box-shadow: var(--fiori-shadow);
+  overflow: hidden;
+}
+
+.fiori-graph-node {
+  display: flex;
+  flex-direction: column;
+  width: 15rem;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  box-shadow: var(--fiori-shadow);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-graph-node--compact {
+  width: 11.25rem;
+  padding: 0.625rem;
+}
+
+.fiori-graph-node:hover {
+  border-color: #aeb6bf;
+}
+
+.fiori-graph-node--target {
+  border: 2px solid var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  box-shadow: 0 0 0 3px rgba(0, 112, 242, 0.1);
+}
+
+.fiori-graph-node--level-1 {
+  border-color: #0064d9;
+  background: #e8f3ff;
+}
+
+.fiori-graph-node--level-2 {
+  border-color: #5b738b;
+  background: #f5f6f7;
+}
+
+.fiori-graph-node--level-3,
+.fiori-graph-node--level-deep {
+  border-color: #89919a;
+  background: #ededed;
+}
+
+.fiori-graph-node__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0.5rem;
+}
+
+.fiori-graph-node--compact .fiori-graph-node__header {
+  margin-bottom: 0.375rem;
+}
+
+.fiori-graph-node__icon {
+  flex-shrink: 0;
+  color: var(--fiori-brand);
+}
+
+.fiori-graph-node__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-node--compact .fiori-graph-node__name {
+  font-size: 0.75rem;
+}
+
+.fiori-graph-node__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 0.375rem;
+  margin-top: auto;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-graph-node__group {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-graph-node__order {
+  font-family: ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+}
+
+.fiori-graph-node__status {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.fiori-graph-node__status--active {
+  background: var(--fiori-positive);
+}
+
+.fiori-graph-node__status--inactive {
+  background: var(--fiori-negative);
+}
+
+.fiori-graph-node__level-badge {
+  position: absolute;
+  top: -0.5rem;
+  left: -0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--fiori-brand);
+  border-radius: 9999px;
+  box-shadow: var(--fiori-shadow);
+}
+
+.fiori-graph-node__level-badge--2 {
+  background: #5b738b;
+}
+
+.fiori-graph-node__level-badge--3,
+.fiori-graph-node__level-badge--deep {
+  background: #89919a;
+}
+
+.fiori-graph-node__external-tag {
+  position: absolute;
+  top: -0.5625rem;
+  left: 0.5rem;
+  z-index: 11;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: calc(100% - 1.5rem);
+  height: 1.125rem;
+  padding: 0 0.4375rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #e76500;
+  background: #fff;
+  border: 1px solid #f9c982;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(231, 101, 0, 0.12);
+  cursor: help;
+}
+
+.fiori-graph-node--compact .fiori-graph-node__external-tag {
+  top: -0.5rem;
+  left: 0.375rem;
+  height: 1rem;
+  padding: 0 0.3125rem;
+  font-size: 0.5rem;
+}
+
+.fiori-graph-node--has-level-badge .fiori-graph-node__external-tag {
+  left: 1.375rem;
+}
+
+.fiori-graph-node--compact.fiori-graph-node--has-level-badge .fiori-graph-node__external-tag {
+  left: 1.25rem;
+}
+
+.fiori-graph-node__external-tag-icon {
+  width: 0.625rem;
+  height: 0.625rem;
+  flex-shrink: 0;
+  stroke-width: 2.25;
+}
+
+.fiori-graph-node--compact .fiori-graph-node__external-tag-icon {
+  width: 0.5625rem;
+  height: 0.5625rem;
+}
+
+.fiori-graph-node__external-tag-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-external-tooltip-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: #e76500;
+  flex-shrink: 0;
+}
+
+.fiori-graph-node__parallel-tag {
+  position: absolute;
+  top: -0.5625rem;
+  right: 0.5rem;
+  z-index: 11;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: calc(100% - 1.5rem);
+  height: 1.125rem;
+  padding: 0 0.4375rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #107e3e;
+  background: #fff;
+  border: 1px solid #b5dfbc;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(16, 126, 62, 0.12);
+  cursor: help;
+}
+
+.fiori-graph-node--compact .fiori-graph-node__parallel-tag {
+  top: -0.5rem;
+  right: 0.375rem;
+  height: 1rem;
+  padding: 0 0.3125rem;
+  font-size: 0.5rem;
+}
+
+.fiori-graph-node__parallel-tag-icon {
+  width: 0.625rem;
+  height: 0.625rem;
+  flex-shrink: 0;
+  stroke-width: 2.25;
+}
+
+.fiori-graph-node--compact .fiori-graph-node__parallel-tag-icon {
+  width: 0.5625rem;
+  height: 0.5625rem;
+}
+
+.fiori-graph-node__parallel-tag-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-parallel-tooltip-order {
+  margin: 0 0 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-parallel-tooltip-empty {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-parallel-tooltip-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: #107e3e;
+  flex-shrink: 0;
+}
+
+.fiori-graph-parallel-tooltip-seq {
+  font-family: ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  flex-shrink: 0;
+}
+
+.fiori-tooltip-panel-dep-item .truncate {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-graph-node__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  width: 100%;
+  padding-top: 0.375rem;
+  margin-top: 0.375rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-graph-node__badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1rem;
+  padding: 0 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 0.125rem;
+}
+
+.fiori-graph-empty {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  background: #f5f6f7;
+}
+
+.fiori-graph-empty__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  color: var(--fiori-brand);
+}
+
+.fiori-graph-empty__title {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+}
+
+.fiori-graph-empty__text {
+  max-width: 20rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-graph-empty__text strong {
+  font-weight: 600;
+  color: var(--fiori-brand);
+}
+
+/* ── Dependências / chips selecionáveis ── */
+.fiori-dialog .fiori-deps-zone {
+  min-height: 2.5rem;
+  max-height: 5.625rem;
+  overflow-y: auto;
+  padding: 0.625rem;
+  background: #fafafa;
+  border: 1px dashed var(--fiori-border);
+  border-radius: 0.25rem;
+}
+
+.fiori-dialog .fiori-deps-empty {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-dep-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 1.625rem;
+  padding: 0 0.25rem 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  box-shadow: var(--fiori-shadow);
+}
+
+.fiori-dialog .fiori-dep-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border-radius: 0.125rem;
+  color: var(--fiori-label);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-dialog .fiori-dep-chip-remove:hover {
+  color: #fff;
+  background: var(--fiori-negative);
+}
+
+.fiori-dialog .fiori-pick-chip {
+  height: 1.75rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  border-radius: 0.25rem;
+  border: 1px solid var(--fiori-border-light);
+  background: var(--fiori-shell);
+  color: var(--fiori-text);
+  box-shadow: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-dialog .fiori-pick-chip:hover {
+  border-color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-pick-chip.fiori-pick-chip-selected {
+  border-color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-filter-select {
+  width: 8.75rem;
+  flex-shrink: 0;
+  height: 2.25rem;
+}
+
+/* Escolha obrigatória de projeto — painel centralizado (50% da tela) */
+.fiori-dialog.fiori-project-picker-dialog {
+  width: 50vw;
+  max-width: 50vw;
+  height: 50dvh;
+  max-height: 50dvh;
+  min-width: 18rem;
+  min-height: 14rem;
+  pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  .fiori-dialog.fiori-project-picker-dialog {
+    width: min(92vw, 24rem);
+    max-width: min(92vw, 24rem);
+    height: min(56dvh, 28rem);
+    max-height: min(56dvh, 28rem);
+  }
+}
+
+.fiori-dialog .fiori-project-picker-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: #fff;
+}
+
+.fiori-dialog .fiori-project-picker-info {
+  flex-shrink: 0;
+  margin: 1rem 1.25rem 0;
+}
+
+.fiori-dialog .fiori-project-picker-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  background: #fff;
+}
+
+.fiori-dialog .fiori-project-picker-items {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.25rem 1.25rem 1.5rem;
+  list-style: none;
+}
+
+.fiori-dialog .fiori-project-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.625rem 0.5rem;
+  text-align: left;
+  font: inherit;
+  font-family: var(--font-72);
+  color: var(--fiori-text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #eef0f2;
+  border-radius: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  appearance: none;
+  transition: background 0.12s ease;
+}
+
+.fiori-dialog .fiori-project-picker-row:last-child {
+  border-bottom: none;
+}
+
+.fiori-dialog .fiori-project-picker-row:hover {
+  background: #f5faff;
+}
+
+.fiori-dialog .fiori-project-picker-row:focus-visible {
+  outline: none;
+  background: #f5faff;
+  box-shadow: inset 0.1875rem 0 0 var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-project-picker-row-icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--fiori-brand);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.fiori-dialog .fiori-project-picker-row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-project-picker-row-name {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--fiori-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-project-picker-row-meta {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--fiori-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Campos de formulário no wizard ── */
+.fiori-wizard-panel .fiori-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fiori-wizard-panel .fiori-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-wizard-panel .fiori-field-hint {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.fiori-wizard-panel .fiori-input,
+.fiori-wizard-panel .fiori-textarea {
+  width: 100%;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-wizard-panel .fiori-input {
+  height: 2.25rem;
+  padding: 0 0.75rem;
+}
+
+.fiori-wizard-panel .fiori-textarea {
+  min-height: 5rem;
+  padding: 0.5rem 0.75rem;
+  resize: vertical;
+}
+
+.fiori-wizard-panel .fiori-input:focus,
+.fiori-wizard-panel .fiori-input:focus-visible,
+.fiori-wizard-panel .fiori-textarea:focus,
+.fiori-wizard-panel .fiori-textarea:focus-visible {
+  outline: none;
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-wizard-panel .fiori-input.fiori-invalid,
+.fiori-wizard-panel .fiori-input.fiori-invalid:focus-visible {
+  border-color: var(--fiori-negative);
+  box-shadow: 0 0 0 1px var(--fiori-negative);
+}
+
+/* ── Lista de seleção de objetos ── */
+.fiori-dialog .fiori-object-list,
+.fiori-wizard-panel .fiori-object-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+.fiori-wizard-panel .fiori-object-list {
+  padding: 0.75rem;
+}
+
+.fiori-dialog .fiori-object-row,
+.fiori-wizard-panel .fiori-object-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  font-family: inherit;
+  border: 1px solid transparent;
+  border-bottom: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fiori-dialog .fiori-object-row:hover,
+.fiori-wizard-panel .fiori-object-row:hover {
+  background: var(--fiori-brand-light);
+  border-color: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-object-row-icon,
+.fiori-wizard-panel .fiori-object-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  background: #f5f6f7;
+  border-radius: 0.25rem;
+  color: var(--fiori-label);
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fiori-dialog .fiori-object-row:hover .fiori-object-row-icon,
+.fiori-wizard-panel .fiori-object-row:hover .fiori-object-row-icon {
+  background: #d4e8ff;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-object-row-body,
+.fiori-wizard-panel .fiori-object-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-object-row-name,
+.fiori-wizard-panel .fiori-object-row-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-object-row-desc,
+.fiori-wizard-panel .fiori-object-row-desc {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-seq-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #5b36b1;
+  background: #f0e8ff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-seq-badge-selected {
+  color: var(--fiori-brand);
+  background: #d4e8ff;
+}
+
+.fiori-dialog .fiori-dialog-icon-parallel {
+  background: #e8f5e9;
+  color: #107e3e;
+}
+
+.fiori-dialog .fiori-selection-hint {
+  margin-top: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-object-row.fiori-object-row-selected,
+.fiori-wizard-panel .fiori-object-row.fiori-object-row-selected {
+  background: var(--fiori-brand-light);
+  border-color: #d4e8ff;
+}
+
+.fiori-wizard-panel .fiori-object-row.fiori-object-row-selected {
+  box-shadow: inset 0.125rem 0 0 var(--fiori-brand);
+}
+
+.fiori-wizard-panel .fiori-object-row.fiori-object-row-selected .fiori-object-row-icon {
+  background: #d4e8ff;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-object-row-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.125rem;
+  background: var(--fiori-shell);
+  color: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fiori-dialog .fiori-stat-object-list .fiori-object-row-checkbox {
+  width: 0.875rem;
+  height: 0.875rem;
+  transition: none;
+}
+
+.fiori-dialog .fiori-object-row-checkbox-checked {
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+  color: #fff;
+}
+
+/* ── Importação de logs / erros ── */
+.fiori-dialog .fiori-import-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background: #fff;
+}
+
+.fiori-dialog .fiori-import-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.fiori-dialog .fiori-import-empty-card {
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-import-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-import-toolbar-search {
+  position: relative;
+  flex: 1;
+  min-width: 12rem;
+  max-width: 20rem;
+}
+
+.fiori-dialog .fiori-import-toolbar-search-icon {
+  position: absolute;
+  left: 0.625rem;
+  top: 50%;
+  width: 0.875rem;
+  height: 0.875rem;
+  transform: translateY(-50%);
+  color: var(--fiori-label);
+  pointer-events: none;
+}
+
+.fiori-dialog .fiori-import-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fiori-dialog .fiori-import-limit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fiori-dialog .fiori-import-limit .fiori-input {
+  width: 6rem;
+  height: 2rem;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+}
+
+.fiori-dialog .fiori-import-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-import-list {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem 1.25rem;
+}
+
+.fiori-dialog .fiori-import-group {
+  margin-bottom: 1rem;
+}
+
+.fiori-dialog .fiori-import-group:last-child {
+  margin-bottom: 0;
+}
+
+.fiori-dialog .fiori-import-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-import-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.375rem;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-dialog .fiori-import-file-row:hover {
+  border-color: #d4e8ff;
+  background: #f7fbff;
+}
+
+.fiori-dialog .fiori-import-file-row-selected {
+  border-color: #d4e8ff;
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-import-file-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fiori-dialog .fiori-import-file-meta {
+  font-size: 0.625rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-import-empty-group {
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--fiori-border);
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-import-progress {
+  flex-shrink: 0;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-import-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.625rem;
+}
+
+.fiori-dialog .fiori-import-progress-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-import-progress-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--fiori-brand);
+  animation: fiori-import-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes fiori-import-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.fiori-dialog .fiori-import-progress-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-import-progress-object {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-import-log {
+  flex: 1;
+  min-height: 0;
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-import-log-line--ok {
+  color: #107e3e;
+}
+
+.fiori-dialog .fiori-import-log-line--warn {
+  color: #e76500;
+}
+
+.fiori-dialog .fiori-import-log-line--error {
+  color: var(--fiori-negative);
+}
+
+.fiori-dialog .fiori-import-log-line--info {
+  color: var(--fiori-label);
+}
+
+.fiori-dialog .fiori-import-log-ts {
+  margin-right: 0.5rem;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
+.fiori-dialog .fiori-import-done {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.fiori-dialog .fiori-import-done-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  background: #e8f5e9;
+  color: #107e3e;
+}
+
+.fiori-dialog .fiori-import-done-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  margin-bottom: 0.375rem;
+}
+
+.fiori-dialog .fiori-import-done-text {
+  max-width: 18rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-label);
+  margin-bottom: 1.25rem;
+}
+
+/* ── Importação CSV / migration data ── */
+.fiori-dialog .fiori-csv-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.fiori-dialog .fiori-csv-layout {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-csv-layout-title {
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-csv-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.fiori-dialog .fiori-csv-field-chip {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-family: ui-monospace, monospace;
+  color: var(--fiori-label);
+  background: #fff;
+  border: 1px solid var(--fiori-border);
+  border-radius: 0.125rem;
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-csv-example {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-csv-example code {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.625rem;
+  word-break: break-all;
+  color: var(--fiori-text);
+}
+
+.fiori-dialog .fiori-csv-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  border: 2px dashed var(--fiori-border);
+  border-radius: 0.375rem;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-dialog .fiori-csv-dropzone:hover {
+  border-color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-csv-dropzone-active {
+  border-color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-csv-dropzone-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-csv-dropzone-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-csv-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.fiori-dialog .fiori-csv-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.625rem;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  background: #fafafa;
+  text-align: center;
+}
+
+.fiori-dialog .fiori-csv-stat-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-csv-stat-value {
+  margin-top: 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.fiori-dialog .fiori-csv-stat--success .fiori-csv-stat-value {
+  color: #107e3e;
+}
+
+.fiori-dialog .fiori-csv-stat--brand .fiori-csv-stat-value {
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-csv-stat--warning .fiori-csv-stat-value {
+  color: #e76500;
+}
+
+.fiori-dialog .fiori-csv-console-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-csv-console {
+  height: 12.5rem;
+  overflow: hidden;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+  background: #f5f6f7;
+}
+
+.fiori-dialog .fiori-csv-console .fiori-import-log {
+  height: 100%;
+  padding: 0.75rem;
+}
+
+/* ── Formulário de objeto na mock ── */
+.fiori-dialog .fiori-object-exec-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.375rem;
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-object-exec-summary .fiori-field-label {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+.fiori-dialog .fiori-object-exec-name {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-object-exec-name p {
+  font-size: 0.8125rem;
+  line-height: 1.2;
+}
+
+.fiori-dialog .fiori-object-exec-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 0.25rem;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  color: var(--fiori-brand);
+  flex-shrink: 0;
+}
+
+.fiori-dialog .fiori-object-exec-icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.fiori-dialog .fiori-object-exec-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fiori-dialog .fiori-object-exec-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+}
+
+.fiori-dialog .fiori-object-exec-readonly {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 1.625rem;
+  padding: 0 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  background: #f5f6f7;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+}
+
+.fiori-dialog .fiori-object-exec-field .scale-90 {
+  transform: scale(0.8);
+}
+
+.fiori-dialog .fiori-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-section-title svg {
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-input-success {
+  color: #107e3e;
+  background: #f7fbf8;
+  border-color: #c8e6c9;
+}
+
+.fiori-dialog .fiori-input-error {
+  color: var(--fiori-negative);
+  background: #fff5f5;
+  border-color: #ffb3b3;
+}
+
+.fiori-dialog .fiori-master-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.fiori-dialog .fiori-link-btn {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-brand);
+  background: transparent;
+  border: none;
+  padding: 0.125rem 0.25rem;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-dialog .fiori-link-btn:hover {
+  color: var(--fiori-brand-hover);
+  text-decoration: underline;
+}
+
+/* ── Diálogo de comentários ── */
+.fiori-dialog .fiori-comment-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 9.375rem;
+  max-height: 9.375rem;
+  overflow: hidden;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  background: #fafafa;
+}
+
+.fiori-dialog .fiori-comment-list.fiori-comment-list--fluid {
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 auto;
+}
+
+.fiori-dialog .fiori-comment-list-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  background: var(--fiori-brand-light);
+}
+
+.fiori-dialog .fiori-comment-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.fiori-dialog .fiori-comment-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
+  padding: 1rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.fiori-dialog .fiori-comment-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.fiori-dialog .fiori-comment-item {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-comment-item:last-child {
+  border-bottom: none;
+}
+
+.fiori-dialog .fiori-comment-item-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.fiori-dialog .fiori-comment-item-author {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+}
+
+.fiori-dialog .fiori-comment-item-author svg {
+  flex-shrink: 0;
+  color: var(--fiori-brand);
+}
+
+.fiori-dialog .fiori-comment-item-date {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.fiori-dialog .fiori-comment-item-text {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--fiori-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fiori-dialog .fiori-comment-item-text--user {
+  font-style: italic;
+}
+
+.fiori-dialog .fiori-comment-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--fiori-label);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fiori-dialog .fiori-comment-delete-btn:hover {
+  color: var(--fiori-negative);
+  background: #ffebeb;
+}
+
+/* ── Formulário de mock (Object Page style) ── */
+.fiori-dialog.fiori-dialog--form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fiori-dialog .fiori-dialog-header-rich {
+  padding: 1rem 1.25rem;
+}
+
+.fiori-dialog .fiori-dialog-header-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.fiori-dialog .fiori-dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.fiori-dialog .fiori-form-section + .fiori-form-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog .fiori-mock-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+  padding: 0.625rem 0.75rem;
+  background: #f7f9fa;
+  border: 1px solid #eef0f2;
+  border-radius: 0.375rem;
+}
+
+.fiori-dialog .fiori-mock-summary-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.fiori-dialog .fiori-mock-summary-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  line-height: 1.3;
+}
+
+.fiori-dialog .fiori-mock-status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 1.375rem;
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.25rem;
+}
+
+.fiori-dialog .fiori-mock-status-pill--success {
+  color: #107e3e;
+  background: #f1fdf6;
+  border-color: #b8e6c8;
+}
+
+.fiori-dialog .fiori-mock-status-pill--warning {
+  color: #e76500;
+  background: #fff8e5;
+  border-color: #ffd78a;
+}
+
+.fiori-dialog .fiori-mock-status-pill--critical {
+  color: #bb0000;
+  background: #ffeaf4;
+  border-color: #ffc2d2;
+}
+
+.fiori-dialog .fiori-picker-zone--tall {
+  max-height: 8.75rem;
+}
+
+.fiori-datetime-popover {
+  width: 17.25rem;
+  max-height: min(85vh, 24rem);
+  overflow-y: auto;
+  padding: 0;
+  background: #fff;
+  border: 1px solid var(--fiori-border-light);
+  border-radius: 0.375rem;
+  box-shadow:
+    0 0 0.125rem 0 rgba(85, 107, 130, 0.12),
+    0 0.25rem 0.75rem rgba(50, 54, 58, 0.1);
+}
+
+/* Calendário Fiori (react-day-picker v9) */
+.fiori-datetime-popover .fiori-calendar {
+  --rdp-accent-color: #0070f2;
+  --rdp-accent-background-color: #e8f3ff;
+  --rdp-day-height: 2rem;
+  --rdp-day-width: 2rem;
+  --rdp-day_button-height: 2rem;
+  --rdp-day_button-width: 2rem;
+
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.625rem;
+  font-family: var(--font-72);
+}
+
+.fiori-datetime-popover .fiori-calendar-months {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.fiori-datetime-popover .fiori-calendar-month {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.fiori-datetime-popover .fiori-calendar-caption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  margin-bottom: 0.125rem;
+}
+
+.fiori-datetime-popover .fiori-calendar-caption-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fiori-text);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.fiori-datetime-popover .fiori-calendar-nav {
+  display: contents;
+}
+
+.fiori-datetime-popover .fiori-calendar-nav-btn {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: var(--fiori-label);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.fiori-datetime-popover .fiori-calendar-nav-btn:hover {
+  color: var(--fiori-text);
+  background: #f5f6f7;
+  border-color: var(--fiori-border-light);
+}
+
+.fiori-datetime-popover .fiori-calendar-nav-btn:focus-visible {
+  outline: none;
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+.fiori-datetime-popover .fiori-calendar-nav-btn:first-of-type {
+  left: 0;
+}
+
+.fiori-datetime-popover .fiori-calendar-nav-btn:last-of-type {
+  right: 0;
+}
+
+.fiori-datetime-popover .fiori-calendar-weekdays {
+  display: flex;
+  width: 100%;
+}
+
+.fiori-datetime-popover .fiori-calendar-weekday {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-align: center;
+  text-transform: lowercase;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.fiori-datetime-popover .fiori-calendar-week {
+  display: flex;
+  width: 100%;
+  margin-top: 0.125rem;
+}
+
+.fiori-datetime-popover .fiori-calendar-day {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.0625rem;
+}
+
+.fiori-datetime-popover .fiori-calendar-day-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.fiori-datetime-popover .fiori-calendar-day-btn:hover:not(:disabled) {
+  background: #f5f6f7;
+  border-color: var(--fiori-border-light);
+}
+
+.fiori-datetime-popover .fiori-calendar-day-today .fiori-calendar-day-btn {
+  font-weight: 600;
+  color: var(--fiori-brand);
+  background: var(--fiori-brand-light);
+  border-color: #b3d4ff;
+}
+
+.fiori-datetime-popover .fiori-calendar-day-selected .fiori-calendar-day-btn {
+  font-weight: 600;
+  color: #fff;
+  background: var(--fiori-brand);
+  border-color: var(--fiori-brand);
+}
+
+.fiori-datetime-popover .fiori-calendar-day-selected .fiori-calendar-day-btn:hover:not(:disabled) {
+  color: #fff;
+  background: #0064d9;
+  border-color: #0064d9;
+}
+
+.fiori-datetime-popover .fiori-calendar-day-outside .fiori-calendar-day-btn {
+  color: #a9adb1;
+}
+
+.fiori-datetime-popover .fiori-calendar-day-disabled .fiori-calendar-day-btn {
+  color: #c8ccd0;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.fiori-datetime-popover .fiori-datetime-time {
+  margin-top: 0;
+  padding: 0.625rem 0.75rem 0.75rem;
+  border-top: 1px solid var(--fiori-border-light);
+  background: #fafafa;
+}
+
+.fiori-datetime-popover .fiori-datetime-time-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Página Configurações (campos e ações) ── */
+.fiori-settings-page .fiori-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fiori-settings-page .fiori-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.fiori-settings-page .fiori-field-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--fiori-label);
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+
+.fiori-settings-page input.fiori-input,
+.fiori-settings-page textarea.fiori-textarea {
+  width: 100% !important;
+  height: 2.25rem !important;
+  min-height: 2.25rem;
+  padding: 0 0.75rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 400 !important;
+  line-height: 1.25;
+  color: var(--fiori-text) !important;
+  background: var(--fiori-shell) !important;
+  border: 1px solid var(--fiori-border) !important;
+  border-radius: var(--fiori-radius-button, 0.5rem) !important;
+  text-transform: none !important;
+  letter-spacing: 0;
+  box-shadow: none !important;
+  outline: none;
+  ring: none;
+  --tw-ring-shadow: 0 0 #0000;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-settings-page textarea.fiori-textarea {
+  height: auto !important;
+  min-height: 7.5rem;
+  padding: 0.5rem 0.75rem !important;
+  resize: vertical;
+}
+
+.fiori-settings-page input.fiori-input:focus,
+.fiori-settings-page input.fiori-input:focus-visible,
+.fiori-settings-page textarea.fiori-textarea:focus,
+.fiori-settings-page textarea.fiori-textarea:focus-visible {
+  outline: none !important;
+  border-color: var(--fiori-brand) !important;
+  box-shadow: 0 0 0 1px var(--fiori-brand) !important;
+  --tw-ring-shadow: 0 0 #0000;
+  scale: 1;
+}
+
+.fiori-settings-page .fiori-settings-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+}
+
+.fiori-settings-page .fiori-message-error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--fiori-negative);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--fiori-radius-button, 0.5rem);
+}
+
+.fiori-settings-page .fiori-btn-emphasized {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-72);
+  text-transform: none;
+  letter-spacing: 0;
+  color: #fff;
+  background: var(--fiori-brand);
+  border: 1px solid var(--fiori-brand);
+  border-radius: var(--fe-header-btn-radius, 0.375rem) !important;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.fiori-settings-page .fiori-btn-emphasized:hover:not(:disabled) {
+  background: var(--fiori-brand-hover);
+  border-color: var(--fiori-brand-hover);
+}
+
+.fiori-settings-page .fiori-btn-emphasized:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fiori-settings-page .fiori-textarea,
+.fiori-dialog .fiori-file-alias-textarea {
+  width: 100%;
+  min-height: 7.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--fiori-text);
+  background: var(--fiori-shell);
+  border: 1px solid var(--fiori-border);
+  border-radius: var(--fiori-radius-button, 0.5rem);
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: none;
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fiori-settings-page .fiori-textarea:focus,
+.fiori-settings-page .fiori-textarea:focus-visible,
+.fiori-dialog .fiori-file-alias-textarea:focus,
+.fiori-dialog .fiori-file-alias-textarea:focus-visible {
+  outline: none;
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+/* Apresentação instantânea — sem fade/zoom ao abrir formulários */
+.fiori-select-content,
+.fiori-dialog .fiori-select-content,
+.fiori-datetime-popover {
+  animation: none !important;
+  transition: none !important;
+}

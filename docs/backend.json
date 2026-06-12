@@ -1,0 +1,379 @@
+{
+  "entities": {
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a data migration project within the IS-U Migra platform.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string",
+          "description": "Nome da empresa cliente ou proprietária do ambiente."
+        },
+        "ownerId": {
+          "type": "string"
+        },
+        "memberUids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Lista de UIDs dos usuários que são membros deste projeto."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "ownerId"
+      ]
+    },
+    "MasterObject": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MasterObject",
+      "type": "object",
+      "description": "Dados mestres de um objeto técnico (Ex: Parceiro, Instalação) reutilizáveis em mocks.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "chargeGroup": {
+          "type": "string",
+          "description": "Grupo técnico de carga (ex: G1, INFRA)."
+        },
+        "chargeOrder": {
+          "type": "number",
+          "description": "Ordem de execução dentro do grupo ou global."
+        },
+        "ownerId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "ownerId"
+      ]
+    },
+    "Mock": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Mock",
+      "type": "object",
+      "description": "Represents a specific mock migration run.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "explanatoryText": {
+          "type": "string"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "isLocked": {
+          "type": "boolean"
+        },
+        "isRunning": {
+          "type": "boolean",
+          "description": "Indica se a janela de migração está ativa/EM ANDAMENTO no momento."
+        },
+        "quantityExistingObjects": {
+          "type": "number"
+        },
+        "ownerId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "name",
+        "ownerId"
+      ]
+    },
+    "MigrationObject": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MigrationObject",
+      "type": "object",
+      "description": "Instância de execução de um objeto técnico em uma mock específica.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "mockId": {
+          "type": "string"
+        },
+        "masterObjectId": {
+          "type": "string",
+          "description": "Referência ao dado mestre."
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "chargeGroup": {
+          "type": "string"
+        },
+        "chargeOrder": {
+          "type": "number"
+        },
+        "chargeStartTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "chargeEndTime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "targetRecordsCount": {
+          "type": "number",
+          "description": "Quantidade total de registros previstos (Target)."
+        },
+        "processedRecordsCount": {
+          "type": "number",
+          "description": "Quantidade de registros efetivamente carregados/processados."
+        },
+        "migratedRecordsCount": {
+          "type": "number"
+        },
+        "successfulRecordsCount": {
+          "type": "number"
+        },
+        "errorRecordsCount": {
+          "type": "number"
+        },
+        "currentChargeDurationMs": {
+          "type": "number"
+        },
+        "previousMigratedRecordsCount": {
+          "type": "number"
+        },
+        "previousChargeDurationMs": {
+          "type": "number"
+        },
+        "dependencyIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Lista de IDs de MigrationObjects que são dependências deste objeto."
+        },
+        "ownerId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "mockId",
+        "name",
+        "ownerId"
+      ]
+    },
+    "MigrationComment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MigrationComment",
+      "type": "object",
+      "description": "Comentários e logs de status postados por consultores sobre uma execução.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "authorId": {
+          "type": "string"
+        },
+        "authorName": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "mockId": {
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "authorId",
+        "authorName"
+      ]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "user"
+          ]
+        },
+        "isDisabled": {
+          "type": "boolean"
+        },
+        "mustChangePassword": {
+          "type": "boolean",
+          "description": "Indica se o usuário deve trocar a senha no próximo login."
+        },
+        "phone": {
+          "type": "string"
+        },
+        "position": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "manager": {
+          "type": "string"
+        },
+        "alternativeEmail": {
+          "type": "string",
+          "format": "email"
+        },
+        "department": {
+          "type": "string"
+        },
+        "projectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "uid",
+        "name",
+        "email",
+        "role"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Projetos de migração."
+        }
+      },
+      {
+        "path": "/projects/{projectId}/mocks/{mockId}",
+        "definition": {
+          "entityName": "Mock",
+          "schema": {
+            "$ref": "#/backend/entities/Mock"
+          },
+          "description": "Janelas de execução (Mocks)."
+        }
+      },
+      {
+        "path": "/projects/{projectId}/mocks/{mockId}/migrationObjects/{objectId}",
+        "definition": {
+          "entityName": "MigrationObject",
+          "schema": {
+            "$ref": "#/backend/entities/MigrationObject"
+          },
+          "description": "Objetos de execução por mock."
+        }
+      },
+      {
+        "path": "/projects/{projectId}/mocks/{mockId}/migrationObjects/{objectId}/comments/{commentId}",
+        "definition": {
+          "entityName": "MigrationComment",
+          "schema": {
+            "$ref": "#/backend/entities/MigrationComment"
+          },
+          "description": "Logs e comentários de execução."
+        }
+      },
+      {
+        "path": "/masterObjects/{objectId}",
+        "definition": {
+          "entityName": "MasterObject",
+          "schema": {
+            "$ref": "#/backend/entities/MasterObject"
+          },
+          "description": "Cadastro global de objetos técnicos."
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Perfis de usuário."
+        }
+      }
+    ]
+  }
+}

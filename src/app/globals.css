@@ -1,0 +1,566 @@
+@import '@xyflow/react/dist/style.css' layer(base);
+
+@import 'tailwindcss';
+
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-72: '72 Condensed', 'Arial Narrow', Arial, sans-serif;
+  --font-body: Inter, sans-serif;
+  --font-headline: Inter, sans-serif;
+  --font-code: monospace;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --color-SkyBlue-50: #f0f7ff;
+  --color-SkyBlue-100: #e0effe;
+  --color-SkyBlue-200: #badffd;
+  --color-SkyBlue-300: #7cc2fc;
+  --color-SkyBlue-400: #38a2f8;
+  --color-SkyBlue-500: #3b82f6;
+  --color-SkyBlue-600: #0963e9;
+  --color-SkyBlue-700: #074fc4;
+  --color-SkyBlue-800: #0c429e;
+  --color-SkyBlue-900: #10397e;
+  --color-SkyBlue-950: #0a244d;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility readable-disabled {
+  &:disabled {
+    opacity: 1 !important;
+    cursor: default;
+    -webkit-text-fill-color: currentColor; /* for safari compatibility */
+  }
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+@layer utilities {
+  @keyframes marchingAnts {
+    to {
+      background-position:
+        8px 0,
+        -8px 100%,
+        0 -8px,
+        100% 8px;
+    }
+  }
+
+  .card-animated-border {
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        #0ea5e9 0,
+        #0ea5e9 4px,
+        transparent 4px,
+        transparent 8px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        #0ea5e9 0,
+        #0ea5e9 4px,
+        transparent 4px,
+        transparent 8px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        #0ea5e9 0,
+        #0ea5e9 4px,
+        transparent 4px,
+        transparent 8px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        #0ea5e9 0,
+        #0ea5e9 4px,
+        transparent 4px,
+        transparent 8px
+      );
+    background-size:
+      8px 1px,
+      8px 1px,
+      1px 8px,
+      1px 8px;
+    background-position:
+      0 0,
+      0 100%,
+      0 0,
+      100% 0;
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    animation: marchingAnts 0.3s infinite linear;
+    border: none !important;
+  }
+
+  /* Borda para cards ativos (mesmo estilo do hover) */
+  .card-static-border {
+    border: 3px solid #94a3b8 !important;
+    background: transparent !important;
+    animation: none !important;
+  }
+
+  /* Page transition removed per user request */
+}
+
+@layer base {
+    :root {
+        --background: 210 20% 98%;
+        --foreground: 222 47% 11%;
+        --card: 0 0% 100%;
+        --card-foreground: 222 47% 11%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222 47% 11%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222 47% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 187 65% 41%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 217 91% 60%;
+        --radius: 0rem;
+        --sidebar-background: 215 28% 17%;
+        --sidebar-foreground: 210 40% 98%;
+        --sidebar-primary: 217 91% 60%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 215 25% 27%;
+        --sidebar-accent-foreground: 210 40% 98%;
+        --sidebar-border: 215 25% 27%;
+        --sidebar-ring: 217 91% 60%;
+    }
+
+    /* Ultra-Compact Density: global scale for inputs (12px base to match Premium BI v2.6) */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="password"],
+    input[type="search"],
+    input[type="datetime-local"],
+    textarea,
+    select,
+    button,
+    .ui-dense-text {
+        font-size: 12px;
+        letter-spacing: -0.01em;
+    }
+
+    label,
+    .ui-label-dense {
+        font-size: 10px;
+        letter-spacing: 0.02em;
+        font-weight: 700;
+    }
+
+    .dark {
+        --background: 222 47% 11%;
+        --foreground: 210 40% 98%;
+        --card: 222 47% 11%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222 47% 11%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217 91% 60%;
+        --primary-foreground: 222 47% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 187 65% 41%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 217 91% 60%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    html,
+    body {
+        min-height: 100%;
+        height: 100%;
+    }
+    html {
+        /* Evita "pulo" horizontal quando overlays bloqueiam o scroll do body */
+        scrollbar-gutter: stable;
+        overflow-y: scroll;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    /*
+      Next.js dev tools portal can receive inline top/left positioning in dev mode.
+      Keep them unset so the preview position matches the persisted layout tweak.
+    */
+    nextjs-portal {
+        top: unset !important;
+        left: unset !important;
+    }
+
+    /* Dashboard: force square corners for all elements */
+    .dashboard-no-rounded * {
+        border-radius: 0 !important;
+    }
+
+    /* Exception: botões SAP Fiori — bordas arredondadas (0.5rem) */
+    .dashboard-no-rounded :is(
+        [class*="fiori-btn-"],
+        .fiori-toolbar-btn,
+        .fiori-horizontal-nav-item,
+        .fiori-card-toolbar-btn,
+        .fiori-page-back-btn,
+        .fiori-page-icon,
+        .fiori-shell-brand-icon,
+        .fiori-dialog-back-btn,
+        .fiori-icon-btn,
+        .fiori-form-popover-btn,
+        .fiori-filter-popover-submit,
+        .fiori-filter-popover-clear,
+        .fiori-login-submit,
+        .fiori-wizard-btn,
+        .fiori-log-filter-btn,
+        .fiori-log-filter-pager-nav,
+        .fiori-toast-close,
+        .fiori-toast-action,
+        .fiori-ai-btn,
+        .fiori-on-off__group,
+        .fiori-chip,
+        .fiori-pick-chip,
+        .fiori-calendar-nav-btn,
+        .fiori-calendar-day-btn,
+        .fiori-project-card-mocks-btn,
+        .fiori-page-select-trigger,
+        .fiori-select-trigger,
+        .fiori-log-filter-date-trigger,
+        .fiori-project-card-metrics,
+        .fiori-migration-object-card-metrics,
+        .fiori-migration-object-card-icon,
+        .fiori-mock-card-metrics,
+        .fiori-mock-card-info,
+        .fiori-mock-card-duration,
+        .fiori-page-badge,
+        .fiori-page-mock-tag
+    ) {
+        border-radius: var(--fiori-radius-button, 0.5rem) !important;
+    }
+
+    .dashboard-no-rounded .fiori-on-off__btn {
+        border-radius: calc(var(--fiori-radius-button, 0.5rem) - 0.125rem) !important;
+    }
+
+    .dashboard-no-rounded .fiori-emails-panel-header-btn {
+        border-radius: var(--fe-header-btn-radius, 0.375rem) !important;
+    }
+
+    /* Exception: painéis de formulário Fiori (página de e-mails) */
+    .dashboard-no-rounded .fiori-emails-panel {
+        border-radius: var(--fiori-radius, 0.5rem) !important;
+    }
+
+    .dashboard-no-rounded .fiori-dropdown-menu {
+        border-radius: var(--fiori-radius, 0.5rem) !important;
+    }
+
+    .dashboard-no-rounded .fiori-dropdown-menu .fiori-dropdown-menu-item {
+        border-radius: 0.375rem !important;
+    }
+
+    .dashboard-no-rounded .fiori-settings-panel,
+    .dashboard-no-rounded .fiori-settings-notes,
+    .dashboard-no-rounded .fiori-file-alias-item,
+    .dashboard-no-rounded .fiori-file-alias-object,
+    .dashboard-no-rounded .fiori-file-alias-pattern,
+    .dashboard-no-rounded :is(
+        .fiori-project-card,
+        .fiori-project-card-metrics,
+        .fiori-migration-object-card-metrics,
+        .fiori-migration-object-card-icon,
+        .fiori-mock-card-metrics,
+        .fiori-mock-card-info,
+        .fiori-mock-card-duration,
+        .fiori-page-badge,
+        .fiori-page-mock-tag
+    ) {
+        border-radius: var(--fiori-radius, 0.5rem) !important;
+    }
+
+    .dashboard-no-rounded .fiori-settings-panel-header-btn,
+    .dashboard-no-rounded .fiori-settings-page .fiori-btn-emphasized,
+    .dashboard-no-rounded .fiori-settings-page .fiori-settings-panel-header-btn.fiori-btn-transparent {
+        border-radius: var(--fe-header-btn-radius, 0.375rem) !important;
+    }
+
+    /* Exception: painéis analíticos do dashboard (gráficos Fiori) */
+    .dashboard-no-rounded .fiori-dashboard-charts :is(
+        .fiori-analytical-card,
+        .fiori-ref-table,
+        .fiori-list-panel,
+        .fiori-legend-panel,
+        .fiori-ai-btn,
+        .fiori-analytical-card__hint
+    ) {
+        border-radius: var(--fiori-radius, 0.5rem) !important;
+    }
+
+    .dashboard-no-rounded .fiori-dashboard-charts :is(
+        .fiori-analytical-card__title-icon,
+        .fiori-list-panel__title-icon,
+        .fiori-analytical-card__search .fiori-search-input,
+        .fiori-variation-badge,
+        .fiori-analytical-card__search .fiori-search-clear
+    ) {
+        border-radius: var(--fiori-radius-button, 0.5rem) !important;
+    }
+
+    .dashboard-no-rounded .fiori-dashboard-charts :is(
+        .fiori-ref-table__progress-track,
+        .fiori-ref-table__swatch,
+        .fiori-legend-panel__dot
+    ) {
+        border-radius: 9999px !important;
+    }
+
+    .dashboard-no-rounded .fiori-dashboard-object-card,
+    .dashboard-no-rounded .fiori-migration-object-card {
+        border-radius: var(--fiori-radius, 0.5rem) !important;
+    }
+
+    .dashboard-no-rounded input.fiori-input,
+    .dashboard-no-rounded input.fiori-search-input,
+    .dashboard-no-rounded textarea.fiori-textarea,
+    .dashboard-no-rounded textarea.fiori-file-alias-textarea {
+        border-radius: var(--fiori-radius-button, 0.5rem) !important;
+    }
+
+    /* Exception: round checkboxes */
+    .dashboard-no-rounded [role="checkbox"] {
+        border-radius: 9999px !important;
+    }
+
+    .dashboard-no-rounded .fiori-card-select-checkbox {
+        border-radius: 0.125rem !important;
+    }
+
+    /* Exception: switch Fiori — trilha e thumb totalmente arredondados (pill) */
+    .dashboard-no-rounded .fiori-switch,
+    .dashboard-no-rounded .fiori-switch__thumb {
+        border-radius: 9999px !important;
+    }
+
+    @media print {
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        html,
+        body {
+            width: 210mm;
+            height: 297mm;
+        }
+
+        .report-print-wrapper {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .report-print-header {
+            display: table-header-group;
+            background: white;
+        }
+
+        .report-print-body {
+            display: table-row-group;
+        }
+
+        /* Keep key blocks together */
+        .report-print-no-break {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        table {
+            page-break-inside: auto;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+    }
+}
+
+@layer components {
+    /* Global button normalization */
+    button,
+    [role="button"] {
+        border-width: 0;
+        transition: all 200ms ease-in-out;
+    }
+
+    /* SVG icon normalization inside buttons: size only, allow color inheritance */
+    button svg,
+    [role="button"] svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+}
+
+@import '../styles/fiori-forms.css';
+@import '../styles/fiori-shell.css';
+@import '../styles/fiori-dashboard.css';
+
+/* Fora de @layer — vence .dashboard-no-rounded * em @layer base */
+.dashboard-no-rounded .fiori-mock-card-info {
+    border-radius: var(--fiori-radius, 0.5rem) !important;
+}
+
+.dashboard-no-rounded .fiori-horizontal-nav-item {
+    border-radius: var(--fiori-radius, 0.5rem) !important;
+}
+
+.dashboard-no-rounded .fiori-page-icon {
+    border-radius: var(--fiori-radius, 0.5rem) !important;
+}
+
+.dashboard-no-rounded .fiori-shell-brand-icon {
+    border-radius: var(--fiori-radius, 0.5rem) !important;
+}
+
+.dashboard-no-rounded .dashboard-mobile-header button.fiori-horizontal-nav-item,
+.dashboard-no-rounded .dashboard-mobile-header a.fiori-horizontal-nav-item {
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+
+.dashboard-no-rounded .fiori-dropdown-menu button.fiori-dropdown-menu-item {
+    border-width: 1px !important;
+    border-style: solid !important;
+}
+
+.dashboard-no-rounded .fiori-page-header .fiori-toolbar-btn,
+.dashboard-no-rounded .fiori-subtoolbar .fiori-toolbar-btn {
+    border-width: 1px !important;
+    border-style: solid !important;
+}

@@ -1,0 +1,225 @@
+"use client";
+
+import { MainSidebar, SidebarContent, UserMenu } from "@/components/layout/main-sidebar";
+import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
+import { UserProfile } from "@/types/migration";
+import { doc } from "firebase/firestore";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import React, { useCallback, useEffect, useState, Suspense } from "react";
+import { usePresence } from "@/hooks/use-presence";
+import { Loader2, Menu, Zap } from "lucide-react";
+import { DashboardHomeLink } from "@/components/layout/dashboard-home-link";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { MandatoryProjectPicker } from "@/components/layout/mandatory-project-picker";
+import { safeRouterPush } from "@/lib/navigation/safe-router";
+
+/**
+ * Micro-componente para ler searchParams e sincronizar com o estado do layout.
+ * Isolado em Suspense para não desmontar o Sheet.
+ */
+function SearchParamsSync({
+    onProjectIdChange,
+}: {
+    onProjectIdChange: (id: string | null) => void;
+}) {
+    const searchParams = useSearchParams();
+    const projectId = searchParams.get("projectId");
+
+    useEffect(() => {
+        onProjectIdChange(projectId);
+    }, [projectId, onProjectIdChange]);
+
+    useEffect(() => {
+        const onProjectChanged = (e: Event) => {
+            const pid = (e as CustomEvent<string | null>).detail;
+            onProjectIdChange(pid && pid !== "all" ? pid : null);
+        };
+        window.addEventListener("migra_project_changed", onProjectChanged);
+        return () => window.removeEventListener("migra_project_changed", onProjectChanged);
+    }, [onProjectIdChange]);
+
+    return null;
+}
+
+export default function DashboardLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    const { user, isUserLoading } = useUser();
+    const router = useRouter();
+
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const handleCloseMobileMenu = useCallback(() => {
+        setIsMobileMenuOpen(false);
+    }, []);
+
+    const db = useFirestore();
+
+    const userDocRef = useMemoFirebase(
+        () => (user && db && !isUserLoading ? doc(db, "users", user.uid) : null),
+        [db, user, isUserLoading],
+    );
+    const { data: userProfile } = useDoc<UserProfile>(userDocRef);
+
+    usePresence(!isUserLoading ? userProfile || undefined : undefined);
+
+    const isAuthenticating = isUserLoading;
+
+    useEffect(() => {
+        if (!isUserLoading && !user) {
+            safeRouterPush(router, "/login?reason=session_ended");
+        }
+    }, [user, isUserLoading, router]);
+
+    // State para projectId do mobile menu (mesmo padrão da MainSidebar)
+    const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        const params = new URLSearchParams(window.location.search);
+        const pid = params.get("projectId");
+        if (pid && pid !== "all") {
+            setActiveProjectId(pid);
+            return;
+        }
+        const stored = sessionStorage.getItem("migra_last_selected_project");
+        if (stored && stored !== "all") setActiveProjectId(stored);
+    }, []);
+
+    const handleProjectIdChange = useCallback((id: string | null) => {
+        setActiveProjectId(id);
+    }, []);
+
+    return (
+        <DashboardShell noPadding>
+            {/* Grid principal horizontal: Topbar + Conteúdo */}
+            <div className="min-h-dvh bg-slate-50/50 flex flex-col overflow-x-hidden dashboard-no-rounded relative">
+
+                {/* Sync global para detectar mudanças de projectId na URL (desktop e mobile) */}
+                <Suspense fallback={null}>
+                    <SearchParamsSync onProjectIdChange={handleProjectIdChange} />
+                </Suspense>
+
+                {/* Header Mobile / Navigation - Agora unificados no topo */}
+                <header className="fixed top-0 left-0 right-0 flex items-center justify-between min-h-16 h-auto py-2 px-4 md:px-8 z-[70] print:hidden dashboard-mobile-header">
+                    <div className="flex items-center gap-6">
+                        {/* Logo & Zap */}
+                        <Suspense
+                            fallback={
+                                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                                    <div className="fiori-shell-brand-icon">
+                                        <Zap className="w-4 h-4 text-white fill-white" />
+                                    </div>
+                                    <span className="text-lg font-black text-slate-900 tracking-tight">Migra</span>
+                                </Link>
+                            }
+                        >
+                            <DashboardHomeLink className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                                <div className="fiori-shell-brand-icon">
+                                    <Zap className="w-4 h-4 text-white fill-white" />
+                                </div>
+                                <span className="text-lg font-black text-slate-900 tracking-tight">Migra</span>
+                            </DashboardHomeLink>
+                        </Suspense>
+
+                        {/* Navigation Desktop Horizontal */}
+                        <div className="hidden xl:block">
+                            {mounted && !isUserLoading && (
+                                <MainSidebar activeProjectId={activeProjectId} />
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        {/* User Profile / Logout (Desktop) */}
+                        <div className="hidden xl:block">
+                            {mounted && !isUserLoading && <UserMenu />}
+                        </div>
+
+                        {/* Menu Mobile */}
+                        <div className="xl:hidden">
+                            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                                <SheetTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 border border-slate-100">
+                                        <Menu className="h-5 w-5 text-slate-600" />
+                                    </Button>
+                                </SheetTrigger>
+                                <SheetContent
+                                    side="right"
+                                    overlayClassName="fiori-nav-sheet-overlay"
+                                    className="fiori-nav-sheet p-0 w-72 h-dvh flex flex-col gap-0"
+                                >
+                                    <SheetHeader className="fiori-nav-sheet-header space-y-0 text-left">
+                                        <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+                                        <Suspense
+                                            fallback={
+                                                <Link href="/" className="fiori-nav-sheet-brand">
+                                                    <div className="fiori-nav-sheet-brand-icon">
+                                                        <Zap className="w-5 h-5 fill-current" />
+                                                    </div>
+                                                    <span className="fiori-nav-sheet-brand-title">Migra</span>
+                                                </Link>
+                                            }
+                                        >
+                                            <DashboardHomeLink
+                                                onNavigate={handleCloseMobileMenu}
+                                                className="fiori-nav-sheet-brand"
+                                            >
+                                                <div className="fiori-nav-sheet-brand-icon">
+                                                    <Zap className="w-5 h-5 fill-current" />
+                                                </div>
+                                                <span className="fiori-nav-sheet-brand-title">Migra</span>
+                                            </DashboardHomeLink>
+                                        </Suspense>
+                                    </SheetHeader>
+                                    <div className="flex-1 min-h-0 flex flex-col min-w-0 relative">
+                                        <Suspense fallback={null}>
+                                            <SidebarContent
+                                                onNavItemClick={handleCloseMobileMenu}
+                                                projectIdFromUrl={activeProjectId}
+                                            />
+                                        </Suspense>
+                                    </div>
+                                </SheetContent>
+                            </Sheet>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Área de Conteúdo - Flexível abaixo da Topbar */}
+                <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar overflow-x-hidden relative pt-16">
+                    {isAuthenticating ? (
+                        <div className="h-full flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-4">
+                                <Loader2 className="w-8 h-8 animate-spin text-SkyBlue-500/20" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 animate-pulse">
+                                    Sincronizando...
+                                </span>
+                            </div>
+                        </div>
+                    ) : !user ? (
+                        null // Redirect será ativado pelo useEffect
+                    ) : (
+                        <div className="flex-1 flex flex-col min-h-full">
+                            <Suspense fallback={null}>
+                                <MandatoryProjectPicker />
+                            </Suspense>
+                            {children}
+                        </div>
+                    )}
+                </main>
+            </div>
+        </DashboardShell>
+    );
+}
