@@ -14,9 +14,9 @@ O **Migra** é uma aplicação **SaaS Multi-tenant** (isolamento por projeto) fo
 
 1. **Separação de Preocupações**: Hooks para dados/ações, componentes para UI
 2. **URL como Fonte de Verdade**: Contexto de navegação via search params
-3. **Persistência Inteligente**: localStorage para preferências, Firestore para dados críticos
+3. **Persistência Inteligente**: localStorage para preferências, Supabase Postgres para dados críticos
 4. **Design System Premium BI**: Consistência visual absoluta em toda aplicação
-5. **Segurança em Camadas**: Firebase Auth + Firestore Rules + Admin Auth
+5. **Segurança em Camadas**: Supabase Auth + RLS (Postgres) + service role nas API routes
 
 ---
 
@@ -27,8 +27,8 @@ O **Migra** é uma aplicação **SaaS Multi-tenant** (isolamento por projeto) fo
 | **Framework** | Next.js 15 (App Router, Turbopack) | ^15.5.14 |
 | **Linguagem** | TypeScript 5 (strict mode) | ^5 |
 | **UI Runtime** | React | ^19.2.1 |
-| **Backend** | Firebase (Auth + Firestore) | ^11.10.0 |
-| **Admin SDK** | firebase-admin | 12.7.0 |
+| **Backend** | Supabase (Auth + Postgres + Storage) | ^2.x |
+| **Compat layer** | `firebase/*` shims → `src/supabase/` | — |
 | **IA** | Genkit (Google Gemini Pro/Flash) | ^1.16.1 |
 | **Estilização** | Tailwind CSS + ShadCN UI | ^3.4.1 / v4 |
 | **Visualização** | Recharts + @xyflow/react | ^2.15.1 / ^12.10.1 |
@@ -161,19 +161,13 @@ src/
 │   ├── useAuthedFetch.ts             # Fetch autenticado
 │   ├── useMobile.tsx                 # Detecção mobile
 │   └── useToast.ts                   # Sistema de toasts
-├── firebase/                         # Configuração Firebase (11 arquivos)
-│   ├── config.ts                     # Client SDK
-│   ├── admin.ts                      # Admin SDK (server-side)
-│   ├── index.ts                      # Barrel export
-│   ├── provider.tsx                  # Provider geral
-│   ├── client-provider.tsx           # Client provider
-│   ├── error-emitter.ts              # Emissor de erros
-│   ├── errors.ts                     # Tratamento de erros
-│   ├── non-blocking-login.tsx        # Login non-blocking
-│   ├── non-blocking-updates.tsx      # Updates non-blocking
-│   └── firestore/
-│       ├── use-collection.tsx        # Hook para coleções
-│       └── use-doc.tsx               # Hook para documentos
+├── supabase/                         # Camada Supabase + shims Firestore-compat
+│   ├── client.ts / admin.ts          # Browser + service role
+│   ├── provider.tsx                  # Auth, hooks useFirestore/useUser
+│   ├── query-builder.ts              # doc/collection/query → Postgres
+│   ├── firestore-shim.ts             # Alias `firebase/firestore` (tsconfig paths)
+│   ├── hooks/                        # use-collection, use-doc
+│   └── mutations.ts                  # Writes non-blocking
 ├── lib/                              # Utilitários (14 arquivos)
 │   ├── utils.ts                      # cn(), utilitários gerais
 │   ├── formatters.tsx                # Formatação pt-BR (números, %, duração, datas)
@@ -206,7 +200,7 @@ src/
 
 ---
 
-## 💾 Modelo de Dados (Firestore)
+## 💾 Modelo de Dados (Supabase Postgres)
 
 ### Estrutura de Coleções
 
@@ -368,10 +362,10 @@ A grade do dashboard segue a **mesma ordem de exibição** da gestão de objetos
 
 ## 🚀 Estratégia de Deploy
 
-### Firebase App Hosting
+### Deploy (standalone)
 
 ```
-Deploy → GCP Cloud Run → Firebase CDN
+npm run build → output standalone (Docker / Cloud Run / Vercel)
 ```
 
 ### Configurações Críticas
@@ -379,19 +373,16 @@ Deploy → GCP Cloud Run → Firebase CDN
 ```typescript
 // next.config.ts
 {
-  output: 'standalone',                    // Container otimizado
-  generateBuildId: () => 'migra-stable-v1', // Previne ChunkLoadError
+  output: 'standalone',
+  generateBuildId: () => 'migra-stable-v1', // Previne ChunkLoadError entre deploys
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
   },
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
   transpilePackages: ['@genkit-ai/google-genai', 'genkit'],
-  serverExternalPackages: ['firebase-admin', '@google-cloud/firestore'],
 }
 ```
 
-**Motivo do `generateBuildId` estável**: Deploys paralelos no Firebase App Hosting podem causar `ChunkLoadError` quando o navegador cacheia chunks de versões diferentes. O ID estável garante consistência.
+**Motivo do `generateBuildId` estável**: deploys paralelos podem causar `ChunkLoadError` quando o navegador cacheia chunks de versões diferentes.
 
 ---
 
@@ -399,13 +390,13 @@ Deploy → GCP Cloud Run → Firebase CDN
 
 ### Camadas de Proteção
 
-1. **Firebase Auth**: Autenticação primária
-2. **Firestore Security Rules**: Controle de acesso granular
-3. **Admin Auth (server-side)**: Validação de permissões em API routes
-4. **Edit Locks**: Prevenção de edições concorrentes
-5. **Session Management**: Controle de sessões ativas
+1. **Supabase Auth**: Autenticação primária (JWT)
+2. **RLS (Row Level Security)**: Políticas Postgres em `supabase/migrations/`
+3. **Admin Auth (server-side)**: Validação de permissões em API routes + service role
+4. **Edit Locks**: Prevenção de edições concorrentes (`edit_locks`)
+5. **Session Management**: Presença em `sessions`
 
-### Regras Principais do Firestore
+### Políticas RLS principais (Postgres)
 
 ```javascript
 // Helpers

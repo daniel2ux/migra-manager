@@ -24,6 +24,7 @@ Via Supabase Dashboard → SQL Editor, ou MCP/CLI:
 2. `20260612000002_rls_policies.sql`
 3. `20260612000003_catalogo_and_storage.sql`
 4. `20260612000004_rls_hardening.sql`
+5. `20260612000005_fix_set_updated_at_search_path.sql`
 
 ## 3. Buckets Storage
 

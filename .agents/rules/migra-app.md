@@ -29,8 +29,8 @@ O **Migra** é uma plataforma de aceleradores para migração de dados com foco 
 | Styling | Tailwind CSS 3.4, tailwind-merge, class-variance-authority |
 | UI Components | shadcn/ui + Radix UI primitives |
 | Icons | Lucide React (traço fino, consistente) |
-| Backend / Auth | Firebase 11 (Auth, Firestore, App Hosting) |
-| Firebase Admin | firebase-admin 12 (server-side) |
+| Backend / Auth | Supabase (Auth, Postgres, Storage) |
+| Server admin | `@supabase/supabase-js` service role em API routes |
 | Charts | Recharts 2 |
 | Graph | @xyflow/react + dagre (grafo de dependências) |
 | Forms | React Hook Form 7 + Zod 3 |
@@ -85,15 +85,16 @@ Registro de uma execução de carga. Contém: `type`, `startTime`, `endTime`, `t
 
 ---
 
-## 5. Firebase / Firestore
+## 5. Supabase / Postgres
 
-- **Project ID**: `studio-4933855246-6debd`
-- **Coleções principais**: `users`, `sessions`, `projects`, `mocks`, `migrationObjects`, `comments`
-- **Acesso**: Restrito por `hasProjectAccess` nas Firestore Rules
-- Usuários comuns vêem apenas projetos em `memberUids`
-- Administradores (`role: 'admin'`) têm visibilidade total
-- Presença de sessão rastreada em `/sessions` via hook `usePresence`
+- **Projeto remoto**: Migra (`nisaukwqrdyomvrczwrf`, sa-east-1) — ver `supabase/SETUP.md`
+- **Tabelas principais**: `profiles`, `sessions`, `projects`, `mocks`, `migration_objects`, `comments`
+- **Acesso**: RLS via `private.has_project_access()` (migrations em `supabase/migrations/`)
+- Usuários comuns vêem apenas projetos em `member_uids` / `project_members`
+- Administradores (`role: 'admin'` ou `master`) têm visibilidade total
+- Presença de sessão rastreada em `sessions` via hook `usePresence`
 - API de sessão admin: `POST /api/admin/session-action` (logout, block, block-logout, delete, unlock)
+- **Imports client**: `@/supabase` (shims `firebase/firestore` e `firebase/auth` no tsconfig)
 
 ---
 
@@ -287,12 +288,13 @@ O offset `7rem` = header da página (`4rem`) + padding do conteúdo (`3rem`). Aj
 | `src/lib/formatters.tsx` | Formatação pt-BR (números, %, duração, datas) |
 | `src/lib/migration/sequence-utils.ts` | Sequência de carga (`parse`, `compare`, display `XX.XX`) |
 | `src/lib/migration/gestao-sequence.ts` | Ordem de exibição alinhada entre dashboard e gestão de objetos |
-| `src/firebase/config.ts` | Configuração Firebase client |
-| `src/firebase/admin.ts` | Firebase Admin SDK |
+| `src/supabase/client.ts` | Cliente browser Supabase |
+| `src/supabase/admin.ts` | Service role (API routes server-side) |
+| `src/supabase/query-builder.ts` | Compat Firestore → Postgres |
 | `src/components/layout/DashboardShell.tsx` | Shell principal das páginas |
 | `src/components/ui/button.tsx` | Variantes e tamanhos de botão |
 | `src/app/globals.css` (`@theme`) | Paleta SkyBlue e tokens shadcn (Tailwind v4) |
 
 ---
 
-> ÚLTIMA ATUALIZAÇÃO: 2026-06-11
+> ÚLTIMA ATUALIZAÇÃO: 2026-06-12
