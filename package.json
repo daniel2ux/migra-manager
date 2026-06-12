@@ -9,9 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "clean:master-catalog": "node scripts/clean_master_non_ativo_inativo.js",
-    "clean:master-catalog:execute": "node scripts/clean_master_non_ativo_inativo.js --execute"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
