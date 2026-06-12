@@ -54,3 +54,5 @@ O repositório legado Firebase (`daniel2ux/migra`) está arquivado.
 | `npm run build` | Build de produção |
 | `npm run typecheck` | Verificação TypeScript |
 | `npm run lint` | ESLint |
+| `npm run db:configure-auth` | Hardening Auth (HIBP + senha mínima) via Management API |
+| `npm run db:gen-types` | Gera `src/supabase/database.types.ts` |

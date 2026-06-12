@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:seed-master": "node scripts/seed-master-user.mjs",
-    "db:configure-env": "node scripts/configure-supabase-env.mjs"
+    "db:configure-env": "node scripts/configure-supabase-env.mjs",
+    "db:configure-auth": "node scripts/configure-supabase-auth.mjs",
+    "db:gen-types": "node scripts/generate-supabase-types.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -202,94 +202,29 @@ src/
 
 ## 💾 Modelo de Dados (Supabase Postgres)
 
-### Estrutura de Coleções
+### Tabelas Postgres (schema `public`)
 
-```
-users/                              # Perfis de usuários
-  {uid}/
-    displayName, email, role, disabled
-    projectOrder: string[]          # Preferência de ordenação
-    projectIds: string[]            # Projetos associados
+Mapeamento Firestore legado → tabela Supabase (via `src/supabase/path-mapper.ts`):
 
-projects/                           # Unidades de isolamento
-  {projectId}/
-    name, description, status
-    memberUids: string[]            # UIDs com acesso
+| Caminho Firestore (app) | Tabela Postgres | Relacionamentos |
+|-------------------------|-----------------|-----------------|
+| `users/{uid}` | `profiles` | FK → `auth.users` |
+| `projects/{id}` | `projects` | `member_uids[]`, `project_members` |
+| `projects/{pid}/mocks/{id}` | `mocks` | FK `project_id` |
+| `…/migrationObjects/{id}` | `migration_objects` | FK `mock_id`, `project_id` |
+| `…/comments/{id}` | `comments` | FK `object_id`, `project_id` |
+| `masterObjects/{id}` | `master_objects` | catálogo global |
+| `activityGroups/{id}` | `activity_groups` | `object_ids[]` |
+| `emailContacts`, `emailGroups` | `email_contacts`, `email_groups` | config |
+| `accessProfiles/{id}` | `access_profiles` | RBAC templates |
+| `editLocks/{id}` | `edit_locks` | locks de edição |
+| `sessions/{uid}` | `sessions` | FK `user_id` → `profiles` |
+| `migrationLogs/{id}` | `migration_logs` | FK `project_id` opcional |
+| `appConfig/{key}` | `app_config` | chave/valor JSONB |
+| `fileAliases/{id}` | `file_aliases` | padrões de arquivo |
+| `catalogo` | `catalogo` | referência para relatórios |
 
-projects/{pid}/mocks/               # Janelas de carga
-  {mockId}/
-    name, projectId, startDate, endDate
-    status, isLocked, explanatoryText
-    quantityExistingObjects: number
-    loadHistory?: LoadHistoryEntry[]
-
-mocks/{mid}/migrationObjects/       # Objetos de migração
-  {objectId}/
-    mockId, projectId, masterObjectId?
-    name, description, chargeGroup?
-    chargeOrder, isParallel?, parallelOrder?
-    chargeStartTime, chargeEndTime
-    targetRecordsCount, processedRecordsCount
-    successfulRecordsCount, errorRecordsCount
-    currentChargeDurationMs
-    status, dependencyIds?
-
-mocks/{mid}/comments/               # Comentários em objetos
-  {commentId}/
-    objectId, authorId, content, createdAt
-
-masterObjects/                      # Catálogo mestre
-  {id}/
-    name, description, type
-    status, chargeGroup, chargeOrder
-    parallelOrder, isParallel
-    dependencyIds[], externalDependencies[]
-    activityGroupIds[]
-
-activityGroups/                     # Grupos de atividade
-  {id}/
-    name, description
-    objectIds: string[]             # Bidirecional com masterObjects
-
-emailContacts/                      # Contatos de e-mail
-  {id}/
-    name, email
-
-emailGroups/                        # Grupos de e-mail
-  {id}/
-    name, contactIds: string[]
-
-accessProfiles/                     # Perfis de acesso
-  {id}/
-    name, permissions: string[]
-
-editLocks/                          # Locks de edição
-  {documentId}/
-    userId, lockedAt, expiresAt
-
-sessions/                           # Sessões de usuário
-  {uid}/
-    sessionId, createdAt, expiresAt
-    lastActive, userAgent
-
-audit_logs/                         # Logs de auditoria
-  {id}/
-    action, userId, timestamp, details
-
-migrationLogs/                      # Logs de migração
-  {id}/
-    mockId, objectId, level, message, timestamp
-
-appConfig/                          # Configurações do app
-  {key}/
-    value, updatedAt
-
-fileAliases/                        # Mapeamento de aliases de arquivos
-  {aliasId}/
-    objectName: string              # Nome do objeto (ex: "BILLEBF_MA")
-    fileNamePatterns: string[]      # Padrões de nome de arquivo (ex: ["BILLDOCMA"])
-    createdAt, createdBy
-```
+Tipos gerados: `src/supabase/database.types.ts` (`npm run db:gen-types`).
 
 ---
 
@@ -319,7 +254,7 @@ A partir da **v2.10**, o sistema utiliza **React Context** para estados que cruz
 | `dashboard_last_mock_id` | localStorage | Mock selecionado no dashboard |
 | `dashboard_last_project_id` | localStorage | Projeto selecionado |
 | `dashboard_show_performance` | localStorage | Visibilidade do painel de performance |
-| `projectOrder` | Firestore | Ordenação manual de projetos (por usuário) |
+| `project_order` | Postgres (`profiles`) | Ordenação manual de projetos (por usuário) |
 | `relatorio-comparativo-project` | localStorage | Projeto no relatório comparativo |
 | `relatorio-comparativo-mock-a/b` | localStorage | Mocks baseline/alvo |
 
@@ -335,7 +270,7 @@ Objetos de carga herdam propriedades do catálogo mestre (`masterObjects`). A at
 O projeto adota o padrão de **Separação de Preocupações**:
 
 ```typescript
-// Hook de DADOS (busca Firestore)
+// Hook de DADOS (busca Supabase via compat layer)
 const { data, loading, error } = useDashboardData(projectId);
 
 // Hook de AÇÕES (mutação/estado UI)
@@ -354,7 +289,7 @@ A grade do dashboard segue a **mesma ordem de exibição** da gestão de objetos
 | `gestao-sequence.ts` | Índice de ordem (catálogo mestre ou instâncias da mock) |
 | `sequence-utils.ts` | Comparação e formatação de sequência de carga (`XX.XX`) |
 | `use-dashboard-filtering.ts` | Aplica filtros e ordenação antes de renderizar os cards |
-| `page.tsx` | Coluna **Seq.** = posição na grade (`formatSequence(index + 1, 0)`), não o valor bruto do Firestore |
+| `page.tsx` | Coluna **Seq.** = posição na grade (`formatSequence(index + 1, 0)`), não o valor bruto do banco |
 
 **Separação de utilitários**: `@/lib/formatters.tsx` concentra formatação pt-BR (números, %, duração, datas). Lógica de sequência de carga permanece em `@/lib/migration/sequence-utils.ts`.
 
@@ -398,22 +333,31 @@ npm run build → output standalone (Docker / Cloud Run / Vercel)
 
 ### Políticas RLS principais (Postgres)
 
-```javascript
-// Helpers
-function isSignedIn() { return request.auth != null; }
-function isDaniel() { return request.auth.uid == "S24W6UskXicS9h98M9Q64H5q1iH3"; }
-function isNotDisabled() { return isDaniel() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true; }
-function isAdmin() { return isMaster() || resource.data.role in ['admin', 'ADMIN'] || resource.data.isAdmin == true; }
-function hasProjectAccess(pid) { return isDaniel() || isAdmin() || request.auth.uid in get(/databases/$(database)/documents/projects/$(pid)).data.memberUids; }
+Funções helper em `private.*` (schema `private`, `SECURITY DEFINER`):
 
-// Exemplo: migrationObjects
-match /projects/{pid}/mocks/{mid}/migrationObjects/{oid} {
-  allow read, list: if isNotDisabled() && hasProjectAccess(pid);
-  allow write: if isAdmin();
-}
+```sql
+-- Acesso ao projeto: admin/master OU member_uids OU project_members OU project_ids no profile
+CREATE FUNCTION private.has_project_access(p_project_id UUID) ...
+
+-- Perfis: leitura própria ou admin/master
+CREATE POLICY profiles_select ON public.profiles
+  FOR SELECT TO authenticated
+  USING (private.is_admin_or_master() OR id = auth.uid());
+
+-- Migration objects: leitura com acesso ao projeto; escrita com acesso ao projeto
+CREATE POLICY migration_objects_select ON public.migration_objects
+  FOR SELECT TO authenticated
+  USING (private.is_admin_or_master() OR private.has_project_access(project_id));
+
+-- Edit locks: leitura aberta; escrita apenas com user_id = auth.uid()
+CREATE POLICY edit_locks_insert ON public.edit_locks
+  FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
 ```
 
-**Otimização**: O bypass do Daniel (`isDaniel()`) tem **custo zero** de `get()`, evitando leituras desnecessárias.
+Migrations completas: `supabase/migrations/20260612000002_rls_policies.sql` e `000004_rls_hardening.sql`.
+
+**Superadmin**: `SUPERADMIN_UID` / `NEXT_PUBLIC_SUPERADMIN_UID` no `.env.local` (bypass client-side em hooks legados).
 
 ---
 
@@ -467,7 +411,9 @@ Page Orchestrator (200-400 linhas)
 | `projetos/page.tsx` | 1.204 | 408 | **-66%** |
 | `logs/page.tsx` | 704 | 301 | **-57%** |
 | `mocks/page.tsx` | 1.179 | 444 | **-62%** |
-| **TOTAL** | **5.835** | **1.627** | **-72%** |
+| `main-sidebar.tsx` | 1.028 | 4 | **-99%** |
+| `activity-groups-manager.tsx` | 898 | 1 | **-99%** |
+| **TOTAL** | **7.761** | **1.632** | **-79%** |
 
 ### Artefatos Criados
 
@@ -517,6 +463,7 @@ A shell visual adota tokens **SAP Fiori Horizon** em `src/styles/fiori-shell.css
 
 | Versão | Foco | Principais Mudanças |
 |--------|------|---------------------|
+| **v3.0** | Supabase | Migração Firebase → Supabase, RLS, `@/supabase`, refactors sidebar/activity-groups |
 | **v2.11** | Fiori & Sequência | UI Fiori Horizon, ordem dashboard ↔ gestão, limpeza de dead code |
 | **v2.10** | Performance | SelectionContext, log cleanup, Next.js 15.5 |
 | **v2.9** | Documentação | Docs completos, estrutura mapeada |

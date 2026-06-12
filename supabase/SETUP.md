@@ -40,7 +40,34 @@ O script grava automaticamente `SUPERADMIN_UID` e `NEXT_PUBLIC_SUPERADMIN_UID` n
 
 **Login padrão:** `admin@migra.local` / `MigraMaster2026!`
 
-## 5. Validar
+## 5. Auth hardening (recomendado)
+
+Proteção contra senhas vazadas (HaveIBeenPwned) e comprimento mínimo:
+
+**Opção A — Dashboard**
+
+1. [Auth → Providers → Email](https://supabase.com/dashboard/project/nisaukwqrdyomvrczwrf/auth/providers)
+2. Ative **Prevent use of leaked passwords**
+3. Defina **Minimum password length** ≥ 10
+4. Salve
+
+**Opção B — Script (Management API)**
+
+1. Crie token em [Account → Access Tokens](https://supabase.com/dashboard/account/tokens)
+2. Adicione `SUPABASE_ACCESS_TOKEN=sbp_...` ao `.env.local`
+3. Rode: `npm run db:configure-auth`
+
+> Nota: leaked password protection pode exigir plano Pro.
+
+## 6. Tipos TypeScript
+
+```bash
+npm run db:gen-types
+```
+
+Gera `src/supabase/database.types.ts` a partir do schema remoto.
+
+## 7. Validar
 
 ```bash
 npm run dev
