@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { BackupManager, type BackupManagerHandle } from "@/components/backup/backup-manager";
 import { useUsersData } from "@/hooks/use-users-data";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
-import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase } from "@/supabase";
 import { doc } from "firebase/firestore";
 import { getProjectCompanyName } from "@/lib/migration/project-company";
 import { safeRouterReplace, useRouterReady } from "@/lib/navigation/safe-router";

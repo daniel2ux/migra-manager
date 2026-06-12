@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Mail, Copy, ExternalLink, Send, Loader2, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/firebase";
+import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/supabase";
 import { doc, Firestore } from "firebase/firestore";
 import type { EmailSignature } from "@/types/migration";
 import { EmailMultiSelect } from "@/components/email/email-multi-select";

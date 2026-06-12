@@ -2,14 +2,14 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { useUser } from '@/firebase';
+import { errorEmitter } from '@/supabase/error-emitter';
+import { FirestorePermissionError } from '@/supabase/errors';
+import { useUser } from '@/supabase/provider';
 import { useToast } from '@/hooks/use-toast';
 
 const COOLDOWN_MS = 10_000;
 
-export function FirebaseErrorListener() {
+export function SupabaseErrorListener() {
   const { user } = useUser();
   const { toast } = useToast();
   const lastShownAt = useRef<number>(0);

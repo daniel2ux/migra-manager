@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
 import { doc, updateDoc, arrayUnion, arrayRemove, Firestore } from "firebase/firestore";
 import type { EmailSignature } from "@/types/migration";
 import { User, Save, Loader2, CheckCircle2, Mail, Plus, Trash2 } from "lucide-react";

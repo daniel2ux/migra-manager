@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { aiDescriptionGenerator } from "@/ai/flows/ai-description-generator";
 import {
     useFirestore, useUser, useCollection, useMemoFirebase,
-} from "@/firebase";
+} from "@/supabase";
 import {
     DndContext,
     closestCenter,
@@ -41,7 +41,7 @@ import {
     setDocumentNonBlocking,
     updateDocumentNonBlocking,
     deleteDocumentNonBlocking,
-} from "@/firebase/non-blocking-updates";
+} from "@/supabase/mutations";
 import { useProjectsData } from "@/hooks/use-projects-data";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { getProjectCompanyName } from "@/lib/migration/project-company";

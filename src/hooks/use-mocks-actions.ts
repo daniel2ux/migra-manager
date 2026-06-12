@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
-import { useFirestore, useUser } from "@/firebase";
+import { useFirestore, useUser } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { doc, serverTimestamp, type Firestore } from "firebase/firestore";
 import type { User } from "firebase/auth";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking } from "@/supabase/mutations";
 import { slugify } from "@/lib/formatters";
 import { generateShortId } from "@/lib/id-utils";
 import { FIRESTORE_BATCH_SIZE } from "@/lib/constants";

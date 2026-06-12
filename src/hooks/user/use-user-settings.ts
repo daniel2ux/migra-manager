@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { useFirestore } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
 import type { EmailSignature } from "@/types/usuarios";
 

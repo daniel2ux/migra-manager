@@ -1,6 +1,6 @@
 "use client";
 
-import { useFirestore, useStorage } from "@/firebase";
+import { useFirestore, useStorage } from "@/supabase";
 import type { UserProfile, UserFormData, CreateUserData, ResetPasswordResult, EmailSignature } from "@/types/usuarios";
 import { useUserCrud } from "./user/use-user-crud";
 import { useUserSettings } from "./user/use-user-settings";

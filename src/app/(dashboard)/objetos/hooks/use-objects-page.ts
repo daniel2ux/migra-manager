@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { useMemoFirebase, useCollection, useFirestore, useUser, useDoc } from '@/firebase';
+import { useMemoFirebase, useCollection, useFirestore, useUser, useDoc } from '@/supabase';
 import type { WithId } from '@/supabase/hooks/types';
 import { collection, doc, collectionGroup, query, where, getDocs, orderBy, writeBatch, serverTimestamp, type Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import type { MigrationObject, UserProfile } from '@/types/migration';
 import { useToast } from '@/hooks/use-toast';
 import { useObjectForm } from '@/hooks/use-object-form';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking } from '@/supabase/mutations';
 import { useEditLock } from '@/hooks/use-edit-lock';
 import {
   parseSequence,

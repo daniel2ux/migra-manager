@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { doc, setDoc, deleteDoc, serverTimestamp, type FirestoreError } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser } from '@/supabase';
 
 function ignorePresenceError(error: unknown) {
   const code = (error as FirestoreError)?.code;

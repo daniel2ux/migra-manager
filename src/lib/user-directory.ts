@@ -1,4 +1,4 @@
-import type { WithId } from "@/firebase";
+import type { WithId } from "@/supabase";
 import type { UserProfile } from "@/types/usuarios";
 
 /** Linha da coleção `users` (pode incluir `projectIds` em telas de projeto). */

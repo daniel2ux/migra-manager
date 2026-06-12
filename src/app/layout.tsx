@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import {Toaster} from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { SupabaseClientProvider } from '@/supabase/client-provider';
 import { SelectionProvider } from '@/context/selection-context';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -60,13 +60,13 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ErrorBoundary>
-          <FirebaseClientProvider>
+          <SupabaseClientProvider>
             <SelectionProvider>
               <TooltipProvider>
                 {children}
               </TooltipProvider>
             </SelectionProvider>
-          </FirebaseClientProvider>
+          </SupabaseClientProvider>
         </ErrorBoundary>
         <div className="print:hidden"><Toaster /></div>
       </body>

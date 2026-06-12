@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Shield, ShieldAlert, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PerfisManager, PerfisManagerRef } from "@/components/configuracoes/perfis-manager";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
 import { doc } from "firebase/firestore";
 
 export default function PerfisPage() {

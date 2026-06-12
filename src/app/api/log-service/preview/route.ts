@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/firebase/admin';
+import { adminDb } from '@/supabase/admin';
 import { verifyAdminOrMaster } from '@/lib/auth-server';
 import * as fs from 'fs';
 import * as path from 'path';

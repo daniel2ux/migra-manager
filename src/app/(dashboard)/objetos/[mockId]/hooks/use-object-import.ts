@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { useFirestore, useUser } from "@/firebase";
+import { useFirestore, useUser } from "@/supabase";
 import { collection, doc, serverTimestamp, getDocs, query, collectionGroup, where } from "firebase/firestore";
-import { setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/supabase/mutations";
 import { parseBrazilianDateTime } from "@/lib/migration/format-utils";
 import { parseCsvHeader, parseCsvLine } from "@/lib/import/csv-parser";
 import type { MigrationObject } from "@/types/migration";

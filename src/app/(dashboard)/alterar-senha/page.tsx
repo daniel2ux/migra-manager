@@ -8,7 +8,7 @@ import { FormIconField } from '@/components/ui/form-icon-field';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lock, ShieldAlert, Loader2, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth, useUser } from '@/supabase';
 import { signOut } from 'firebase/auth';
 
 export default function ChangePasswordPage() {

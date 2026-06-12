@@ -9,7 +9,7 @@ import {
   where,
   doc,
 } from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
 
 import { idsForFirestoreIn, SUPERADMIN_UID } from "@/lib/constants";
 

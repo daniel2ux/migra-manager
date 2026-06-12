@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { doc, serverTimestamp } from 'firebase/firestore';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking } from '@/supabase/mutations';
 import type { AggregatedObject, Mock } from '@/types/migration';
 
 interface UseDashboardMockActionsDeps {

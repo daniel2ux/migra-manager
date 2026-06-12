@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { doc, collection } from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
 import type { UserProfile } from "@/types/usuarios";
 import { dedupeDirectoryUsers, type UserDirectoryDoc } from "@/lib/user-directory";
 

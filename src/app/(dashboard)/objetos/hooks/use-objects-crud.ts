@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { doc, serverTimestamp, writeBatch, type Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/supabase/mutations';
 import { aiDescriptionGenerator } from '@/ai/flows/ai-description-generator';
 import { isValidSequence } from '@/lib/migration/sequence-utils';
 import { generateShortId } from '@/lib/id-utils';

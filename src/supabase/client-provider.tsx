@@ -23,5 +23,3 @@ export function SupabaseClientProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** @deprecated Use SupabaseClientProvider */
-export const FirebaseClientProvider = SupabaseClientProvider;

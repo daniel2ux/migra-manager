@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { collection, doc, serverTimestamp, query, orderBy, getDocs } from 'firebase/firestore';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking } from '@/supabase/mutations';
 import type { Mock } from '@/types/migration';
 import type { MigrationObject } from '../types';
 

@@ -12,7 +12,7 @@ import {
   query,
   setDoc,
 } from "firebase/firestore";
-import { useFirestore, useUser } from "@/firebase/provider";
+import { useFirestore, useUser } from "@/supabase/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

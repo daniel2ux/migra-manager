@@ -1,7 +1,7 @@
 "use client";
 
 import { MainSidebar, SidebarContent, UserMenu } from "@/components/layout/main-sidebar";
-import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/firebase";
+import { useUser, useFirestore, useMemoFirebase, useDoc } from "@/supabase";
 import { UserProfile } from "@/types/migration";
 import { doc } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";

@@ -1,4 +1,4 @@
-import { getAdminStorageBucket } from '@/firebase/admin-storage';
+import { getAdminStorageBucket } from '@/supabase/admin-storage';
 import type { BackupMetadata } from './types';
 
 export async function uploadBackupToStorage(

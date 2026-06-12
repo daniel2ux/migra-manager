@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
-import { useFirestore, useUser } from "@/firebase/provider";
+import { useFirestore, useUser } from "@/supabase/provider";
 import {
   collection,
   query,

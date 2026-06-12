@@ -5,7 +5,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Layers, Loader2, Plus, ShieldAlert } from "lucide-react";
 import { ActivityGroupsManager } from "@/components/configuracoes/activity-groups-manager";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
 import { doc } from "firebase/firestore";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { getProjectCompanyName } from "@/lib/migration/project-company";

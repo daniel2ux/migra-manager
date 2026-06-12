@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { useFirestore } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, UserFormData, CreateUserData, ResetPasswordResult } from "@/types/usuarios";
 

@@ -14,7 +14,7 @@ import {
     useCollection, 
     useMemoFirebase, 
     useDoc 
-} from "@/firebase";
+} from "@/supabase";
 import type { 
     Project, 
     UserProfile, 

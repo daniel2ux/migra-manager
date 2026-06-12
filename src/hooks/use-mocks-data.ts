@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { collection, collectionGroup, doc, query, where } from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
 import type { Mock, Project } from "@/types/migration";
 
 interface UseMocksDataReturn {

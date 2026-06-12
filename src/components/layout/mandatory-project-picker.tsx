@@ -10,11 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
 import type { UserProfile } from "@/types/migration";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { AlertCircle, Loader2, FolderKanban, LogOut } from "lucide-react";
-import { useAuth } from "@/firebase/provider";
+import { useAuth } from "@/supabase/provider";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 

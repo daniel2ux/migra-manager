@@ -21,7 +21,7 @@ import { doc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 import { createUserWithEmailAndPassword, Auth } from 'firebase/auth';
 import Link from 'next/link';
-import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/firebase';
+import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/supabase';
 import { Camera, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 

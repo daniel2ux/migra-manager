@@ -13,7 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/supabase/client';
 import { setQueryClient, type SupabaseDb } from '@/supabase/query-builder';
 import { toCompatUser, type CompatUser } from '@/supabase/auth-compat';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { SupabaseErrorListener } from '@/components/SupabaseErrorListener';
 
 export interface SupabaseContextState {
   areServicesAvailable: boolean;
@@ -81,7 +81,7 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
 
   return (
     <SupabaseContext.Provider value={value}>
-      <FirebaseErrorListener />
+      <SupabaseErrorListener />
       {children}
     </SupabaseContext.Provider>
   );

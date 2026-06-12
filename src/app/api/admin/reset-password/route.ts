@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/firebase/admin';
+import { adminAuth, adminDb } from '@/supabase/admin';
 import { verifyCallerRole } from '@/lib/admin-auth';
 import { randomInt } from 'node:crypto';
 import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';

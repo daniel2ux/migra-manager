@@ -5,7 +5,7 @@ import {
   setDocumentNonBlocking,
   addDocumentNonBlocking,
   deleteDocumentNonBlocking,
-} from '@/firebase/non-blocking-updates';
+} from '@/supabase/mutations';
 import {
   formatDurationInput,
   parseDurationString,

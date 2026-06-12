@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore } from "@/supabase/provider";
 import {
   Dialog,
   DialogContent,

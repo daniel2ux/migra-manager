@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSelection } from '@/context/selection-context';
 import { ArrowLeft, Box, Calendar, Clock, Database, Gauge, BarChart, CheckCircle2, Loader2, Info, History } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { useFirestore } from '@/supabase';
 import { doc, getDoc } from 'firebase/firestore';
 import { MigrationObject } from '@/types/migration';
 import { formatNumber, formatDateTime, renderDuration, formatPercentage } from '@/lib/formatters';

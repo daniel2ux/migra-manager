@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { collection, query, where, doc } from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import type { WithId } from "@/firebase";
+import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
+import type { WithId } from "@/supabase";
 import { dedupeDirectoryUsers } from "@/lib/user-directory";
 import { SUPERADMIN_UID } from "@/lib/constants";
 

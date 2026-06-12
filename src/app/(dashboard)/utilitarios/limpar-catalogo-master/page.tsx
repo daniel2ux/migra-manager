@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { PageHeader } from '@/components/layout/page-header';
-import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/supabase';
 import { doc } from 'firebase/firestore';
 import { AccessDeniedScreen } from '@/components/usuarios';
 import { useToast } from '@/hooks/use-toast';

@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Mail, Lock, Loader2, Zap, Eye, EyeOff, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore } from '@/firebase';
-import { firebaseConfig, isFirebaseEnvComplete } from '@/firebase/config';
+import { useAuth, useFirestore } from '@/supabase';
+import { firebaseConfig, isFirebaseEnvComplete } from '@/supabase/config';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, Auth } from 'firebase/auth';
 import { doc, getDoc, Firestore } from 'firebase/firestore';
 

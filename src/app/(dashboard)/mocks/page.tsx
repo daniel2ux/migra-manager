@@ -11,7 +11,7 @@ import { MockHeader } from '@/components/mocks/mock-header';
 import { MockTable, MockTableHandle } from '@/components/mocks/mock-table';
 import { MockAlerts } from '@/components/mocks/mock-alerts';
 import { useLocalStorageState } from '@/hooks/use-local-storage-state';
-import { useUser } from '@/firebase';
+import { useUser } from '@/supabase';
 import { cn } from '@/lib/utils';
 import { FOCUS_RETURN_DELAY, STORAGE_KEYS } from '@/lib/constants';
 import type { Mock } from '@/types/migration';

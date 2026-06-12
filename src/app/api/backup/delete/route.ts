@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminStorageBucket } from '@/firebase/admin-storage';
+import { getAdminStorageBucket } from '@/supabase/admin-storage';
 import { verifyCallerRole } from '@/lib/admin-auth';
 import { isValidBackupFilename } from '@/lib/backup/types';
 

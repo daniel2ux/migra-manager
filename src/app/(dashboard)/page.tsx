@@ -6,7 +6,7 @@ import {
     addDocumentNonBlocking,
     deleteDocumentNonBlocking,
     updateDocumentNonBlocking,
-} from "@/firebase/non-blocking-updates";
+} from "@/supabase/mutations";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Loader2, Layout, Target } from "lucide-react";

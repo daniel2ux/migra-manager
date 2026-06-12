@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { collection, doc, serverTimestamp, setDoc, type Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { addDocumentNonBlocking } from '@/supabase/mutations';
 import { useEditLock } from '@/hooks/use-edit-lock';
 import { useToast } from '@/hooks/use-toast';
 import { formatStatDate, formatStatTime } from './use-dashboard-export';

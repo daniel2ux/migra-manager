@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Loader2, UserPlus, Search, Users, X } from "lucide-react";
-import { useFirestore, useStorage, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useStorage, useUser, useDoc, useMemoFirebase } from "@/supabase";
 import { doc } from "firebase/firestore";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";

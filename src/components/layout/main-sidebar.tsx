@@ -32,7 +32,7 @@ import {
     useDoc,
     useMemoFirebase,
     useCollection,
-} from "@/firebase";
+} from "@/supabase";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { doc, collection, query, where } from "firebase/firestore";

@@ -1,6 +1,9 @@
 import { isSupabaseEnvComplete, supabaseAnonKey, supabaseUrl } from '@/supabase/env';
 
-/** @deprecated Use supabase env vars */
+/** @deprecated Prefer isSupabaseEnvComplete from @/supabase/env */
+export const isFirebaseEnvComplete = isSupabaseEnvComplete;
+
+/** @deprecated Legacy alias for login diagnostics */
 export const firebaseConfig = {
   apiKey: supabaseAnonKey,
   authDomain: supabaseUrl,
@@ -9,5 +12,3 @@ export const firebaseConfig = {
   messagingSenderId: '',
   appId: '',
 };
-
-export const isFirebaseEnvComplete = isSupabaseEnvComplete;

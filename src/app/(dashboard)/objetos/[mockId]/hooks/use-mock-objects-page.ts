@@ -9,7 +9,7 @@ import {
   useFirestore,
   useMemoFirebase,
   useUser,
-} from '@/firebase';
+} from '@/supabase';
 import {
   collection,
   collectionGroup,

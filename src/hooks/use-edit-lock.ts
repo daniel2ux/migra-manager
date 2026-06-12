@@ -10,7 +10,7 @@ import {
   Timestamp,
   serverTimestamp,
 } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore } from '@/supabase';
 
 const LOCK_COLLECTION = 'editLocks';
 

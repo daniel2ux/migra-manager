@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore } from '@/supabase';
 import { useToast } from '@/hooks/use-toast';
 import type { BackupDestination } from '@/lib/backup/build-backup';
 import {

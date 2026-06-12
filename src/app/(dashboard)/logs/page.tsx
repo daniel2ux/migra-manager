@@ -6,7 +6,7 @@ import {
   collection, query, where, orderBy, limit, startAfter,
   getDocs, getCountFromServer, QueryDocumentSnapshot, Timestamp,
 } from "firebase/firestore";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
 import { doc } from "firebase/firestore";
 import type { MigrationLog, MigrationLogStatus, Project, UserProfile } from "@/types/migration";
 import { PageHeader } from "@/components/layout/page-header";

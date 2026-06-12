@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { doc, updateDoc } from "firebase/firestore";
-import { useFirestore, useAuth, useMemoFirebase } from "@/firebase/provider";
-import { useDoc } from "@/firebase/firestore/use-doc";
+import { useFirestore, useAuth, useMemoFirebase } from "@/supabase/provider";
+import { useDoc } from "@/supabase/hooks/use-doc";
 import { useFileAliases } from "@/hooks/use-file-aliases";
 import type { AppConfig } from "@/types/migration";
 import {

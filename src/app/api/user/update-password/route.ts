@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/firebase/admin';
+import { adminAuth, adminDb } from '@/supabase/admin';
 import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
 
 export async function POST(req: NextRequest) {

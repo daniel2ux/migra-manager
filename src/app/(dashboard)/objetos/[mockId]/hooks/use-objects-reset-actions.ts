@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { doc, serverTimestamp } from 'firebase/firestore';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/supabase/mutations';
 import type { MigrationObject } from '../types';
 
 interface UseObjectsResetActionsDeps {

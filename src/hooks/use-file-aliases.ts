@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc } from "firebase/firestore";
-import { useFirestore, useAuth } from "@/firebase/provider";
+import { useFirestore, useAuth } from "@/supabase/provider";
 import type { FileAlias } from "@/types/file-alias";
 
 function _validate(firestore: any): asserts firestore {

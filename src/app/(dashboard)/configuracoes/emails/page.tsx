@@ -5,7 +5,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useMemoFirebase, useDoc } from "@/firebase";
+import { useFirestore, useUser, useMemoFirebase, useDoc } from "@/supabase";
 import { doc } from "firebase/firestore";
 import { PageHeader } from "@/components/layout/page-header";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";

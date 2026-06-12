@@ -12,7 +12,7 @@ import {
   orderBy,
   query,
 } from "firebase/firestore";
-import { useFirestore, useUser } from "@/firebase/provider";
+import { useFirestore, useUser } from "@/supabase/provider";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
 import { doc, setDoc, type Firestore } from "firebase/firestore";
 import { PageHeader } from "@/components/layout/page-header";
 import { FileAliasesManager } from "@/components/configuracoes/file-aliases-manager";

@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { collection, doc, deleteDoc, setDoc } from "firebase/firestore";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { useUser } from "@/firebase/provider";
+import { useFirestore, useCollection, useMemoFirebase } from "@/supabase";
+import { useUser } from "@/supabase/provider";
 import type { EmailContact, EmailGroup, EmailRecipientSelection } from "@/types/email";
 import { getDocRef, validateUpsert, buildAuditData } from "@/lib/firestore-upsert";
 import type { Firestore } from "firebase/firestore";
