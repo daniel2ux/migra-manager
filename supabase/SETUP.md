@@ -23,6 +23,7 @@ Via Supabase Dashboard → SQL Editor, ou MCP/CLI:
 1. `20260612000001_initial_schema.sql`
 2. `20260612000002_rls_policies.sql`
 3. `20260612000003_catalogo_and_storage.sql`
+4. `20260612000004_rls_hardening.sql`
 
 ## 3. Buckets Storage
 
@@ -31,10 +32,12 @@ Criados pela migration `000003`: `avatars`, `signatures`, `backups`.
 ## 4. Usuário master
 
 ```bash
-node scripts/seed-master-user.mjs
+npm run db:seed-master
 ```
 
-Atualize `SUPERADMIN_UID` e `NEXT_PUBLIC_SUPERADMIN_UID` com o UUID impresso.
+O script grava automaticamente `SUPERADMIN_UID` e `NEXT_PUBLIC_SUPERADMIN_UID` no `.env.local`.
+
+**Login padrão:** `admin@migra.local` / `MigraMaster2026!`
 
 ## 5. Validar
 

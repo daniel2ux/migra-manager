@@ -10,7 +10,7 @@
  *   SUPABASE_SERVICE_ROLE_KEY
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
 
@@ -108,8 +108,29 @@ if (profileError) {
   process.exit(1);
 }
 
-console.log('\n--- Configure no .env.local ---');
-console.log(`SUPERADMIN_UID=${userId}`);
-console.log(`NEXT_PUBLIC_SUPERADMIN_UID=${userId}`);
+const uidVars = {
+  SUPERADMIN_UID: userId,
+  NEXT_PUBLIC_SUPERADMIN_UID: userId,
+};
+
+const envPath = resolve(process.cwd(), '.env.local');
+if (existsSync(envPath)) {
+  let lines = readFileSync(envPath, 'utf8').split(/\r?\n/);
+  for (const [key, value] of Object.entries(uidVars)) {
+    const prefix = `${key}=`;
+    const idx = lines.findIndex((l) => l.startsWith(prefix));
+    const entry = `${key}=${value}`;
+    if (idx >= 0) lines[idx] = entry;
+    else lines.push(entry);
+  }
+  writeFileSync(envPath, lines.join('\n').replace(/\n*$/, '\n'));
+  console.log('\n.env.local atualizado com SUPERADMIN_UID.');
+} else {
+  console.log('\n--- Configure no .env.local ---');
+  for (const [key, value] of Object.entries(uidVars)) {
+    console.log(`${key}=${value}`);
+  }
+}
+
 console.log('\nLogin:', email);
 console.log('Senha:', password);
