@@ -2,10 +2,10 @@
 
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useMemoFirebase, useCollection, useFirestore, useUser, useDoc } from '@/firebase';
-import type { WithId } from '@/firebase/firestore/use-collection';
+import type { WithId } from '@/supabase/hooks/types';
 import { collection, doc, collectionGroup, query, where, getDocs, orderBy, writeBatch, serverTimestamp, type Firestore } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
-import type { MigrationObject } from '@/types/migration';
+import type { MigrationObject, UserProfile } from '@/types/migration';
 import { useToast } from '@/hooks/use-toast';
 import { useObjectForm } from '@/hooks/use-object-form';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -55,7 +55,7 @@ function _defaultExtractChargeOrderDisplay(chargeOrder: string | number | undefi
 function useObjectsAuth(db: Firestore | null) {
   const { user } = useUser();
   const currentUserRef = useMemoFirebase(() => user ? doc(db!, 'users', user.uid) : null, [db, user]);
-  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc(currentUserRef);
+  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(currentUserRef);
   const isAdmin = !isProfileLoading && (
     (currentUserProfile?.role || '').toLowerCase() === 'admin' ||
     (currentUserProfile?.role || '').toLowerCase() === 'master' ||

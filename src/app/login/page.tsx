@@ -65,7 +65,8 @@ function LoginForm() {
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
-        const userData = userDoc.data();
+        const userData = userDoc.data() as { isDisabled?: boolean; mustChangePassword?: boolean } | undefined;
+        if (!userData) return;
 
         if (userData.isDisabled === true) {
           await signOut(auth as Auth);

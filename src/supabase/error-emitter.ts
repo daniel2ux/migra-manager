@@ -1,7 +1,7 @@
 'use client';
 import { FirestorePermissionError } from '@/supabase/errors';
 
-export interface AppEvents {
+export interface AppEvents extends Record<string, unknown> {
   'permission-error': FirestorePermissionError;
 }
 

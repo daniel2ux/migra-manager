@@ -1,8 +1,11 @@
 'use client';
 
+import { createSupabaseBrowserClient } from './client';
+
 export * from './provider';
-export * from './hooks/use-collection';
-export * from './hooks/use-doc';
+export { useCollection } from './hooks/use-collection';
+export { useDoc } from './hooks/use-doc';
+export type { WithId } from './hooks/types';
 export * from './mutations';
 export * from './errors';
 export * from './error-emitter';

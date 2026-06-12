@@ -115,14 +115,14 @@ export default function ProjetosPageContent() {
                     mocksByProj[projectId] = mocksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                     const projectSnap = await getDoc(doc(db as Firestore, "projects", projectId));
                     if (projectSnap.exists()) {
-                        const pData = projectSnap.data();
-                        if (pData.memberUids && pData.memberUids.length > 0) {
+                        const pData = projectSnap.data() as { memberUids?: string[] } | undefined;
+                        if (pData?.memberUids && pData.memberUids.length > 0) {
                             const memberSnaps = await Promise.all(
                                 pData.memberUids.map((uid: string) => getDoc(doc(db as Firestore, "users", uid)))
                             );
                             membersByProj[projectId] = memberSnaps
-                                .filter(s => s.exists())
-                                .map(s => ({ uid: s.id, ...s.data() }));
+                                .filter((s) => s.exists())
+                                .map((s) => ({ uid: s.id, ...s.data() }));
                         }
                     }
                 } catch { /* ignore */ }

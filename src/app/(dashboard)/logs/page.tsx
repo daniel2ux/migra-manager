@@ -168,7 +168,7 @@ export default function LogsPage() {
       const pageQ = query(coll, ...wheres, orderBy("importedAt", "desc"), ...(cursor ? [startAfter(cursor)] : []), limit(PAGE_SIZE + 1));
       const snap = await getDocs(pageQ);
       const docs = snap.docs; const more = docs.length > PAGE_SIZE;
-      setRows(docs.slice(0, PAGE_SIZE).map(d => ({ ...(d.data() as MigrationLog), id: d.id, _snap: d })));
+      setRows(docs.slice(0, PAGE_SIZE).map(d => ({ ...(d.data() as unknown as MigrationLog), id: d.id, _snap: d })));
       setHasNext(more);
       if (withCount) { const countQ = query(coll, ...wheres); getCountFromServer(countQ).then(s => setTotal(s.data().count)).catch(() => setTotal(null)); }
     } catch (err) {

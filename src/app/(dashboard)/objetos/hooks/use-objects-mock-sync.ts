@@ -76,7 +76,12 @@ export function useObjectsMockSync(db: any, selectedProjectId: string | null) {
       doc(db, 'projects', selectedProjectId, 'mocks', selectedMockId),
       (docSnap) => {
         if (docSnap.exists()) {
-          const data = docSnap.data();
+          const data = docSnap.data() as { name?: string; isLocked?: boolean; status?: string } | undefined;
+          if (!data) {
+            setSelectedMockName(null);
+            setIsMockLocked(false);
+            return;
+          }
           setSelectedMockName(data.name || null);
           setIsMockLocked((data.isLocked ?? false) || data.status === 'BLOQUEADO');
         } else {

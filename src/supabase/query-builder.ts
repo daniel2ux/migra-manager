@@ -23,7 +23,7 @@ export interface CollectionReference {
 
 export interface QueryConstraint {
   type: 'where' | 'orderBy' | 'limit';
-  field: string;
+  field?: string;
   op?: string;
   value?: unknown;
   direction?: 'asc' | 'desc';
@@ -152,7 +152,7 @@ function applyFilters(
     q = q.eq(f.column, f.value);
   }
   for (const c of constraints) {
-    if (c.type === 'where') {
+    if (c.type === 'where' && c.field) {
       const col = (toSnakeRow({ [c.field]: c.value }) as Record<string, unknown>)[c.field] as string ?? c.field;
       if (c.op === 'array-contains') {
         q = q.contains(col, [c.value]);

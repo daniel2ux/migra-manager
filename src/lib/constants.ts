@@ -23,8 +23,11 @@ export const FOCUS_RETURN_DELAY = 150;
 export const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
 export const MAX_FILE_SIZE_MB = 2;
 
-// Superadmin configuration
-export const SUPERADMIN_UID = '9sTbj0ERgMMVfaqDEZGluQ75EmG2';
+// Superadmin configuration (UUID do auth.users — ver scripts/seed-master-user.mjs)
+export const SUPERADMIN_UID =
+  process.env.NEXT_PUBLIC_SUPERADMIN_UID ??
+  process.env.SUPERADMIN_UID ??
+  '';
 
 // LocalStorage keys
 export const STORAGE_KEYS = {

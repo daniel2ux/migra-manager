@@ -7,8 +7,7 @@ import { toCamelRow } from '@/supabase/field-map';
 import { errorEmitter } from '@/supabase/error-emitter';
 import { FirestorePermissionError } from '@/supabase/errors';
 import { useSupabase } from '@/supabase/provider';
-
-export type WithId<T> = T & { id: string; __path: string };
+import type { WithId } from './types';
 
 export interface UseDocResult<T> {
   data: WithId<T> | null;

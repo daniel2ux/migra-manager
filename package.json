@@ -9,7 +9,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:seed-master": "node scripts/seed-master-user.mjs",
+    "db:configure-env": "node scripts/configure-supabase-env.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

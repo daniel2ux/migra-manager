@@ -18,15 +18,15 @@ npm install
 
 ### 2. Supabase
 
-1. Crie um projeto em [supabase.com](https://supabase.com)
-2. Aplique as migrations em `supabase/migrations/`
-3. Copie `.env.example` → `.env.local` e preencha as chaves
+Projeto configurado: **Migra** (`nisaukwqrdyomvrczwrf`, `sa-east-1`).
 
-```bash
-# Com Supabase CLI (opcional)
-supabase link --project-ref SEU_REF
-supabase db push
-```
+1. Copie `.env.example` → `.env.local`
+2. Configure variáveis: `node scripts/configure-supabase-env.mjs`
+3. Adicione `SUPABASE_SERVICE_ROLE_KEY` (Dashboard → Settings → API)
+4. Crie usuário master: `npm run db:seed-master`
+5. Guia completo: [`supabase/SETUP.md`](supabase/SETUP.md)
+
+Migrations em `supabase/migrations/` (inclui tabela `catalogo` e buckets Storage).
 
 ### 3. Dev server
 

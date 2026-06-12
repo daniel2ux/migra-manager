@@ -36,12 +36,18 @@ $$;
 CREATE OR REPLACE FUNCTION private.has_project_access(p_project_id UUID)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT private.is_admin_or_master()
-    OR p_project_id = ANY (SELECT project_ids FROM public.profiles WHERE id = auth.uid())
+    OR EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid() AND p_project_id = ANY (project_ids)
+    )
     OR EXISTS (
       SELECT 1 FROM public.project_members
       WHERE project_id = p_project_id AND user_id = auth.uid()
     )
-    OR auth.uid() = ANY (SELECT member_uids FROM public.projects WHERE id = p_project_id);
+    OR EXISTS (
+      SELECT 1 FROM public.projects
+      WHERE id = p_project_id AND auth.uid() = ANY (member_uids)
+    );
 $$;
 
 -- Enable RLS

@@ -29,10 +29,6 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', 'recharts', 'date-fns'],
   },
   // Next.js 16 não aceita mais `eslint` em next.config; use `npm run lint` no CI.
-  typescript: {
-    // Migração Supabase: shims Firestore geram casts estritos pendentes de refinamento
-    ignoreBuildErrors: true,
-  },
   transpilePackages: ['@genkit-ai/google-genai', 'genkit'],
   // Estabilizando o Build ID para evitar ChunkLoadErrors após deploys
   generateBuildId: async () => {

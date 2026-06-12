@@ -294,7 +294,7 @@ export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, 
                 body: JSON.stringify({
                     callerToken: token,
                     from: from || undefined,
-                    fromName: user.displayName || undefined,
+                    fromName: authUser?.displayName || undefined,
                     to: to.trim(),
                     subject,
                     html,

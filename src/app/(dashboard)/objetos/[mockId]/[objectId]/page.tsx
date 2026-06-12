@@ -47,7 +47,7 @@ export default function ObjectDetails() {
         const objSnap = await getDoc(objRef);
 
         if (objSnap.exists()) {
-          const data = objSnap.data() as MigrationObject;
+          const data = objSnap.data() as unknown as MigrationObject;
           data.id = objSnap.id;
           setObj(data);
         } else {

@@ -1,15 +1,23 @@
 export * from '@/supabase/query-builder';
-import { subscribeCollection, subscribeDoc, getDocs, getDoc, type CollectionReference, type DocumentReference, type Query } from '@/supabase/query-builder';
+import {
+  subscribeCollection,
+  subscribeDoc,
+  getDocs,
+  getDoc,
+  type CollectionReference,
+  type DocumentReference,
+  type Query,
+  type QueryConstraint,
+  type DocumentSnapshot,
+  type QuerySnapshot,
+} from '@/supabase/query-builder';
 import { toCamelRow } from '@/supabase/field-map';
 
 export type Firestore = import('@supabase/supabase-js').SupabaseClient;
 export type FirestoreError = Error & { code?: string };
 export type DocumentData = Record<string, unknown>;
-export type DocumentReference = import('@/supabase/query-builder').DocumentReference;
-export type CollectionReference = import('@/supabase/query-builder').CollectionReference;
-export type Query<T = CollectionReference> = import('@/supabase/query-builder').Query<T>;
-export type DocumentSnapshot<T = DocumentData> = import('@/supabase/query-builder').DocumentSnapshot<T>;
-export type QuerySnapshot<T = DocumentData> = import('@/supabase/query-builder').QuerySnapshot<T>;
+export type { CollectionReference, DocumentReference, Query, DocumentSnapshot, QuerySnapshot, QueryConstraint };
+
 export type QueryDocumentSnapshot<T = DocumentData> = import('@/supabase/query-builder').QueryDocumentSnapshot<T>;
 
 export class Timestamp {
@@ -66,8 +74,6 @@ export function startAfter(_doc: QueryDocumentSnapshot): QueryConstraint {
   return { type: 'where', field: '__startAfter', op: '>', value: _doc.id };
 }
 
-type QueryConstraint = import('@/supabase/query-builder').QueryConstraint;
-
 export async function getCountFromServer(ref: CollectionReference | Query<CollectionReference>) {
   const snap = await getDocs(ref);
   return { data: () => ({ count: snap.size }) };
@@ -85,9 +91,10 @@ export function onSnapshot(
 ): () => void;
 export function onSnapshot(
   ref: DocumentReference | CollectionReference | Query<CollectionReference>,
-  onNext: (snap: DocumentSnapshot | QuerySnapshot) => void,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- overload impl must accept both snapshot shapes
+  onNext: (snap: any) => void,
   onError?: (err: Error) => void,
-) {
+): () => void {
   const isCollection = '_segments' in (ref as CollectionReference);
   const isQuery = '_constraints' in (ref as Query<CollectionReference>);
 
@@ -116,7 +123,7 @@ export function onSnapshot(
     (rows) => {
       const docs = rows.map((row) => {
         const id = String((row as Record<string, unknown>).id ?? '');
-        const docRef = { ...colRef, path: `${colRef.path}/${id}`, id } as DocumentReference;
+        const docRef = { ...colRef, path: `${colRef.path}/${id}`, id } as unknown as DocumentReference;
         const camel = toCamelRow(row as Record<string, unknown>);
         return {
           id,

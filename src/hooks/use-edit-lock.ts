@@ -23,6 +23,23 @@ class LockConflictError extends Error {
 }
 const LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+interface EditLockData {
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  lockedAt?: { toMillis?: () => number } | string | number;
+}
+
+function getLockedAtMs(lockedAt: EditLockData['lockedAt']): number {
+  if (!lockedAt) return 0;
+  if (typeof lockedAt === 'object' && typeof lockedAt.toMillis === 'function') {
+    return lockedAt.toMillis();
+  }
+  if (typeof lockedAt === 'string') return new Date(lockedAt).getTime();
+  if (typeof lockedAt === 'number') return lockedAt;
+  return 0;
+}
+
 export interface EditLockState {
   /** True when the currently-watched resource is locked by another user */
   isLockedByOther: boolean;
@@ -78,8 +95,12 @@ export function useEditLock(
           setState({ isLockedByOther: false, lockedByName: null });
           return;
         }
-        const data = snap.data();
-        const lockedAt: number = data.lockedAt?.toMillis?.() ?? 0;
+        const data = snap.data() as EditLockData | undefined;
+        if (!data) {
+          setState({ isLockedByOther: false, lockedByName: null });
+          return;
+        }
+        const lockedAt = getLockedAtMs(data.lockedAt);
         const isExpired = Date.now() - lockedAt > LOCK_TTL_MS;
 
         if (isExpired || data.userId === userId) {
@@ -113,8 +134,9 @@ export function useEditLock(
         await runTransaction(db, async (tx) => {
           const snap = await tx.get(lockRef);
           if (snap.exists()) {
-            const data = snap.data();
-            const lockedAt: number = data.lockedAt?.toMillis?.() ?? 0;
+            const data = snap.data() as EditLockData | undefined;
+            if (!data) return;
+            const lockedAt = getLockedAtMs(data.lockedAt);
             const isExpired = Date.now() - lockedAt > LOCK_TTL_MS;
             
             if (!isExpired && data.userId !== userId && !force) {
@@ -125,8 +147,8 @@ export function useEditLock(
                 try {
                   const userSnap = await tx.get(doc(db, 'users', data.userId));
                   if (userSnap.exists()) {
-                    const userData = userSnap.data();
-                    blockerName = userData.name || userData.email || 'Outro usuário';
+                    const userData = userSnap.data() as { name?: string; email?: string } | undefined;
+                    blockerName = userData?.name || userData?.email || 'Outro usuário';
                   }
                 } catch {
                   // Ignore fetch error, use default
