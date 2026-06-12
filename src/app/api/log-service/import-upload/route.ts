@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/supabase/admin';
 import { verifyAdminOrMaster } from '@/lib/auth-server';
-import { randomUUID } from 'crypto';
 import { getParser, errDedupKey } from '@/lib/log-parser';
 import { deleteBatch } from '@/lib/admin-batch';
 

@@ -50,13 +50,6 @@ export function calculateMockTotalDuration(
 }
 
 /**
- * Verifica se a mock possui duração registrada
- */
-export function hasMockDuration(mock: Mock, objects?: MigrationObject[]): boolean {
-  return calculateMockTotalDuration(mock, objects) > 0;
-}
-
-/**
  * Verifica se a mock está bloqueada (por flag ou status)
  */
 export function isMockLocked(mock: Mock): boolean {

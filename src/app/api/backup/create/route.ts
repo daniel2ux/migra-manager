@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/firebase/admin';
 import { verifyCallerRole } from '@/lib/admin-auth';
 import { getBackupApiError } from '@/lib/backup/api-errors';
 import {
@@ -64,7 +63,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await uploadBackupToStorage(buffer, metadata, { backupType: 'full' });
+    await uploadBackupToStorage(buffer, metadata);
 
     return NextResponse.json(
       { success: true, filename, metadata },

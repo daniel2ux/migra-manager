@@ -4,7 +4,6 @@ import { verifyAdminOrMaster } from '@/lib/auth-server';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { randomUUID } from 'crypto';
 import { getParser, errDedupKey } from '@/lib/log-parser';
 import { deleteBatch } from '@/lib/admin-batch';
 

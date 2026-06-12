@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/firebase/admin';
 import { getAdminStorageBucket } from '@/firebase/admin-storage';
 import { verifyCallerRole } from '@/lib/admin-auth';
 import { restoreCollections } from '@/lib/backup/importer';

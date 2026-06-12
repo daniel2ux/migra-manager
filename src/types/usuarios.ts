@@ -53,23 +53,9 @@ export interface ResetPasswordResult {
   tempPassword: string;
 }
 
-export const ROLE_COLORS: Record<UserRole, string> = {
-  master: "bg-violet-600 text-white shadow-xs",
-  admin: "bg-SkyBlue-500 text-white shadow-xs",
-  especialista: "bg-slate-900 text-white shadow-xs",
-  membro: "bg-slate-100 text-slate-500",
-};
-
 export const ROLE_LABELS: Record<UserRole, string> = {
   master: "Master",
   admin: "Governança",
   especialista: "Especialista",
   membro: "Consultoria",
-};
-
-export const ROLE_BORDER_COLORS: Record<UserRole, string> = {
-  master: "border-violet-500/20 bg-violet-500",
-  admin: "border-SkyBlue-500/20 bg-SkyBlue-500",
-  especialista: "border-emerald-500/20 bg-emerald-400",
-  membro: "border-emerald-500/20 bg-emerald-400",
 };

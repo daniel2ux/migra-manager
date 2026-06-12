@@ -84,14 +84,6 @@ async function fetchErrorExportDataInternal(db: any, objects: ErrorObj[]): Promi
 }
 
 /**
- * Busca sumários de erro para objetos com falhas na carga
- */
-export async function fetchErrorSummaries(db: any, objects: ErrorObj[]): Promise<ErrorEmailRow[]> {
-  const { summaries } = await fetchErrorExportDataInternal(db, objects);
-  return summaries;
-}
-
-/**
  * Sumário + linhas de detalhe (cada registro importado) para planilha com abas por tipo de erro.
  */
 export async function fetchErrorExportData(

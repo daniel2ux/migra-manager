@@ -67,11 +67,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await uploadBackupToStorage(buffer, metadata, {
-      backupType: 'mock',
-      mockId,
-      mockName,
-    });
+    await uploadBackupToStorage(buffer, metadata);
 
     return NextResponse.json(
       {
