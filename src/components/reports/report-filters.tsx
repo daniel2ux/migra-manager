@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { Filter, Box, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +22,8 @@ interface ReportFiltersProps {
   selectedMockId: string;
   projects: any[] | null;
   projectMocks: any[] | null;
+  onProjectChange: (val: string) => void;
+  onMockChange: (val: string) => void;
 }
 
 export function ReportFilters({
@@ -30,36 +31,22 @@ export function ReportFilters({
   selectedMockId,
   projects,
   projectMocks,
+  onProjectChange,
+  onMockChange,
 }: ReportFiltersProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const handleProjectChange = (val: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("projectId", val);
-    params.set("mockId", "all");
-    router.replace(`/relatorios?${params.toString()}`);
-  };
-
-  const handleMockChange = (val: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("mockId", val);
-    router.replace(`/relatorios?${params.toString()}`);
-  };
-
   const handlePrint = () => window.print();
 
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex items-center gap-1 bg-slate-50 p-1 border border-slate-100">
-        <ProjectSelector value={selectedProjectId} onChange={handleProjectChange} projects={projects} />
+        <ProjectSelector value={selectedProjectId} onChange={onProjectChange} projects={projects} />
 
         <div className="w-px h-4 bg-slate-200" />
 
         <div className={cn("flex items-center", selectedProjectId === "all" && "opacity-30 grayscale pointer-events-none")}>
           <MockSelector
             value={selectedMockId}
-            onChange={handleMockChange}
+            onChange={onMockChange}
             projectMocks={projectMocks}
             disabled={selectedProjectId === "all"}
           />

@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useSelection } from '@/context/selection-context';
+import { useParams, useRouter } from 'next/navigation';
+import { useActiveProjectId } from '@/hooks/use-active-project-id';
 import { ArrowLeft, Box, Calendar, Clock, Database, Gauge, BarChart, CheckCircle2, Loader2, Info, History } from 'lucide-react';
 import { useDb } from '@/supabase';
 import { doc, getDoc } from '@/supabase/compat-db-shim';
@@ -14,9 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function ObjectDetails() {
   const { mockId, objectId } = useParams() as { mockId: string, objectId: string };
-  const searchParams = useSearchParams();
-  const { selectedProjectId } = useSelection();
-  const projectId = searchParams.get('projectId') || selectedProjectId;
+  const { projectId: activeProjectId } = useActiveProjectId();
+  const projectId = activeProjectId;
   const router = useRouter();
   const db = useDb();
 

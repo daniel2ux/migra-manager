@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Mail, Lock, Loader2, Zap, Eye, EyeOff, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -10,11 +10,11 @@ import { useAuth, useDb } from '@/supabase';
 import { isSupabaseEnvComplete } from '@/supabase/env';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, Auth } from '@/supabase/auth-shim';
 import { doc, getDoc, type CompatDb } from '@/supabase/compat-db-shim';
+import { consumeLoginFlash, stripNavigationQueryParams } from '@/lib/auth/app-session';
 
 
 function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
   const db = useDb();
@@ -26,11 +26,12 @@ function LoginForm() {
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const reason = searchParams.get('reason');
-    if (reason === 'session_ended') {
+    stripNavigationQueryParams();
+    const flash = consumeLoginFlash();
+    if (flash === 'session_ended') {
       setInfoMessage('Sessão encerrada com sucesso.');
     }
-  }, [searchParams]);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

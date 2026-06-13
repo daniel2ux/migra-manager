@@ -22,7 +22,12 @@ import { ReportLoading, ReportEmptyState } from "@/components/reports/report-sta
 import { printStyles } from "@/lib/print-styles";
 
 function RelatoriosContent() {
-    const { selectedProjectId, selectedMockId } = useReportFilters();
+    const {
+        selectedProjectId,
+        selectedMockId,
+        setSelectedProjectId,
+        setSelectedMockId,
+    } = useReportFilters();
     const { isLoading: isProfileLoading, isAdmin } = useUserProfile();
     const { projects, isLoading: isProjectsLoading, accessibleProjectIds } = useProjects(isAdmin, isProfileLoading);
     const { projectMocks } = useRunningMock(selectedProjectId, selectedMockId);
@@ -76,6 +81,8 @@ function RelatoriosContent() {
                             selectedMockId={selectedMockId}
                             projects={projects}
                             projectMocks={projectMocks}
+                            onProjectChange={setSelectedProjectId}
+                            onMockChange={setSelectedMockId}
                         />
                     }
                 />

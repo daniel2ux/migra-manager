@@ -51,5 +51,8 @@ supabase/.temp/
 firebase-debug.log
 firestore-debug.log
 
-.agent/
-.qwen/settings.json
+# local dev/diagnostic scripts (not part of the app)
+scripts/diagnose-*.mjs
+scripts/fix-*.mjs
+scripts/test-*.mjs
+

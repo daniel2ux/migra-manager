@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { safeRouterReplace } from "@/lib/navigation/safe-router";
+import { SESSION_KEYS } from "@/lib/constants";
 
-const STORAGE_KEY = "migra_last_selected_project";
-const SELECTION_PROJECT_KEY = "migra_sel_project";
-const SELECTION_MOCK_KEY = "migra_sel_mock";
 export const PROJECT_CHANGED_EVENT = "migra_project_changed";
 
 function normalizeProjectId(id: string | null | undefined): string | null {
@@ -16,19 +12,19 @@ function normalizeProjectId(id: string | null | undefined): string | null {
 
 function readStoredProjectId(): string | null {
   if (typeof window === "undefined") return null;
-  return normalizeProjectId(sessionStorage.getItem(STORAGE_KEY));
+  return normalizeProjectId(sessionStorage.getItem(SESSION_KEYS.ACTIVE_PROJECT));
 }
 
 function persistProjectId(id: string | null): void {
   if (typeof window === "undefined") return;
   if (id) {
-    sessionStorage.setItem(STORAGE_KEY, id);
-    sessionStorage.setItem(SELECTION_PROJECT_KEY, id);
-    sessionStorage.removeItem(SELECTION_MOCK_KEY);
+    sessionStorage.setItem(SESSION_KEYS.ACTIVE_PROJECT, id);
+    sessionStorage.setItem(SESSION_KEYS.SEL_PROJECT, id);
+    sessionStorage.removeItem(SESSION_KEYS.SEL_MOCK);
   } else {
-    sessionStorage.removeItem(STORAGE_KEY);
-    sessionStorage.removeItem(SELECTION_PROJECT_KEY);
-    sessionStorage.removeItem(SELECTION_MOCK_KEY);
+    sessionStorage.removeItem(SESSION_KEYS.ACTIVE_PROJECT);
+    sessionStorage.removeItem(SESSION_KEYS.SEL_PROJECT);
+    sessionStorage.removeItem(SESSION_KEYS.SEL_MOCK);
   }
 }
 
@@ -38,25 +34,14 @@ function broadcastProjectChange(id: string | null): void {
 
 /**
  * Hook para gerenciar o ID do projeto ativo de forma reativa.
- * Sincroniza entre URL, SessionStorage e eventos customizados.
+ * Persiste apenas em sessionStorage (por aba) — sem parâmetros na URL.
  */
 export function useActiveProjectId() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const urlProjectId = normalizeProjectId(searchParams?.get("projectId"));
+  const [projectId, setProjectId] = useState<string | null>(null);
 
-  const [projectId, setProjectId] = useState<string | null>(urlProjectId);
-
-  // URL primeiro; sessionStorage só após mount (evita hydration mismatch no SSR).
   useEffect(() => {
-    if (urlProjectId) {
-      setProjectId(urlProjectId);
-      persistProjectId(urlProjectId);
-      return;
-    }
     setProjectId(readStoredProjectId());
-  }, [urlProjectId]);
+  }, []);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -67,39 +52,19 @@ export function useActiveProjectId() {
     return () => window.removeEventListener(PROJECT_CHANGED_EVENT, handler);
   }, []);
 
-  const updateActiveProject = useCallback(
-    (id: string | null) => {
-      if (typeof window === "undefined") return;
+  const updateActiveProject = useCallback((id: string | null) => {
+    if (typeof window === "undefined") return;
 
-      const normalized = normalizeProjectId(id);
-      persistProjectId(normalized);
-      setProjectId(normalized);
-
-      // Notifica sidebar, dashboard e SelectionContext antes da navegação
-      broadcastProjectChange(normalized);
-
-      const base = pathname || "/";
-      const params = new URLSearchParams(searchParams?.toString() ?? "");
-      const prevProjectId = params.get("projectId");
-      if (normalized) {
-        params.set("projectId", normalized);
-        if (prevProjectId !== normalized) params.delete("mockId");
-      } else {
-        params.delete("projectId");
-        params.delete("mockId");
-      }
-      const qs = params.toString();
-      safeRouterReplace(router, qs ? `${base}?${qs}` : base, { scroll: false });
-    },
-    [pathname, router, searchParams],
-  );
+    const normalized = normalizeProjectId(id);
+    persistProjectId(normalized);
+    setProjectId(normalized);
+    broadcastProjectChange(normalized);
+  }, []);
 
   return { projectId, updateActiveProject, isAll: !projectId };
 }
 
-/**
- * Helper para atualizar projeto fora de hooks (ex: callbacks)
- */
+/** Helper para atualizar projeto fora de hooks (ex: callbacks) */
 export function dispatchProjectChange(id: string | null): void {
   if (typeof window === "undefined") return;
   const normalized = normalizeProjectId(id);

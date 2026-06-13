@@ -12,12 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ActivityGroupChipTooltip } from "@/components/shared/activity-group-chip-tooltip";
 import {
   Select,
   SelectContent,
@@ -322,31 +318,24 @@ export function EditObjectDialog({
                       {activityGroups.map((g) => {
                         const isSelected = formDraft.activityGroupIds.includes(g.id);
                         return (
-                          <Tooltip key={g.id}>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                disabled={!isAdmin || isMockLocked}
-                                onClick={() => {
-                                  const ids = isSelected
-                                    ? formDraft.activityGroupIds.filter(id => id !== g.id)
-                                    : [...formDraft.activityGroupIds, g.id];
-                                  patchForm({ activityGroupIds: ids });
-                                }}
-                                className={cn(
-                                  "fiori-chip",
-                                  isSelected && "fiori-chip--outline fiori-chip-selected",
-                                )}
-                                style={isSelected ? { borderColor: g.color, color: g.color } : undefined}
-                              >
-                                {g.name}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" align="start" variant="fiori" className="max-w-xs">
-                              <p className="font-semibold">{g.name}</p>
-                              {g.description && <p className="text-[var(--fiori-label)] mt-0.5">{g.description}</p>}
-                            </TooltipContent>
-                          </Tooltip>
+                          <ActivityGroupChipTooltip key={g.id} group={g}>
+                            <button
+                              type="button"
+                              disabled={!isAdmin || isMockLocked}
+                              onClick={() => {
+                                const ids = isSelected
+                                  ? formDraft.activityGroupIds.filter(id => id !== g.id)
+                                  : [...formDraft.activityGroupIds, g.id];
+                                patchForm({ activityGroupIds: ids });
+                              }}
+                              className={cn(
+                                "fiori-chip",
+                                isSelected && "fiori-chip-selected",
+                              )}
+                            >
+                              {g.name}
+                            </button>
+                          </ActivityGroupChipTooltip>
                         );
                       })}
                     </div>

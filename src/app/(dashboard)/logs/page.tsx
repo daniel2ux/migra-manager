@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   collection, query, where, orderBy, limit, startAfter,
   getDocs, getCountFromServer, QueryDocumentSnapshot, Timestamp,
@@ -25,7 +24,9 @@ import type { ErrorEmailRow } from "@/components/email/email-compose-dialog";
 import { LogFilterPanel } from "@/components/logs/log-filter-panel";
 import { LogSummaryTable } from "@/components/logs/log-summary-table";
 import { LogDetailModal } from "@/components/logs/log-detail-modal";
-import { useLocalStorageState } from "@/hooks/use-local-storage-state";
+import { useActiveProjectId } from "@/hooks/use-active-project-id";
+import { useSessionStorageState } from "@/hooks/use-session-storage-state";
+import { SESSION_KEYS } from "@/lib/constants";
 
 type LogRow = MigrationLog & { _snap: QueryDocumentSnapshot };
 interface Filters { object: string; mock: string; status: MigrationLogStatus | ""; dateFrom: string; dateTo: string; }
@@ -57,10 +58,8 @@ function buildWhereConstraints(f: Filters, projectId: string, mockMap: Record<st
 }
 
 export default function LogsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const page = Math.max(1, Number(searchParams.get("page")) || 1);
-  const projectIdFromUrl = searchParams.get("projectId") ?? "";
+  const [page, setPage] = useSessionStorageState<number>(SESSION_KEYS.LOGS_PAGE, 1);
+  const { projectId: activeProjectId } = useActiveProjectId();
   const db = useDb();
   const { user } = useUser();
 
@@ -83,29 +82,17 @@ export default function LogsPage() {
   const [viewMode, setViewMode] = useState<'summary' | 'detail'>('summary');
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
-  // Sync with dashboard's selected mock (uses same localStorage key)
-  const [dashboardMockId, setDashboardMockId] = useLocalStorageState<string>(
-    "dashboard_last_mock_id",
+  const [dashboardMockId, setDashboardMockId] = useSessionStorageState<string>(
+    SESSION_KEYS.DASHBOARD_MOCK,
     "all"
   );
-  const [dashboardProjectId] = useLocalStorageState<string>(
-    "dashboard_last_project_id",
-    "all"
-  );
-  const projectId = projectIdFromUrl || (dashboardProjectId !== "all" ? dashboardProjectId : "");
+  const projectId = activeProjectId ?? "";
 
   const projectDocRef = useMemoDb(
     () => (projectId ? doc(db!, "projects", projectId) : null),
     [db, projectId],
   );
   const { data: projectData } = useDoc<Project>(projectDocRef);
-
-  useEffect(() => {
-    if (projectIdFromUrl || !projectId) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("projectId", projectId);
-    router.replace(`?${params.toString()}`);
-  }, [projectIdFromUrl, projectId, searchParams, router]);
 
   // Load mocks for project and sync with dashboard selection
   useEffect(() => {
@@ -180,8 +167,7 @@ export default function LogsPage() {
 
   const handlePageChange = (nextPage: number) => {
     if (nextPage < 1 || (nextPage > page && !hasNext)) return;
-    const params = new URLSearchParams(searchParams.toString()); params.set("page", String(nextPage));
-    router.push(`?${params.toString()}`);
+    setPage(nextPage);
     let cursor: QueryDocumentSnapshot | null = null;
     if (nextPage > 1) {
       if (nextPage === page + 1) { cursor = rows[rows.length - 1]._snap; setPageCursors(prev => ({ ...prev, [nextPage]: cursor })); }
@@ -192,13 +178,13 @@ export default function LogsPage() {
 
   const handleSearch = () => {
     setTotal(null); setHasSearched(true); setPageCursors({ 1: null });
-    if (page !== 1) { const params = new URLSearchParams(searchParams.toString()); params.set("page", "1"); router.push(`?${params.toString()}`); }
+    if (page !== 1) setPage(1);
     execQuery(draft, null, true);
   };
 
   const handleClear = () => {
     setDraft(EMPTY); setTotal(null); setRows([]); setTextSearch(""); setHasSearched(false); setPageCursors({ 1: null });
-    if (page !== 1) { const params = new URLSearchParams(searchParams.toString()); params.delete("page"); router.push(`?${params.toString()}`); }
+    if (page !== 1) setPage(1);
   };
 
   const toggleExpanded = (key: string) => { setExpandedKeys(prev => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next; }); };

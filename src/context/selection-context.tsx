@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { PROJECT_CHANGED_EVENT } from '@/hooks/use-active-project-id';
+import { SESSION_KEYS } from '@/lib/constants';
 
 interface SelectionContextType {
   selectedProjectId: string | null;
@@ -15,8 +16,8 @@ const SelectionContext = createContext<SelectionContextType | undefined>(undefin
 function readInitialProjectId(): string | null {
   if (typeof window === 'undefined') return null;
   return (
-    sessionStorage.getItem('migra_sel_project') ||
-    sessionStorage.getItem('migra_last_selected_project')
+    sessionStorage.getItem(SESSION_KEYS.SEL_PROJECT) ||
+    sessionStorage.getItem(SESSION_KEYS.ACTIVE_PROJECT)
   );
 }
 
@@ -26,7 +27,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedProject = readInitialProjectId();
-    const savedMock = sessionStorage.getItem('migra_sel_mock');
+    const savedMock = sessionStorage.getItem(SESSION_KEYS.SEL_MOCK);
     if (savedProject) setSelectedProjectId(savedProject);
     if (savedMock) setSelectedMockId(savedMock);
   }, []);
@@ -45,18 +46,19 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     setSelectedProjectId(projectId);
     setSelectedMockId(mockId);
 
-    if (projectId) sessionStorage.setItem('migra_sel_project', projectId);
-    else sessionStorage.removeItem('migra_sel_project');
+    if (projectId) sessionStorage.setItem(SESSION_KEYS.SEL_PROJECT, projectId);
+    else sessionStorage.removeItem(SESSION_KEYS.SEL_PROJECT);
 
-    if (mockId) sessionStorage.setItem('migra_sel_mock', mockId);
-    else sessionStorage.removeItem('migra_sel_mock');
+    if (mockId) sessionStorage.setItem(SESSION_KEYS.SEL_MOCK, mockId);
+    else sessionStorage.removeItem(SESSION_KEYS.SEL_MOCK);
   }, []);
 
   const clearSelection = useCallback(() => {
     setSelectedProjectId(null);
     setSelectedMockId(null);
-    sessionStorage.removeItem('migra_sel_project');
-    sessionStorage.removeItem('migra_sel_mock');
+    sessionStorage.removeItem(SESSION_KEYS.SEL_PROJECT);
+    sessionStorage.removeItem(SESSION_KEYS.SEL_MOCK);
+    sessionStorage.removeItem(SESSION_KEYS.ACTIVE_PROJECT);
   }, []);
 
   return (

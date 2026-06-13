@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import {
     Tooltip,
     TooltipContent,
+    TooltipProvider,
     TooltipTrigger
 } from "@/components/ui/tooltip";
 import {
@@ -40,6 +41,7 @@ import {
 import { cn } from "@/lib/utils";
 import { isValidSequence, normalizeSeqForDisplay, isObjectParallelLoad } from "@/lib/migration/sequence-utils";
 import { ActivityGroupBadges } from "@/components/shared/activity-group-badges";
+import { ActivityGroupChipTooltip } from "@/components/shared/activity-group-chip-tooltip";
 import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
 import type { ChargeGroup } from "@/types/charge-group";
@@ -373,15 +375,18 @@ function CardActivityGroupsControl({
         return <ActivityGroupBadges groupIds={groupIds} allGroups={allGroups} maxVisible={2} />;
     }
 
+    const [pickerOpen, setPickerOpen] = useState(false);
+
     const toggleGroup = (groupId: string) => {
         const next = selectedIds.includes(groupId)
             ? selectedIds.filter((id) => id !== groupId)
             : [...selectedIds, groupId];
         onChange(next);
+        setPickerOpen(false);
     };
 
     return (
-        <Popover>
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger asChild>
                 <button
                     type="button"
@@ -409,16 +414,17 @@ function CardActivityGroupsControl({
                 onClick={stopCardEvent}
                 onOpenAutoFocus={(e) => e.preventDefault()}
             >
+                <TooltipProvider delayDuration={200}>
                 <div className="fiori-activity-groups-picker-grid" role="listbox" aria-label="Grupos de atividade" aria-multiselectable>
                     {allGroups.map((g) => {
                         const isSelected = selectedIds.includes(g.id);
                         return (
+                            <div key={g.id} className="fiori-activity-groups-picker-cell">
+                            <ActivityGroupChipTooltip group={g} elevated>
                             <button
-                                key={g.id}
                                 type="button"
                                 role="option"
                                 aria-selected={isSelected}
-                                title={g.description?.trim() ? `${g.name} — ${g.description.trim()}` : g.name}
                                 onClick={() => toggleGroup(g.id)}
                                 className={cn(
                                     "fiori-activity-group-pick-badge",
@@ -437,9 +443,12 @@ function CardActivityGroupsControl({
                                 />
                                 <span className="fiori-activity-group-pick-badge-label">{g.name}</span>
                             </button>
+                            </ActivityGroupChipTooltip>
+                            </div>
                         );
                     })}
                 </div>
+                </TooltipProvider>
             </PopoverContent>
         </Popover>
     );

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, useUser, useDb, useDoc, useMemoDb } from "@/supabase";
-import { signOut } from "@/supabase/auth-shim";
+import { signOutAndRedirect } from "@/lib/auth/sign-out";
 import { doc } from "@/supabase/compat-db-shim";
 import type { UserProfile } from "@/types/migration";
 import { PASSWORD_MIN_LENGTH, validatePasswordPolicy } from "@/lib/security/password-policy";
@@ -53,8 +53,7 @@ export default function ChangePasswordPage() {
 
   const handleSignOut = async () => {
     if (!auth) return;
-    await signOut(auth);
-    router.replace("/login?reason=session_ended");
+    await signOutAndRedirect(auth, router);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -106,8 +105,7 @@ export default function ChangePasswordPage() {
       const message =
         error instanceof Error ? error.message : "Não foi possível alterar a senha no momento.";
       if (message === "Sessão inválida. Faça login novamente.") {
-        if (auth) await signOut(auth);
-        router.replace("/login");
+        if (auth) await signOutAndRedirect(auth, router);
       } else {
         toast({
           variant: "destructive",

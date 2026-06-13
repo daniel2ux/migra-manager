@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useUsersData } from "@/hooks/use-users-data";
+import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { AccessDeniedScreen } from "@/components/usuarios";
 import { cn } from "@/lib/utils";
 import type { Project, Mock } from "@/types/migration";
@@ -78,6 +79,7 @@ export default function ClonarProjetoPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const { isAdmin, isProfileLoading } = useUsersData("");
+  const { projectId: activeProjectId } = useActiveProjectId();
 
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
@@ -101,28 +103,24 @@ export default function ClonarProjetoPage() {
     description: ""
   });
 
-  // Auto-select project from URL if present
+  // Pré-seleciona projeto ativo da sessão, se disponível
   useEffect(() => {
-    const handleUrlProject = async () => {
-      if (!db) return;
-      const params = new URLSearchParams(window.location.search);
-      const urlProjectId = params.get("projectId");
-      if (urlProjectId && !selectedProject) {
-        try {
-          const docRef = doc(db, "projects", urlProjectId);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const proj = { id: docSnap.id, ...docSnap.data() } as Project;
-            setSelectedProject(proj);
-            setStep(2);
-          }
-        } catch (error) {
-          console.error("Erro ao carregar projeto da URL:", error);
+    const handleActiveProject = async () => {
+      if (!db || !activeProjectId || selectedProject) return;
+      try {
+        const docRef = doc(db, "projects", activeProjectId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const proj = { id: docSnap.id, ...docSnap.data() } as Project;
+          setSelectedProject(proj);
+          setStep(2);
         }
+      } catch (error) {
+        console.error("Erro ao carregar projeto ativo:", error);
       }
     };
-    handleUrlProject();
-  }, [db, selectedProject]);
+    void handleActiveProject();
+  }, [db, activeProjectId, selectedProject]);
 
   const fetchProjects = useCallback(async (filter?: string) => {
     if (!db) return;

@@ -12,6 +12,39 @@ export function normalizeChargeGroupName(name: string): string {
   return (name || '').trim().toUpperCase();
 }
 
+/** Primeiro grupo com o mesmo nome normalizado, excluindo um ID (edição). */
+export function findChargeGroupNameConflict(
+  groups: Pick<ChargeGroup, 'id' | 'name'>[] | null | undefined,
+  name: string,
+  excludeId?: string,
+): Pick<ChargeGroup, 'id' | 'name'> | undefined {
+  const key = normalizeChargeGroupName(name);
+  if (!key) return undefined;
+  return groups?.find(
+    (g) => normalizeChargeGroupName(g.name) === key && g.id !== excludeId,
+  );
+}
+
+export function isChargeGroupNameDuplicateError(err: unknown): boolean {
+  const code = (err as { code?: string })?.code;
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  return (
+    code === '23505' ||
+    code === 'CHARGE_GROUP_NAME_CONFLICT' ||
+    message.includes('idx_charge_groups_name_upper')
+  );
+}
+
+export function chargeGroupNameConflictMessage(name: string): string {
+  return `Já existe um grupo de objetos com o nome "${normalizeChargeGroupName(name)}". Escolha outro nome.`;
+}
+
+export function throwChargeGroupNameConflict(name: string): never {
+  throw Object.assign(new Error(chargeGroupNameConflictMessage(name)), {
+    code: "CHARGE_GROUP_NAME_CONFLICT",
+  });
+}
+
 /** União de `objectIds` do grupo + objetos com `chargeGroup` igual ao nome do grupo. */
 export function resolveChargeGroupMemberIds(
   group: Pick<ChargeGroup, 'name' | 'objectIds'>,

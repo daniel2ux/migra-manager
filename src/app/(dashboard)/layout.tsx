@@ -1,12 +1,12 @@
 "use client";
 
+import { useEffect, useCallback, useState, Suspense } from "react";
 import { MainSidebar, SidebarContent, UserMenu } from "@/components/layout/main-sidebar";
 import { useUser, useDb, useMemoDb, useDoc } from "@/supabase";
 import { UserProfile } from "@/types/migration";
 import { doc } from "@/supabase/compat-db-shim";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import React, { useCallback, useEffect, useState, Suspense } from "react";
 import { usePresence } from "@/hooks/use-presence";
 import { Loader2, Menu, Zap, LogOut, X } from "lucide-react";
 import { DashboardHomeLink } from "@/components/layout/dashboard-home-link";
@@ -29,32 +29,14 @@ import {
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { MandatoryProjectPicker } from "@/components/layout/mandatory-project-picker";
 import { safeRouterPush } from "@/lib/navigation/safe-router";
+import { stripNavigationQueryParams } from "@/lib/auth/app-session";
+import { SESSION_KEYS } from "@/lib/constants";
+import { PROJECT_CHANGED_EVENT } from "@/hooks/use-active-project-id";
 
-/**
- * Micro-componente para ler searchParams e sincronizar com o estado do layout.
- * Isolado em Suspense para não desmontar o Sheet.
- */
-function SearchParamsSync({
-    onProjectIdChange,
-}: {
-    onProjectIdChange: (id: string | null) => void;
-}) {
-    const searchParams = useSearchParams();
-    const projectId = searchParams.get("projectId");
-
+function StripNavigationQueryParams() {
     useEffect(() => {
-        onProjectIdChange(projectId);
-    }, [projectId, onProjectIdChange]);
-
-    useEffect(() => {
-        const onProjectChanged = (e: Event) => {
-            const pid = (e as CustomEvent<string | null>).detail;
-            onProjectIdChange(pid && pid !== "all" ? pid : null);
-        };
-        window.addEventListener("migra_project_changed", onProjectChanged);
-        return () => window.removeEventListener("migra_project_changed", onProjectChanged);
-    }, [onProjectIdChange]);
-
+        stripNavigationQueryParams();
+    }, []);
     return null;
 }
 
@@ -92,7 +74,7 @@ export default function DashboardLayout({
 
     useEffect(() => {
         if (!isUserLoading && !user) {
-            safeRouterPush(router, "/login?reason=session_ended");
+            safeRouterPush(router, "/login");
         }
     }, [user, isUserLoading, router]);
 
@@ -103,41 +85,34 @@ export default function DashboardLayout({
         }
     }, [user, isUserLoading, userProfile, isPasswordChangeRoute, router]);
 
-    // State para projectId do mobile menu (mesmo padrão da MainSidebar)
     const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        const params = new URLSearchParams(window.location.search);
-        const pid = params.get("projectId");
-        if (pid && pid !== "all") {
-            setActiveProjectId(pid);
-            return;
-        }
-        const stored = sessionStorage.getItem("migra_last_selected_project");
+        const stored = sessionStorage.getItem(SESSION_KEYS.ACTIVE_PROJECT);
         if (stored && stored !== "all") setActiveProjectId(stored);
     }, []);
 
-    const handleProjectIdChange = useCallback((id: string | null) => {
-        setActiveProjectId(id);
+    useEffect(() => {
+        const onProjectChanged = (e: Event) => {
+            const pid = (e as CustomEvent<string | null>).detail;
+            setActiveProjectId(pid && pid !== "all" ? pid : null);
+        };
+        window.addEventListener(PROJECT_CHANGED_EVENT, onProjectChanged);
+        return () => window.removeEventListener(PROJECT_CHANGED_EVENT, onProjectChanged);
     }, []);
 
     return (
         <DashboardShell noPadding>
-            {/* Grid principal horizontal: Topbar + Conteúdo */}
             <div className="min-h-dvh bg-slate-50/50 flex flex-col overflow-x-hidden dashboard-no-rounded relative">
-
-                {/* Sync global para detectar mudanças de projectId na URL (desktop e mobile) */}
                 <Suspense fallback={null}>
-                    <SearchParamsSync onProjectIdChange={handleProjectIdChange} />
+                    <StripNavigationQueryParams />
                 </Suspense>
 
-                {/* Header Mobile / Navigation - oculto na troca obrigatória de senha */}
                 {!isPasswordChangeRoute && (
                 <header className="fixed top-0 left-0 right-0 flex items-center justify-between min-h-16 h-auto py-2 px-4 md:px-8 z-[70] print:hidden dashboard-mobile-header">
                     <div className="flex items-center gap-6">
-                        {/* Logo & Zap */}
                         <Suspense
                             fallback={
                                 <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -156,7 +131,6 @@ export default function DashboardLayout({
                             </DashboardHomeLink>
                         </Suspense>
 
-                        {/* Navigation Desktop Horizontal */}
                         <div className="hidden xl:block">
                             {mounted && !isUserLoading && (
                                 <MainSidebar activeProjectId={activeProjectId} />
@@ -165,12 +139,10 @@ export default function DashboardLayout({
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* User Profile / Logout (Desktop) */}
                         <div className="hidden xl:block">
                             {mounted && !isUserLoading && <UserMenu />}
                         </div>
 
-                        {/* Menu Mobile */}
                         <div className="xl:hidden">
                             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                                 <SheetTrigger asChild>
@@ -250,7 +222,6 @@ export default function DashboardLayout({
                 </header>
                 )}
 
-                {/* Área de Conteúdo - Flexível abaixo da Topbar */}
                 <main className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar overflow-x-hidden relative ${isPasswordChangeRoute ? "pt-0" : "pt-16"}`}>
                     {isAuthenticating ? (
                         <div className="h-full flex items-center justify-center">
@@ -262,7 +233,7 @@ export default function DashboardLayout({
                             </div>
                         </div>
                     ) : !user ? (
-                        null // Redirect será ativado pelo useEffect
+                        null
                     ) : (
                         <div className="flex-1 flex flex-col min-h-full">
                             {!isPasswordChangeRoute && (

@@ -23,7 +23,6 @@ import {
   buildConfiguredChargeGroupByObjectId,
   getConfiguredChargeGroupForObject,
 } from '@/lib/migration/charge-group-sync';
-import { useSearchParams } from 'next/navigation';
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
 import { SUPERADMIN_UID, idsForDbIn } from '@/lib/constants';
 import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
@@ -249,9 +248,8 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
   const extractChargeOrderDisplay = customExtract || _defaultExtractChargeOrderDisplay;
   const db = useDb();
   const { toast } = useToast();
-  const searchParams = useSearchParams();
   const { projectId: activeProjectId } = useActiveProjectId();
-  const selectedProjectId = searchParams.get('projectId') || activeProjectId || null;
+  const selectedProjectId = activeProjectId;
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -275,7 +273,7 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
   // Dialog state
   const [isDependenciesOpen, setIsDependenciesOpen] = useState(false);
   const [dependencySearchTerm, setDependencySearchTerm] = useState('');
-  const [dependencyFilterType, setDependencyFilterType] = useState('TODOS');
+  const [dependencySelectedIds, setDependencySelectedIds] = useState<string[]>([]);
   const [dependencyTargetObject, setDependencyTargetObject] = useState<MasterObject | null>(null);
   const [isPrecedenceOpen, setIsPrecedenceOpen] = useState(false);
   const [precedenceObject, setPrecedenceObject] = useState<MasterObject | null>(null);
@@ -509,33 +507,28 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
       ...fresh,
       dependencyIds: [...(fresh.dependencyIds ?? [])],
     });
+    setDependencySelectedIds([...(fresh.dependencyIds ?? [])]);
+    setDependencySearchTerm('');
     setIsDependenciesOpen(true);
   };
 
-  const handleToggleDependency = async (objectId: string) => {
+  const handleSaveDependencySelect = async () => {
     if (!dependencyTargetObject || !db) return;
     const targetId = dependencyTargetObject.id;
-    const current = dependencyTargetObject.dependencyIds ?? [];
-    const isRemoving = current.includes(objectId);
-    const updated = isRemoving ? current.filter((id) => id !== objectId) : [...current, objectId];
-
-    setDependencyTargetObject((prev) =>
-      prev?.id === targetId ? { ...prev, dependencyIds: updated } : prev,
-    );
-
     try {
       await updateDoc(doc(db, 'masterObjects', targetId), {
-        dependencyIds: updated,
+        dependencyIds: dependencySelectedIds,
         updatedAt: serverTimestamp(),
       });
-      queries.refetchObjects?.();
-    } catch (err) {
-      console.error('[handleToggleDependency]', err);
       setDependencyTargetObject((prev) =>
-        prev?.id === targetId ? { ...prev, dependencyIds: current } : prev,
+        prev?.id === targetId ? { ...prev, dependencyIds: dependencySelectedIds } : prev,
       );
+      queries.refetchObjects?.();
+      setIsDependenciesOpen(false);
+    } catch (err) {
+      console.error('[handleSaveDependencySelect]', err);
       const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
-      toast({ variant: 'destructive', description: `ERRO AO SALVAR PRECEDÊNCIA: ${msg}` });
+      toast({ variant: 'destructive', description: `ERRO AO SALVAR DEPENDÊNCIAS: ${msg}` });
     }
   };
 
@@ -595,12 +588,12 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode, selectedCardId, setSelectedCardId,
     activityGroups, activityGroupFilter, setActivityGroupFilter, chargeGroups, configuredChargeGroupById, hasActiveFilters,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,
-    dependencyFilterType, setDependencyFilterType, dependencyTargetObject,
+    dependencySelectedIds, setDependencySelectedIds, dependencyTargetObject,
     isPrecedenceOpen, setIsPrecedenceOpen, precedenceObject, setPrecedenceObject, precedenceMode,
     editingObject,
     quickFormData, setQuickFormData, editFormData, setEditFormData,
     ...mockSync, ...importHook,
-    handleClearFilters, handleOpenDependencies, handleToggleDependency,
+    handleClearFilters, handleOpenDependencies, handleSaveDependencySelect,
     handleOpenPrecedence, suggestNextOrder, suggestNextParallelOrder,
     releaseLock,
   };

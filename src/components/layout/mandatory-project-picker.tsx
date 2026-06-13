@@ -15,7 +15,7 @@ import type { UserProfile } from "@/types/migration";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { AlertCircle, Loader2, FolderKanban, LogOut } from "lucide-react";
 import { useAuth } from "@/supabase/provider";
-import { signOut } from "@/supabase/auth-shim";
+import { signOutAndRedirect } from "@/lib/auth/sign-out";
 import { useRouter, usePathname } from "next/navigation";
 
 type ProjectBrief = {
@@ -162,8 +162,7 @@ export function MandatoryProjectPicker() {
 
   const handleSignOut = async () => {
     if (!auth) return;
-    await signOut(auth);
-    router.push("/login?reason=session_ended");
+    await signOutAndRedirect(auth, router);
   };
 
   const handlePick = (id: string) => {

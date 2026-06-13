@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import {
   collection,
   collectionGroup,
@@ -10,20 +9,36 @@ import {
   doc,
 } from "@/supabase/compat-db-shim";
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
-
-import { idsForDbIn, SUPERADMIN_UID } from "@/lib/constants";
+import { useActiveProjectId } from "@/hooks/use-active-project-id";
+import { useSessionStorageState } from "@/hooks/use-session-storage-state";
+import { SESSION_KEYS, idsForDbIn, SUPERADMIN_UID } from "@/lib/constants";
 
 interface UseReportFiltersReturn {
   selectedProjectId: string;
   selectedMockId: string;
+  setSelectedProjectId: (id: string) => void;
+  setSelectedMockId: (id: string) => void;
 }
 
 export function useReportFilters(): UseReportFiltersReturn {
-  const searchParams = useSearchParams();
+  const { projectId, updateActiveProject } = useActiveProjectId();
+  const [selectedMockId, setSelectedMockId] = useSessionStorageState<string>(
+    SESSION_KEYS.REPORT_MOCK,
+    "all",
+  );
+
+  const selectedProjectId = projectId ?? "all";
+
+  const setSelectedProjectId = (id: string) => {
+    updateActiveProject(id === "all" ? null : id);
+    setSelectedMockId("all");
+  };
 
   return {
-    selectedProjectId: searchParams.get("projectId") || "all",
-    selectedMockId: searchParams.get("mockId") || "all",
+    selectedProjectId,
+    selectedMockId,
+    setSelectedProjectId,
+    setSelectedMockId,
   };
 }
 
@@ -91,8 +106,7 @@ export function useRunningMock(
   selectedMockId: string,
 ): UseRunningMockReturn {
   const db = useDb();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const [, setStoredMockId] = useSessionStorageState<string>(SESSION_KEYS.REPORT_MOCK, "all");
 
   const projectMocksQuery = useMemoDb(() => {
     if (!db || selectedProjectId === "all") return null;
@@ -109,12 +123,10 @@ export function useRunningMock(
     ) {
       const running = projectMocks.find((m) => m.isRunning);
       if (running) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("mockId", running.id);
-        router.replace(`/relatorios?${params.toString()}`);
+        setStoredMockId(running.id);
       }
     }
-  }, [selectedMockId, projectMocks, searchParams, router]);
+  }, [selectedMockId, projectMocks, setStoredMockId]);
 
   return { projectMocks };
 }

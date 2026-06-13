@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { User as CompatAuthUser } from "@/supabase/auth-shim";
 import { useRouter } from "next/navigation";
-import { signOut } from "@/supabase/auth-shim";
+import { signOutAndRedirect } from "@/lib/auth/sign-out";
 import { collection, query, where } from "@/supabase/compat-db-shim";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { useAuth, useDb, useMemoDb, useCollection } from "@/supabase";
@@ -50,9 +50,7 @@ export function useSignOut() {
 
     return async () => {
         try {
-            sessionStorage.removeItem("migra_last_selected_project");
-            if (auth) await signOut(auth);
-            router.push("/login?reason=session_ended");
+            if (auth) await signOutAndRedirect(auth, router);
         } catch {
             toast({ variant: "destructive", description: "Erro ao sair." });
         }

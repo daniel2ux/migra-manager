@@ -18,12 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ActivityGroupChipTooltip } from "@/components/shared/activity-group-chip-tooltip";
 import {
   Database,
   Network,
@@ -34,6 +30,7 @@ import {
   FileText,
   Hash,
   Split,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { computeNextChargeOrderAfterLastCard, computeChargeGroupFromLastCard } from "@/lib/migration/master-catalog-charge-reflow";
@@ -120,9 +117,9 @@ export function QuickCreateObjectDialog({
   const [isDepsOpen, setIsDepsOpen] = useState(false);
   const [isParallelOpen, setIsParallelOpen] = useState(false);
   const [parallelSelectDraft, setParallelSelectDraft] = useState<string[]>([]);
+  const [depSelectDraft, setDepSelectDraft] = useState<string[]>([]);
   const [parallelSearchTerm, setParallelSearchTerm] = useState("");
   const [depSearchTerm, setDepSearchTerm] = useState("");
-  const [depFilterType, setDepFilterType] = useState("TODOS");
 
   const dependencyIds = quickFormData.dependencyIds ?? [];
   const normalizedName = nameDraft.trim().toUpperCase();
@@ -164,13 +161,24 @@ export function QuickCreateObjectDialog({
     [catalogObjects],
   );
 
-  const handleToggleDraftDependency = (objectId: string) => {
+  const handleToggleDepPeer = (objectId: string) => {
     if (objectId === draftTarget.id) return;
-    const current = quickFormData.dependencyIds ?? [];
-    const updated = current.includes(objectId)
-      ? current.filter((id) => id !== objectId)
-      : [...current, objectId];
-    onFormChange({ dependencyIds: updated });
+    setDepSelectDraft((current) =>
+      current.includes(objectId)
+        ? current.filter((id) => id !== objectId)
+        : [...current, objectId],
+    );
+  };
+
+  const handleSaveDepSelection = () => {
+    onFormChange({ dependencyIds: depSelectDraft });
+    setIsDepsOpen(false);
+  };
+
+  const handleRemoveDependency = (objectId: string) => {
+    onFormChange({
+      dependencyIds: dependencyIds.filter((id) => id !== objectId),
+    });
   };
 
   const handleToggleParallelPeer = (objectId: string) => {
@@ -197,14 +205,35 @@ export function QuickCreateObjectDialog({
     setIsParallelOpen(false);
   };
 
+  const quickFormSyncKey = useMemo(
+    () =>
+      JSON.stringify({
+        name: quickFormData.name ?? "",
+        description: quickFormData.description ?? "",
+        externalDependencies: quickFormData.externalDependencies ?? [],
+        parallelPeerIds: quickFormData.parallelPeerIds ?? [],
+      }),
+    [
+      quickFormData.name,
+      quickFormData.description,
+      quickFormData.externalDependencies,
+      quickFormData.parallelPeerIds,
+    ],
+  );
+
   useEffect(() => {
     if (!open) return;
-    setNameDraft(quickFormData.name ?? "");
-    setDescriptionDraft(quickFormData.description ?? "");
-    setExternalDepsDraft((quickFormData.externalDependencies ?? []).join("\n"));
-  // Sincroniza só ao abrir o diálogo — drafts locais evitam re-render da página.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+    const parsed = JSON.parse(quickFormSyncKey) as {
+      name: string;
+      description: string;
+      externalDependencies: string[];
+      parallelPeerIds: string[];
+    };
+    setNameDraft(parsed.name);
+    setDescriptionDraft(parsed.description);
+    setExternalDepsDraft(parsed.externalDependencies.join("\n"));
+    setParallelSelectDraft(parsed.parallelPeerIds);
+  }, [open, quickFormSyncKey]);
 
   const buildTextPatch = useCallback(
     () => ({
@@ -277,7 +306,7 @@ export function QuickCreateObjectDialog({
                   <label className="fiori-field-label">Grupo carga</label>
                   <Input
                     type="text"
-                    value={suggestedChargeGroup}
+                    value=""
                     readOnly
                     tabIndex={-1}
                     aria-readonly
@@ -347,32 +376,23 @@ export function QuickCreateObjectDialog({
                     const selectedIds = quickFormData.activityGroupIds ?? [];
                     const isSelected = selectedIds.includes(g.id);
                     return (
-                      <Tooltip key={g.id}>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const ids = isSelected
-                                ? selectedIds.filter((id) => id !== g.id)
-                                : [...selectedIds, g.id];
-                              onFormChange({ activityGroupIds: ids });
-                            }}
-                            className={cn(
-                              "fiori-chip",
-                              isSelected && "fiori-chip--outline fiori-chip-selected",
-                            )}
-                            style={isSelected ? { borderColor: g.color, color: g.color } : undefined}
-                          >
-                            {g.name}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="start" variant="fiori" className="max-w-xs">
-                          <p className="font-semibold">{g.name}</p>
-                          {g.description && (
-                            <p className="text-[var(--fiori-label)] mt-0.5">{g.description}</p>
+                      <ActivityGroupChipTooltip key={g.id} group={g}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ids = isSelected
+                              ? selectedIds.filter((id) => id !== g.id)
+                              : [...selectedIds, g.id];
+                            onFormChange({ activityGroupIds: ids });
+                          }}
+                          className={cn(
+                            "fiori-chip",
+                            isSelected && "fiori-chip-selected",
                           )}
-                        </TooltipContent>
-                      </Tooltip>
+                        >
+                          {g.name}
+                        </button>
+                      </ActivityGroupChipTooltip>
                     );
                   })}
                 </div>
@@ -388,7 +408,7 @@ export function QuickCreateObjectDialog({
                 placeholder="Finalidade técnica do objeto..."
                 value={descriptionDraft}
                 onChange={(e) => setDescriptionDraft(e.target.value)}
-                className="fiori-textarea uppercase shadow-none resize-none"
+                className="fiori-textarea fiori-textarea--object-description uppercase shadow-none resize-none"
                 rows={2}
               />
             </section>
@@ -406,7 +426,10 @@ export function QuickCreateObjectDialog({
                   type="button"
                   className="fiori-btn-transparent fiori-btn-transparent--compact shrink-0"
                   title="Selecionar dependências"
-                  onClick={() => setIsDepsOpen(true)}
+                  onClick={() => {
+                    setDepSelectDraft(dependencyIds);
+                    setIsDepsOpen(true);
+                  }}
                 >
                   Selecionar
                 </button>
@@ -416,6 +439,14 @@ export function QuickCreateObjectDialog({
                   linkedDepObjects.map((dep) => (
                     <span key={dep.id} className="fiori-dep-chip">
                       {dep.name}
+                      <button
+                        type="button"
+                        className="fiori-dep-chip-remove"
+                        aria-label={`Remover ${dep.name}`}
+                        onClick={() => handleRemoveDependency(dep.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </span>
                   ))
                 ) : (
@@ -465,7 +496,7 @@ export function QuickCreateObjectDialog({
               </h3>
               <Textarea
                 placeholder="Um objeto por linha. Ex.: OBJETO_SAP_01"
-                className="fiori-textarea uppercase shadow-none resize-y min-h-[4.5rem]"
+                className="fiori-textarea fiori-textarea--external-deps uppercase shadow-none resize-y min-h-[4.5rem]"
                 rows={4}
                 value={externalDepsDraft}
                 onChange={(e) => setExternalDepsDraft(e.target.value.toUpperCase())}
@@ -509,18 +540,15 @@ export function QuickCreateObjectDialog({
       open={isDepsOpen}
       onOpenChange={(next) => {
         setIsDepsOpen(next);
-        if (!next) {
-          setDepSearchTerm("");
-          setDepFilterType("TODOS");
-        }
+        if (!next) setDepSearchTerm("");
       }}
       targetObject={draftTarget}
       objects={catalogObjects}
-      filterType={depFilterType}
-      onFilterTypeChange={setDepFilterType}
+      selectedIds={depSelectDraft}
       searchTerm={depSearchTerm}
       onSearchChange={setDepSearchTerm}
-      onToggle={handleToggleDraftDependency}
+      onToggleId={handleToggleDepPeer}
+      onSave={handleSaveDepSelection}
       elevated
     />
     <ParallelSelectDialog

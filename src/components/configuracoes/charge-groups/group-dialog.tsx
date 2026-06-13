@@ -10,7 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Package } from "lucide-react";
+import { Package, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { ChargeGroup } from "@/types/charge-group";
 
 export function ChargeGroupDialog({
@@ -32,9 +33,11 @@ export function ChargeGroupDialog({
   const [description, setDescription] = useState("");
   const [displayOrder, setDisplayOrder] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    setSaveError(null);
     setName(initial?.name ?? suggestedCreateName);
     setDescription(initial?.description ?? "");
     setDisplayOrder(initial?.displayOrder ?? suggestedCreateOrder);
@@ -44,6 +47,7 @@ export function ChargeGroupDialog({
   async function handleSave() {
     if (!name.trim()) return;
     setSaving(true);
+    setSaveError(null);
     try {
       const nextOrder = await onSave({
         name: name.trim().toUpperCase(),
@@ -58,6 +62,8 @@ export function ChargeGroupDialog({
       setName(match ? `G${Number(match[1]) + 1}` : suggestedCreateName);
       setDescription("");
       setDisplayOrder(typeof nextOrder === "number" ? nextOrder : displayOrder + 1);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Erro ao salvar o grupo de objetos.");
     } finally {
       setSaving(false);
     }
@@ -111,12 +117,25 @@ export function ChargeGroupDialog({
                 <Input
                   id="charge-group-name"
                   value={name}
-                  onChange={(e) => setName(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    setSaveError(null);
+                    setName(e.target.value.toUpperCase());
+                  }}
                   placeholder="Ex.: G1"
                   disabled={saving}
-                  className="fiori-input uppercase shadow-none"
+                  className={cn(
+                    "fiori-input fiori-input--charge-group-name uppercase shadow-none",
+                    saveError && "fiori-invalid",
+                  )}
                 />
               </div>
+
+              {saveError && (
+                <div className="fiori-message-error flex items-start gap-2 !m-0">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden />
+                  <span>{saveError}</span>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label className="fiori-field-label" htmlFor="charge-group-description">

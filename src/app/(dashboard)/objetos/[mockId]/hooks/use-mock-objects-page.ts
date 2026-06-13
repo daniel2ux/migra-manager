@@ -1,8 +1,9 @@
 'use client';
 
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useSelection } from '@/context/selection-context';
+import { useActiveProjectId } from '@/hooks/use-active-project-id';
 import {
   useCollection,
   useDoc,
@@ -29,15 +30,15 @@ import type { MasterObject, MigrationComment, MigrationObject } from '../types';
 
 export function useMockObjectsPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
-  const { selectedMockId, selectedProjectId } = useSelection();
+  const { selectedMockId, selectedProjectId: selectionProjectId } = useSelection();
+  const { projectId: activeProjectId } = useActiveProjectId();
   const db = useDb();
   const { user } = useUser();
 
   const isMasked = params.mockId === 'gestao';
-  const projectId = isMasked ? selectedProjectId : searchParams.get('projectId');
+  const projectId = isMasked ? selectionProjectId : activeProjectId;
   const routeMockId = isMasked ? selectedMockId : (params.mockId as string);
 
   const projectDocRef = useMemoDb(
@@ -281,7 +282,6 @@ export function useMockObjectsPage() {
     db,
     user,
     router,
-    searchParams,
     toast,
     isMasked,
     projectId,

@@ -40,3 +40,15 @@ export const STORAGE_KEYS = {
   RELATORIO_COMPARATIVO_MOCK_A: 'relatorio-comparativo-mock-a',
   RELATORIO_COMPARATIVO_MOCK_B: 'relatorio-comparativo-mock-b',
 } as const;
+
+// SessionStorage keys (por aba — não vazam entre abas)
+export const SESSION_KEYS = {
+  ACTIVE_PROJECT: 'migra_last_selected_project',
+  SEL_PROJECT: 'migra_sel_project',
+  SEL_MOCK: 'migra_sel_mock',
+  DASHBOARD_MOCK: 'migra_dashboard_mock_id',
+  REPORT_MOCK: 'migra_report_mock_id',
+  LOGS_PAGE: 'migra_logs_page',
+  LOGIN_FLASH: 'migra_login_flash',
+  MOCK_OPEN_ADD: 'migra_mock_open_add',
+} as const;

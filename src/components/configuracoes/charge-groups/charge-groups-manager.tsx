@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   collection,
   getDocs,
@@ -12,7 +12,6 @@ import {
   query,
 } from "@/supabase/compat-db-shim";
 import { useDb, useUser } from "@/supabase/provider";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -44,6 +43,9 @@ import {
   normalizeChargeGroupName,
   reconcileChargeGroupsObjectIds,
   resolveChargeGroupMemberIds,
+  findChargeGroupNameConflict,
+  isChargeGroupNameDuplicateError,
+  throwChargeGroupNameConflict,
 } from "@/lib/migration/charge-group-sync";
 
 export function ChargeGroupsManager({
@@ -57,9 +59,6 @@ export function ChargeGroupsManager({
 } = {}) {
   const db = useDb();
   const { user } = useUser();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const [groups, setGroups] = useState<ChargeGroup[]>([]);
   const [allObjects, setAllObjects] = useState<MasterObject[]>([]);
@@ -79,7 +78,6 @@ export function ChargeGroupsManager({
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; group?: ChargeGroup }>({ open: false });
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; group?: ChargeGroup | null }>({ open: false });
   const [orderSavingId, setOrderSavingId] = useState<string | null>(null);
-  const pendingAssignGroupIdRef = useRef<string | null>(null);
 
   const createNameSuggestion = useMemo(
     () => suggestedChargeGroupName(groups),
@@ -91,37 +89,12 @@ export function ChargeGroupsManager({
     [groups],
   );
 
-  useEffect(() => {
-    const groupId = searchParams.get("assignGroupId");
-    if (!groupId) {
-      if (pendingAssignGroupIdRef.current) return;
-      setAssignDialog((prev) => (prev.open ? { open: false, group: undefined } : prev));
-      return;
-    }
-    pendingAssignGroupIdRef.current = null;
-    if (groups.length === 0) return;
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) return;
-    setAssignDialog((prev) =>
-      prev.open && prev.group?.id === group.id ? prev : { open: true, group },
-    );
-  }, [searchParams, groups]);
-
   function openAssignDialog(group: ChargeGroup) {
-    pendingAssignGroupIdRef.current = group.id;
     setAssignDialog({ open: true, group });
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("assignGroupId", group.id);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
   function closeAssignDialog() {
-    pendingAssignGroupIdRef.current = null;
     setAssignDialog({ open: false, group: undefined });
-    if (!searchParams.has("assignGroupId")) return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("assignGroupId");
-    router.replace(params.size ? `${pathname}?${params.toString()}` : pathname, { scroll: false });
   }
 
   useEffect(() => {
@@ -149,60 +122,73 @@ export function ChargeGroupsManager({
 
   async function handleSaveGroup(data: Omit<ChargeGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">) {
     if (!db) return;
-    if (groupDialog.initial) {
-      const groupId = groupDialog.initial.id;
-      const oldName = normalizeChargeGroupName(groupDialog.initial.name);
-      const newName = normalizeChargeGroupName(data.name);
 
-      const batch = writeBatch(db);
-      batch.update(doc(db, "chargeGroups", groupId), {
-        ...data,
-        updatedAt: serverTimestamp(),
-      });
-
-      if (oldName !== newName) {
-        const memberIds = resolveChargeGroupMemberIds(groupDialog.initial, allObjects);
-        for (const objId of memberIds) {
-          batch.update(doc(db, "masterObjects", objId), {
-            chargeGroup: newName,
-            updatedAt: serverTimestamp(),
-          });
-        }
-      }
-
-      await batch.commit();
-
-      setGroups((prev) =>
-        prev.map((g) => (g.id === groupId ? { ...g, ...data } : g)),
-      );
-      if (oldName !== newName) {
-        const memberIds = new Set(resolveChargeGroupMemberIds(groupDialog.initial, allObjects));
-        setAllObjects((prev) =>
-          prev.map((obj) =>
-            memberIds.has(obj.id) ? { ...obj, chargeGroup: newName } : obj,
-          ),
-        );
-      }
-      return;
+    const excludeId = groupDialog.initial?.id;
+    if (findChargeGroupNameConflict(groups, data.name, excludeId)) {
+      throwChargeGroupNameConflict(data.name);
     }
 
-    const createdRef = await addDoc(collection(db, "chargeGroups"), {
-      ...data,
-      objectIds: [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      createdBy: user?.uid ?? "",
-    });
-    const newGroup: ChargeGroup = {
-      id: createdRef.id,
-      ...data,
-      objectIds: [],
-      createdBy: user?.uid ?? "",
-    };
-    const nextGroups = [...groups, newGroup];
-    setGroups(nextGroups);
-    setGroupDialog({ open: true, initial: null });
-    return nextAvailableDisplayOrder(nextGroups);
+    try {
+      if (groupDialog.initial) {
+        const groupId = groupDialog.initial.id;
+        const oldName = normalizeChargeGroupName(groupDialog.initial.name);
+        const newName = normalizeChargeGroupName(data.name);
+
+        const batch = writeBatch(db);
+        batch.update(doc(db, "chargeGroups", groupId), {
+          ...data,
+          updatedAt: serverTimestamp(),
+        });
+
+        if (oldName !== newName) {
+          const memberIds = resolveChargeGroupMemberIds(groupDialog.initial, allObjects);
+          for (const objId of memberIds) {
+            batch.update(doc(db, "masterObjects", objId), {
+              chargeGroup: newName,
+              updatedAt: serverTimestamp(),
+            });
+          }
+        }
+
+        await batch.commit();
+
+        setGroups((prev) =>
+          prev.map((g) => (g.id === groupId ? { ...g, ...data } : g)),
+        );
+        if (oldName !== newName) {
+          const memberIds = new Set(resolveChargeGroupMemberIds(groupDialog.initial, allObjects));
+          setAllObjects((prev) =>
+            prev.map((obj) =>
+              memberIds.has(obj.id) ? { ...obj, chargeGroup: newName } : obj,
+            ),
+          );
+        }
+        return;
+      }
+
+      const createdRef = await addDoc(collection(db, "chargeGroups"), {
+        ...data,
+        objectIds: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: user?.uid ?? "",
+      });
+      const newGroup: ChargeGroup = {
+        id: createdRef.id,
+        ...data,
+        objectIds: [],
+        createdBy: user?.uid ?? "",
+      };
+      const nextGroups = [...groups, newGroup];
+      setGroups(nextGroups);
+      setGroupDialog({ open: true, initial: null });
+      return nextAvailableDisplayOrder(nextGroups);
+    } catch (err) {
+      if (isChargeGroupNameDuplicateError(err)) {
+        throwChargeGroupNameConflict(data.name);
+      }
+      throw err;
+    }
   }
 
   async function handleAssignObjects(objectIds: string[]) {

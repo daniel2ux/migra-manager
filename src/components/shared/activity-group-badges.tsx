@@ -6,19 +6,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { activityGroupDescription } from "@/components/shared/activity-group-chip-tooltip";
 import type { ActivityGroup } from "@/types/activity-group";
 
 interface ActivityGroupBadgesProps {
   groupIds?: string[];
   allGroups: ActivityGroup[];
   maxVisible?: number;
-}
-
-function groupDescription(group: ActivityGroup): string | null {
-  const description = group.description?.trim();
-  if (!description) return null;
-  if (description.toLowerCase() === group.name.trim().toLowerCase()) return null;
-  return description;
 }
 
 function truncateLabel(name: string, maxLength = 10): string {
@@ -41,7 +35,7 @@ export function ActivityGroupBadges({ groupIds, allGroups, maxVisible = 2 }: Act
     <TooltipProvider delayDuration={200}>
       <div className="flex items-center gap-1 flex-wrap min-w-0">
         {visible.map((g) => {
-          const description = groupDescription(g);
+          const description = activityGroupDescription(g);
 
           return (
             <Tooltip key={g.id}>

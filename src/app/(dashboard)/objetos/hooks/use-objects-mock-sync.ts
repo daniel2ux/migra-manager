@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot } from '@/supabase/compat-db-shim';
 
-const MOCK_ID_STORAGE_KEY = 'dashboard_last_mock_id';
+import { SESSION_KEYS } from '@/lib/constants';
 
 function readMockIdFromStorage(): string | null {
-  const raw = localStorage.getItem(MOCK_ID_STORAGE_KEY);
+  const raw = sessionStorage.getItem(SESSION_KEYS.DASHBOARD_MOCK);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
@@ -26,19 +26,14 @@ export function useObjectsMockSync(db: any, selectedProjectId: string | null) {
   const [isMockLocked, setIsMockLocked] = useState(false);
   const [mocksForProject, setMocksForProject] = useState<any[]>([]);
 
-  // Sincroniza o mockId do localStorage ao focar ou trocar de aba
+  // Sincroniza o mockId do sessionStorage ao focar na aba
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const updateMockId = () => setSelectedMockId(readMockIdFromStorage());
     updateMockId();
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === MOCK_ID_STORAGE_KEY) updateMockId();
-    };
     window.addEventListener('focus', updateMockId);
-    window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('focus', updateMockId);
-      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -60,7 +55,7 @@ export function useObjectsMockSync(db: any, selectedProjectId: string | null) {
     if (!belongsToProject) {
       setSelectedMockId(null);
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(MOCK_ID_STORAGE_KEY);
+        sessionStorage.removeItem(SESSION_KEYS.DASHBOARD_MOCK);
       }
     }
   }, [selectedMockId, mocksForProject]);

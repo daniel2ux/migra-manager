@@ -55,7 +55,7 @@ export async function signOut(auth: Auth) {
 }
 
 export async function setPersistence(_auth: Auth, _mode: unknown) {
-  // Supabase handles session persistence via cookies/localStorage
+  // Sessão por aba via sessionStorage em createSupabaseBrowserClient (client.ts).
 }
 
 export const browserSessionPersistence = 'session';

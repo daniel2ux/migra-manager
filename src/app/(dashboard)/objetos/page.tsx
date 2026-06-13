@@ -65,7 +65,7 @@ function ObjetosMasterPageContent() {
     editingObject, quickFormData, setQuickFormData, editFormData,
     isMigrationDialogOpen, setIsMigrationDialogOpen, isMigrating,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,
-    dependencyFilterType, setDependencyFilterType, dependencyTargetObject,
+    dependencySelectedIds, setDependencySelectedIds, dependencyTargetObject,
     isSelectNextOpen, setIsSelectNextOpen, selectNextTargetObject, selectNextSearchTerm, setSelectNextSearchTerm,
     isParallelSelectOpen, setIsParallelSelectOpen, parallelSelectTarget, parallelSelectSearch, setParallelSelectSearch,
     parallelSelectedIds, setParallelSelectedIds,
@@ -80,8 +80,8 @@ function ObjetosMasterPageContent() {
     usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, hasActiveFilters, selectedMockName, isMockLocked,
     displayChargeOrderById,
     // Handlers
-    handleClearFilters, handleOpenDependencies, handleOpenParallelSelect, handleSaveParallelSelect,
-    handleOpenSelectNext, handleSelectNextConfirm, handleToggleDependency, handleOpenPrecedence,
+    handleClearFilters, handleOpenDependencies, handleSaveDependencySelect, handleOpenParallelSelect, handleSaveParallelSelect,
+    handleOpenSelectNext, handleSelectNextConfirm, handleOpenPrecedence,
     handleVisualDragStart, handleVisualDragOver, handleVisualDrop, handleApplyVisualOrder,
     handleDragOver, handleDragLeave, handleDrop,
     suggestNextParallelOrder, handleMigrateSequences,
@@ -581,11 +581,12 @@ function ObjetosMasterPageContent() {
             onOpenChange={(open) => { setIsDependenciesOpen(open); if (!open) setTimeout(() => depTriggerRef.current?.focus(), 0); }}
             targetObject={dependencyTargetObject}
             objects={sequenceContextRows}
-            filterType={dependencyFilterType}
-            onFilterTypeChange={setDependencyFilterType}
+            displayChargeOrderById={displayChargeOrderById}
+            selectedIds={dependencySelectedIds}
             searchTerm={dependencySearchTerm}
             onSearchChange={setDependencySearchTerm}
-            onToggle={handleToggleDependency}
+            onToggleId={(id) => setDependencySelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+            onSave={handleSaveDependencySelect}
             triggerRef={depTriggerRef as React.RefObject<HTMLElement>}
             searchRef={depSearch1Ref as React.RefObject<HTMLInputElement>}
             timerRef={depSearchTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}

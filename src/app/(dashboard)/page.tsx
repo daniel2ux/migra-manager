@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { collection, doc, serverTimestamp } from "@/supabase/compat-db-shim";
 import {
     addDocumentNonBlocking,
@@ -45,6 +46,7 @@ import { DashboardModals } from "./components/dashboard-modals";
  * Mantendo 100% da lógica original, mas modularizada com hooks customizados.
  */
 function DashboardContent() {
+    const router = useRouter();
     // 1. Estado de Filtros UI
     const filtersState = useDashboardFiltersState();
     const { toast } = useToast();
@@ -367,7 +369,7 @@ function DashboardContent() {
                         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Seleção de Projeto Obrigatória</h2>
                         <p className="text-slate-500 text-sm">A visualização consolidada de todos os projetos está desabilitada para otimizar a performance. Por favor, selecione um projeto específico no menu superior.</p>
                     </div>
-                    <button onClick={() => nav.router.push('/projetos')} className="bg-SkyBlue-500 hover:bg-SkyBlue-600 text-white font-black uppercase tracking-widest px-8 h-10 shadow-lg shadow-SkyBlue-500/20 active:scale-95 transition-all">
+                    <button onClick={() => router.push('/projetos')} className="bg-SkyBlue-500 hover:bg-SkyBlue-600 text-white font-black uppercase tracking-widest px-8 h-10 shadow-lg shadow-SkyBlue-500/20 active:scale-95 transition-all">
                         Ver Projetos
                     </button>
                 </div>

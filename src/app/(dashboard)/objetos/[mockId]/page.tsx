@@ -14,6 +14,7 @@ import { LogViewerDialog } from '@/components/logs/log-viewer-dialog';
 import { QuickEditDialog } from '@/components/migration/quick-edit-dialog';
 import { CommentDialog } from '@/components/migration/comment-dialog';
 import { cn } from '@/lib/utils';
+import { SESSION_KEYS } from '@/lib/constants';
 import { BulkSelectionBar } from './components/bulk-selection-bar';
 import { ConfirmationDialogs } from './components/confirmation-dialogs';
 import { CsvImportDialog } from './components/csv-import-dialog';
@@ -153,23 +154,22 @@ function ObjetosContent() {
   });
 
     useEffect(() => {
+    const shouldOpenAdd =
+      typeof window !== 'undefined' &&
+      sessionStorage.getItem(SESSION_KEYS.MOCK_OPEN_ADD) === '1';
     if (
-      page.searchParams.get('add') === 'true' &&
+      shouldOpenAdd &&
       !page.isLoading &&
       !page.isMockLoading &&
       !page.isProfileLoading
     ) {
-            handleOpenDialog();
-            const url = new URL(window.location.href);
-            url.searchParams.delete('add');
-      page.router.replace(url.pathname + url.search);
+      sessionStorage.removeItem(SESSION_KEYS.MOCK_OPEN_ADD);
+      handleOpenDialog();
     }
   }, [
-    page.searchParams,
     page.isLoading,
     page.isMockLoading,
     page.isProfileLoading,
-    page.router,
     handleOpenDialog,
   ]);
 
