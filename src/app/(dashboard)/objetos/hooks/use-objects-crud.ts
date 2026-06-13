@@ -5,7 +5,7 @@ import { deleteDocumentNonBlocking } from '@/supabase/mutations';
 import { isValidSequence, resolveDisplayChargeOrder, resolveParallelPersistFlag, isObjectParallelLoad } from '@/lib/migration/sequence-utils';
 import { useToast } from '@/hooks/use-toast';
 import type { PerformReorderOptions } from './use-objects-reorder';
-import type { MasterObject } from '../components/object-card';
+import type { MasterObject } from '@/types/master-object';
 import { findMasterCatalogNameConflict, normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
 import {
   computeMasterCatalogGroupReflowUpdates,
@@ -446,11 +446,17 @@ function useEditDialog(
   displayChargeOrderById?: ReadonlyMap<string, string>,
   reorderDisplayList?: MasterObject[],
 ) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
+  const editOpenSeqRef = useRef(0);
   const [isForceLockOpen, setIsForceLockOpen] = useState(false);
   const [forceLockTarget, setForceLockTarget] = useState<MasterObject | null>(null);
   const [forceLockBlockerName, setForceLockBlockerName] = useState<string | null>(null);
   const [editSaveError, setEditSaveError] = useState<string | null>(null);
+
+  const setOpen = useCallback((value: boolean) => {
+    if (!value) editOpenSeqRef.current += 1;
+    setOpenState(value);
+  }, []);
 
   const buildFormData = (obj: MasterObject): ObjectFormData => ({
     name: obj.name, description: obj.description ?? '', chargeGroup: obj.chargeGroup || '',
@@ -464,11 +470,34 @@ function useEditDialog(
   const handleOpen = async (obj: MasterObject, viewOnly = false) => {
     if (!isAdmin) return;
     setEditSaveError(null);
-    if (viewOnly) { setEditingObject(obj); setEditFormData(buildFormData(obj)); setOpen(true); return; }
-    if (isMockLocked) return;
-    const { acquired, lockedByName: blocker } = await acquireLock(`masterObjects/${obj.id}`);
-    if (!acquired) { setForceLockTarget(obj); setForceLockBlockerName(blocker || 'Outro usuário'); setIsForceLockOpen(true); return; }
-    setEditingObject(obj); setEditFormData(buildFormData(obj)); setOpen(true);
+    if (isMockLocked && !viewOnly) return;
+
+    setEditingObject(obj);
+    setEditFormData(buildFormData(obj));
+
+    if (viewOnly) {
+      setOpen(true);
+      return;
+    }
+
+    const seq = ++editOpenSeqRef.current;
+    setOpen(true);
+
+    const resourceId = `masterObjects/${obj.id}`;
+    const { acquired, lockedByName: blocker } = await acquireLock(resourceId);
+
+    if (seq !== editOpenSeqRef.current) {
+      if (acquired) releaseLock(resourceId);
+      return;
+    }
+
+    if (!acquired) {
+      setOpen(false);
+      setEditingObject(null);
+      setForceLockTarget(obj);
+      setForceLockBlockerName(blocker || 'Outro usuário');
+      setIsForceLockOpen(true);
+    }
   };
 
   const clearEditSaveError = useCallback(() => setEditSaveError(null), []);
@@ -676,7 +705,12 @@ export function useObjectsCRUD(deps: UseObjectsCRUDDeps) {
 
   const handlePatchMaster = async (
     target: MasterObject,
-    patch: { status?: string; activityGroupIds?: string[]; chargeGroupId?: string | null },
+    patch: {
+      status?: string;
+      activityGroupIds?: string[];
+      chargeGroupId?: string | null;
+      type?: string;
+    },
   ) => {
     if (!db || deps.isMockLocked) return;
 
@@ -695,6 +729,26 @@ export function useObjectsCRUD(deps: UseObjectsCRUDDeps) {
         console.error('[useObjectsCRUD] patch chargeGroupId', err);
         const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
         toast({ variant: 'destructive', description: `ERRO AO ATUALIZAR GRUPO: ${msg}` });
+      }
+      return;
+    }
+
+    if (patch.type !== undefined) {
+      if (!isAdmin || !deps.isAdminOrMaster) return;
+      const nextType = (patch.type || 'SCRIPT') as MasterObject['type'];
+      const currentType = (target.type || 'SCRIPT') as MasterObject['type'];
+      if (nextType === currentType) return;
+      try {
+        await setDoc(
+          doc(db, 'masterObjects', target.id),
+          { type: nextType, updatedAt: serverTimestamp() },
+          { merge: true },
+        );
+        deps.refetchObjects?.();
+      } catch (err) {
+        console.error('[useObjectsCRUD] patch type', err);
+        const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+        toast({ variant: 'destructive', description: `ERRO AO ATUALIZAR TIPO: ${msg}` });
       }
       return;
     }

@@ -27,7 +27,6 @@ interface ObjectCardProps {
     isMockLocked?: boolean;
     isMockInProgress?: boolean;
     isMockCompleted?: boolean;
-    objects: MigrationObject[];
     masterObjects: MasterObject[];
     objComments: MigrationComment[];
     onSelect: (id: string, idx: number, event?: React.MouseEvent | React.KeyboardEvent) => void;
@@ -48,7 +47,7 @@ export function ObjectCard({
     masterObjects, objComments,
     onSelect, onContextMenu, onOpenDialog, onOpenCommentDialog, onOpenQuickDialog,
     onToggleCargaStatus, onImportLogs, onViewLogs, onResetObject, renderDuration,
-}: Omit<ObjectCardProps, 'objects'>) {
+}: ObjectCardProps) {
     const target = Number(obj.targetRecordsCount) || 0;
     const processed = Number(obj.processedRecordsCount) || 0;
     const error = Number(obj.errorRecordsCount) || 0;

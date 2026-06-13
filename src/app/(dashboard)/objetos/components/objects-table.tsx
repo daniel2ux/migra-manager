@@ -11,7 +11,6 @@ import {
 import { normalizeMasterCatalogName } from "@/lib/migration/master-catalog";
 import { getConfiguredChargeGroupForObject } from "@/lib/migration/charge-group-sync";
 import type { MasterObject } from "@/types/master-object";
-import type { ActivityGroup } from "@/types/activity-group";
 import {
   Box,
   Zap,
@@ -29,7 +28,6 @@ interface ObjectsTableProps {
   objects: MasterObject[];
   duplicateMasterNameKeys?: Set<string>;
   allObjects?: MasterObject[] | null;
-  activityGroups: ActivityGroup[];
   isAdmin: boolean;
   /** Chaves `projectId:mockId` por objeto mestre; usado para desabilitar excluir quando em uso. */
   usageMap?: Record<string, Set<string>>;
@@ -51,7 +49,6 @@ export function ObjectsTable({
   objects,
   duplicateMasterNameKeys,
   allObjects = [],
-  activityGroups: _activityGroups,
   isAdmin,
   usageMap,
   isMockLocked = false,

@@ -16,7 +16,7 @@ import {
   buildListPositionChargeOrderMap,
 } from '@/lib/migration/sequence-utils';
 import { buildPrecedenceMap } from '@/lib/migration/dependency-utils';
-import type { MasterObject } from '../components/object-card';
+import type { MasterObject } from '@/types/master-object';
 import type { ActivityGroup } from '@/types/activity-group';
 import type { ChargeGroup } from '@/types/charge-group';
 import {
@@ -37,10 +37,6 @@ import {
 import { useObjectsCRUD } from './use-objects-crud';
 
 interface Project { id: string; name: string; company?: string; empresa?: string; }
-
-interface UseObjectsPageDeps {
-  extractChargeOrderDisplay?: (chargeOrder: string | number | undefined) => string;
-}
 
 function _defaultExtractChargeOrderDisplay(chargeOrder: string | number | undefined): string {
   if (chargeOrder === undefined || chargeOrder === null) return '';
@@ -244,8 +240,8 @@ function useDialogEffects(anyDialogOpen: boolean, selectedCardId: string | null,
 
 // ── Hook principal composto ───────────────────────────────────────────────
 
-export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: UseObjectsPageDeps = {}) {
-  const extractChargeOrderDisplay = customExtract || _defaultExtractChargeOrderDisplay;
+export function useObjectsPage() {
+  const extractChargeOrderDisplay = _defaultExtractChargeOrderDisplay;
   const db = useDb();
   const { toast } = useToast();
   const { projectId: activeProjectId } = useActiveProjectId();
@@ -450,14 +446,9 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
   });
 
   const displayChargeOrderById = useMemo(() => {
-    const sequenceByListPosition = sortMode === 'EXECUTION' || reorder.isVisualReorderMode;
-    if (!sequenceByListPosition) return undefined;
-    const list =
-      reorder.isVisualReorderMode && reorder.visualOrder.length > 0
-        ? reorder.visualOrder
-        : sortedFilteredObjects;
-    return buildListPositionChargeOrderMap(list);
-  }, [sortMode, reorder.isVisualReorderMode, reorder.visualOrder, sortedFilteredObjects]);
+    if (sortMode !== 'EXECUTION') return undefined;
+    return buildListPositionChargeOrderMap(sortedFilteredObjects);
+  }, [sortMode, sortedFilteredObjects]);
 
   const refetchChargeGroups = useCallback(async () => {
     if (!db) return;
@@ -481,9 +472,8 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
 
   // Derived flags
   const hasActiveFilters = searchTerm !== '' || statusFilter !== 'ALL' || activityGroupFilter !== 'ALL';
-  const anyDialogOpen = crud.isQuickCreateOpen || importHook.isImportOpen || reorder.isResetDialogOpen ||
-    reorder.isMigrationDialogOpen || isDependenciesOpen || reorder.isSelectNextOpen ||
-    reorder.isParallelSelectOpen || crud.isForceLockOpen || isPrecedenceOpen;
+  const anyDialogOpen = crud.isQuickCreateOpen || importHook.isImportOpen || isDependenciesOpen ||
+    reorder.isSelectNextOpen || reorder.isParallelSelectOpen || crud.isForceLockOpen || isPrecedenceOpen;
 
   // Effects
   useDialogEffects(anyDialogOpen, selectedCardId, isPrecedenceOpen, setIsPrecedenceOpen);

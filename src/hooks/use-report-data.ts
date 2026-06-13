@@ -152,21 +152,21 @@ export function useMockData(
   return { mockData };
 }
 
-interface UseCatalogueReturn {
-  catalogue: any[] | null;
+interface UseMasterCatalogReturn {
+  masterCatalog: any[] | null;
 }
 
-export function useCatalogue(): UseCatalogueReturn {
+export function useMasterCatalog(): UseMasterCatalogReturn {
   const db = useDb();
 
-  const catalogueQuery = useMemoDb(() => {
+  const masterCatalogQuery = useMemoDb(() => {
     if (!db) return null;
-    return collection(db, "catalogo");
+    return collection(db, "masterObjects");
   }, [db]);
 
-  const { data: catalogue } = useCollection<any>(catalogueQuery);
+  const { data: masterCatalog } = useCollection<any>(masterCatalogQuery);
 
-  return { catalogue };
+  return { masterCatalog };
 }
 
 interface UseMigrationObjectsReturn {

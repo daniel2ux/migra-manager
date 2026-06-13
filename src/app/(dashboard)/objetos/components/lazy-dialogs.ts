@@ -2,15 +2,8 @@
 
 import dynamic from "next/dynamic";
 
-export const QuickCreateObjectDialog = dynamic(
-  () => import("./quick-create-object-dialog").then((m) => m.QuickCreateObjectDialog),
-  { ssr: false },
-);
-
-export const EditObjectDialog = dynamic(
-  () => import("./edit-object-dialog").then((m) => m.EditObjectDialog),
-  { ssr: false },
-);
+export { QuickCreateObjectDialog } from "./quick-create-object-dialog";
+export { EditObjectDialog } from "./edit-object-dialog";
 
 export const ImportDialog = dynamic(
   () => import("./import-dialog").then((m) => m.ImportDialog),
@@ -34,21 +27,6 @@ export const SelectNextDialog = dynamic(
 
 export const PrecedenceDialog = dynamic(
   () => import("./precedence-dialog").then((m) => m.PrecedenceDialog),
-  { ssr: false },
-);
-
-export const ResetSequenceDialog = dynamic(
-  () => import("./sequence-dialogs").then((m) => m.ResetSequenceDialog),
-  { ssr: false },
-);
-
-export const MigrationDialog = dynamic(
-  () => import("./sequence-dialogs").then((m) => m.MigrationDialog),
-  { ssr: false },
-);
-
-export const ProgressDialog = dynamic(
-  () => import("./progress-dialog").then((m) => m.ProgressDialog),
   { ssr: false },
 );
 

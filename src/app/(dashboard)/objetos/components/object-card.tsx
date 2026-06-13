@@ -2,14 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-    Database,
     Link2,
     Network,
     AlertTriangle,
     Trash2,
     Pencil,
     Eye,
-    GripVertical,
     ShieldCheck,
     ArrowRight,
     GitFork,
@@ -22,8 +20,7 @@ import { Button } from "@/components/ui/button";
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
-    TooltipTrigger
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
     Popover,
@@ -41,12 +38,11 @@ import {
 import { cn } from "@/lib/utils";
 import { isValidSequence, normalizeSeqForDisplay, isObjectParallelLoad } from "@/lib/migration/sequence-utils";
 import { ActivityGroupBadges } from "@/components/shared/activity-group-badges";
-import { ActivityGroupChipTooltip } from "@/components/shared/activity-group-chip-tooltip";
+import { MasterObjectTypeIcon, getMasterObjectTypeIconMeta } from "@/components/shared/master-object-type-icon";
+import { MASTER_OBJECT_TYPE_OPTIONS } from "@/lib/migration/master-object-type";
 import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
 import type { ChargeGroup } from "@/types/charge-group";
-
-export type { MasterObject } from "@/types/master-object";
 
 const CARD_TOOLBAR_BTN =
     "fiori-card-toolbar-btn !rounded-[0.375rem] !size-7 min-h-0 min-w-0";
@@ -96,9 +92,6 @@ interface MigrationObjectCardProps {
   /** Somente perfis Governança (admin) e Master podem alterar status/grupos no card. */
   isAdminOrMaster?: boolean;
     isExecutionSort: boolean;
-    isVisualReorderMode: boolean;
-    isVisualDragging?: boolean;
-    isVisualDragTarget?: boolean;
     isNormalDragging?: boolean;
     isNormalDragTarget?: boolean;
     isSelected?: boolean;
@@ -136,6 +129,8 @@ interface MigrationObjectCardProps {
     selectedChargeGroupId?: string | null;
     /** Somente Governança (admin) ou Master — altera grupo de carga inline no card. */
     onChargeGroupChange?: (obj: MasterObject, groupId: string | null) => void;
+    /** Governança ou Master — altera tipo inline no card. */
+    onTypeChange?: (obj: MasterObject, type: string) => void;
 }
 
 function CardChargeOrderMetric({
@@ -356,6 +351,87 @@ function CardStatusControl({
     );
 }
 
+function CardObjectTypeControl({
+    type,
+    editable,
+    onChange,
+}: {
+    type?: string;
+    editable: boolean;
+    onChange: (type: string) => void;
+}) {
+    const meta = getMasterObjectTypeIconMeta(type);
+    const Icon = meta.Icon;
+    const normalized = meta.resolved;
+
+    if (!editable) {
+        return (
+            <div className="fiori-migration-object-card-icon">
+                <MasterObjectTypeIcon type={type} />
+            </div>
+        );
+    }
+
+    return (
+        <DropdownMenu>
+            <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            type="button"
+                            className={cn(
+                                "fiori-migration-object-card-icon fiori-card-meta-editable",
+                            )}
+                            onClick={stopCardEvent}
+                            onMouseDown={stopCardEvent}
+                            aria-label={`Alterar tipo do objeto (${meta.label})`}
+                        >
+                            <Icon className={cn("w-3.5 h-3.5 shrink-0", meta.colorClass)} aria-hidden />
+                        </button>
+                    </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="top" variant="fiori">
+                    Tipo: {meta.label}
+                </TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent
+                align="start"
+                side="bottom"
+                sideOffset={4}
+                className="fiori-dropdown-menu fiori-dropdown-menu--table-rows w-40"
+                onClick={stopCardEvent}
+            >
+                <DropdownMenuLabel className="fiori-dropdown-menu-label">Tipo do objeto</DropdownMenuLabel>
+                {MASTER_OBJECT_TYPE_OPTIONS.map((option) => {
+                    const optionMeta = getMasterObjectTypeIconMeta(option.value);
+                    const OptionIcon = optionMeta.Icon;
+                    const isSelected = normalized === option.value;
+                    return (
+                        <DropdownMenuItem
+                            key={option.value}
+                            className={cn(
+                                "fiori-dropdown-menu-item",
+                                isSelected && "fiori-dropdown-menu-item--selected",
+                            )}
+                            onSelect={() => {
+                                if (!isSelected) onChange(option.value);
+                            }}
+                        >
+                            <span className="fiori-type-picker-row-icon">
+                                <OptionIcon
+                                    className={cn("shrink-0", optionMeta.colorClass)}
+                                    aria-hidden
+                                />
+                            </span>
+                            <span className="fiori-type-picker-row-label">{option.label}</span>
+                        </DropdownMenuItem>
+                    );
+                })}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
 function CardActivityGroupsControl({
     groupIds,
     allGroups,
@@ -369,13 +445,17 @@ function CardActivityGroupsControl({
 }) {
     const selectedIds = groupIds ?? [];
     const hasGroups = selectedIds.length > 0;
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     if (!editable || allGroups.length === 0) {
         if (!hasGroups) return null;
-        return <ActivityGroupBadges groupIds={groupIds} allGroups={allGroups} maxVisible={2} />;
+        return (
+            <ActivityGroupBadges
+                groupIds={groupIds}
+                allGroups={allGroups}
+            />
+        );
     }
-
-    const [pickerOpen, setPickerOpen] = useState(false);
 
     const toggleGroup = (groupId: string) => {
         const next = selectedIds.includes(groupId)
@@ -396,7 +476,10 @@ function CardActivityGroupsControl({
                     aria-label="Alterar grupos de atividade"
                 >
                     {hasGroups ? (
-                        <ActivityGroupBadges groupIds={groupIds} allGroups={allGroups} maxVisible={2} />
+                        <ActivityGroupBadges
+                            groupIds={groupIds}
+                            allGroups={allGroups}
+                        />
                     ) : (
                         <span className="fiori-activity-group-badge fiori-activity-group-badge--add">
                             <Layers className="w-2.5 h-2.5" aria-hidden />
@@ -414,41 +497,38 @@ function CardActivityGroupsControl({
                 onClick={stopCardEvent}
                 onOpenAutoFocus={(e) => e.preventDefault()}
             >
-                <TooltipProvider delayDuration={200}>
                 <div className="fiori-activity-groups-picker-grid" role="listbox" aria-label="Grupos de atividade" aria-multiselectable>
                     {allGroups.map((g) => {
                         const isSelected = selectedIds.includes(g.id);
                         return (
                             <div key={g.id} className="fiori-activity-groups-picker-cell">
-                            <ActivityGroupChipTooltip group={g} elevated>
-                            <button
-                                type="button"
-                                role="option"
-                                aria-selected={isSelected}
-                                onClick={() => toggleGroup(g.id)}
-                                className={cn(
-                                    "fiori-activity-group-pick-badge",
-                                    isSelected && "fiori-activity-group-pick-badge--selected",
-                                )}
-                                style={
-                                    isSelected
-                                        ? ({ "--ag-pick-color": g.color } as React.CSSProperties)
-                                        : undefined
-                                }
-                            >
-                                <span
-                                    className="fiori-activity-group-badge-swatch"
-                                    style={{ backgroundColor: g.color }}
-                                    aria-hidden
-                                />
-                                <span className="fiori-activity-group-pick-badge-label">{g.name}</span>
-                            </button>
-                            </ActivityGroupChipTooltip>
+                                <button
+                                    type="button"
+                                    role="option"
+                                    aria-selected={isSelected}
+                                    aria-label={g.name}
+                                    onClick={() => toggleGroup(g.id)}
+                                    className={cn(
+                                        "fiori-activity-group-pick-badge",
+                                        isSelected && "fiori-activity-group-pick-badge--selected",
+                                    )}
+                                    style={
+                                        isSelected
+                                            ? ({ "--ag-pick-color": g.color } as React.CSSProperties)
+                                            : undefined
+                                    }
+                                >
+                                    <span
+                                        className="fiori-activity-group-badge-swatch"
+                                        style={{ backgroundColor: g.color }}
+                                        aria-hidden
+                                    />
+                                    <span className="fiori-activity-group-pick-badge-label">{g.name}</span>
+                                </button>
                             </div>
                         );
                     })}
                 </div>
-                </TooltipProvider>
             </PopoverContent>
         </Popover>
     );
@@ -581,9 +661,6 @@ export function MigrationObjectCard({
     isAdmin,
     isAdminOrMaster,
     isExecutionSort,
-    isVisualReorderMode,
-    isVisualDragging,
-    isVisualDragTarget,
     isNormalDragging,
     isNormalDragTarget,
     isSelected,
@@ -613,24 +690,24 @@ export function MigrationObjectCard({
     allChargeGroups = [],
     selectedChargeGroupId = null,
     onChargeGroupChange,
+    onTypeChange,
 }: MigrationObjectCardProps) {
     const chargeOrderLabel = normalizeSeqForDisplay(displayChargeOrder ?? obj.chargeOrder);
     const chargeGroupLabel = displayChargeGroup || "";
     const canEditChargeOrder =
         isAdmin &&
         !isMockLocked &&
-        !isVisualReorderMode &&
         !!onChargeOrderChange &&
         obj.status !== "INATIVO";
     const canEditCardMeta =
-        (isAdminOrMaster ?? isAdmin) && !isMockLocked && !isVisualReorderMode;
+        (isAdminOrMaster ?? isAdmin) && !isMockLocked;
     const canEditChargeGroup =
         isAdminOrMaster === true &&
         !isMockLocked &&
-        !isVisualReorderMode &&
         !!onChargeGroupChange;
     const isInUse = usageCount > 0;
     const isInactive = obj.status === "INATIVO";
+    const descriptionText = obj.description?.trim().replace(/\s+/g, " ") || "";
     /** Excluir do catálogo só aparece para admin com objeto inativo; continua bloqueado se houver uso em mocks/projetos. */
     const showDeleteButton = isAdmin && isInactive;
     const canDelete = showDeleteButton && !isInUse;
@@ -639,7 +716,7 @@ export function MigrationObjectCard({
 
     return (
         <div
-            draggable={isAdmin && (isExecutionSort || isVisualReorderMode)}
+            draggable={isAdmin && isExecutionSort}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
@@ -648,52 +725,43 @@ export function MigrationObjectCard({
             tabIndex={0}
             onClick={() => onSelect?.(obj.id)}
             className={cn(
-                "fiori-migration-object-card group relative border border-slate-200 hover:border-slate-400 transition-all duration-300 hover:scale-[1.03] hover:z-10 overflow-hidden bg-white p-2.5 flex flex-col gap-2 select-none",
+                "fiori-migration-object-card group relative border border-slate-200 hover:border-slate-400 transition-all duration-300 hover:scale-[1.03] hover:z-10 overflow-hidden bg-white p-2.5 flex flex-col gap-2 h-full min-h-0 select-none",
                 isSelected ? "card-static-border z-10" : "",
-                (isAdmin && (isExecutionSort || isVisualReorderMode)) ? "cursor-move" : "cursor-pointer",
-                (isVisualDragging || isNormalDragging) && "fiori-migration-object-card--dragging opacity-30 border-slate-200 grayscale scale-95 cursor-grabbing",
-                isVisualDragTarget && "fiori-migration-object-card--drag-target border-amber-400 border-dashed bg-amber-50/20 shadow-inner scale-[0.98] ring-2 ring-amber-400/30",
+                isAdmin && isExecutionSort ? "cursor-move" : "cursor-pointer",
+                isNormalDragging && "fiori-migration-object-card--dragging opacity-30 border-slate-200 grayscale scale-95 cursor-grabbing",
                 isNormalDragTarget && "fiori-migration-object-card--drag-target border-emerald-400 border-dashed bg-emerald-50/10 shadow-inner scale-[0.98] ring-2 ring-emerald-500/20",
             )}
         >
-            {isVisualReorderMode && (
-                <div className="absolute top-1.5 right-1.5 z-10 opacity-40 group-hover:opacity-80 transition-opacity">
-                    <GripVertical className="w-3.5 h-3.5 text-amber-500" />
-                </div>
-            )}
-
-            <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="fiori-migration-object-card-icon">
-                        <Database className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    </div>
-                    <div className="flex flex-col min-w-0 gap-0.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
+            <div className="fiori-migration-object-card-header">
+                <div className="fiori-migration-object-card-header-top">
+                    <div className="fiori-migration-object-card-header-main">
+                        <CardObjectTypeControl
+                            type={obj.type}
+                            editable={canEditCardMeta && !!onTypeChange}
+                            onChange={(nextType) => onTypeChange?.(obj, nextType)}
+                        />
+                        <div className="fiori-migration-object-card-title-row">
                             <span className="fiori-migration-object-card-name truncate">{obj.name}</span>
                             {catalogDuplicateName && (
-                                <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                        <span className="inline-flex shrink-0 cursor-help" tabIndex={0}>
-                                            <AlertTriangle className="w-3 h-3 text-amber-500" aria-hidden />
-                                        </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" variant="fiori">
-                                        Existe outro objeto mestre com o mesmo nome (outro ID no banco de dados). Compare seq./uso nos mocks e mantenha apenas um registro.
-                                    </TooltipContent>
-                                </Tooltip>
+                                <span
+                                    className="inline-flex shrink-0"
+                                    aria-label="Existe outro objeto mestre com o mesmo nome"
+                                >
+                                    <AlertTriangle className="w-3 h-3 text-amber-500" aria-hidden />
+                                </span>
                             )}
                             {obj.dependencyIds && obj.dependencyIds.length > 0 && (
                                 <Tooltip delayDuration={0}>
                                     <TooltipTrigger asChild>
                                         <span className="flex items-center gap-1 text-slate-500 font-bold text-[10px] shrink-0 ml-0.5 cursor-help hover:text-slate-900 transition-colors">
-                                            <Link2 className="w-2.5 h-2.5" /> ({chain.length})
+                                            <Link2 className="w-2.5 h-2.5" aria-hidden /> ({chain.length})
                                         </span>
                                     </TooltipTrigger>
                                     <TooltipContent variant="fiori-panel" side="top" className="w-64 z-[200]">
                                         <div className="fiori-tooltip-panel-body">
                                             <div className="fiori-tooltip-panel-section-title">
                                                 <span className="flex items-center gap-1.5">
-                                                    <Link2 className="w-3 h-3" /> Precedências ativas
+                                                    <Link2 className="w-3 h-3" aria-hidden /> Precedências ativas
                                                 </span>
                                                 <span className="fiori-tooltip-panel-badge">{chain.length}</span>
                                             </div>
@@ -723,14 +791,14 @@ export function MigrationObjectCard({
                                 <Tooltip delayDuration={0}>
                                     <TooltipTrigger asChild>
                                         <span className="flex items-center gap-1 text-amber-500 font-bold text-[10px] shrink-0 ml-1.5 cursor-help hover:text-amber-600 transition-colors">
-                                            <Network className="w-2.5 h-2.5" /> ({obj.externalDependencies.length})
+                                            <Network className="w-2.5 h-2.5" aria-hidden /> ({obj.externalDependencies.length})
                                         </span>
                                     </TooltipTrigger>
                                     <TooltipContent variant="fiori-panel" side="top" className="w-64 z-[200]">
                                         <div className="fiori-tooltip-panel-body">
                                             <div className="fiori-tooltip-panel-section-title">
                                                 <span className="flex items-center gap-1.5">
-                                                    <Network className="w-3 h-3 text-[#e76500]" /> Dependências externas
+                                                    <Network className="w-3 h-3 text-[#e76500]" aria-hidden /> Dependências externas
                                                 </span>
                                                 <span className="fiori-tooltip-panel-badge">{obj.externalDependencies.length}</span>
                                             </div>
@@ -750,14 +818,14 @@ export function MigrationObjectCard({
                                 <Tooltip delayDuration={0}>
                                     <TooltipTrigger asChild>
                                         <span className="flex items-center gap-1 text-slate-500 font-bold text-[10px] shrink-0 ml-1.5 cursor-help hover:text-slate-600 transition-colors">
-                                            <GitFork className="w-2.5 h-2.5" /> ({otherParallelObjects.length})
+                                            <GitFork className="w-2.5 h-2.5" aria-hidden /> ({otherParallelObjects.length})
                                         </span>
                                     </TooltipTrigger>
                                     <TooltipContent variant="fiori-panel" side="top" className="w-64 z-[200]">
                                         <div className="fiori-tooltip-panel-body">
                                             <div className="fiori-tooltip-panel-section-title">
                                                 <span className="flex items-center gap-1.5">
-                                                    <GitFork className="w-3 h-3" /> Execução paralela
+                                                    <GitFork className="w-3 h-3" aria-hidden /> Execução paralela
                                                 </span>
                                                 <span className="fiori-tooltip-panel-badge">{otherParallelObjects.length}</span>
                                             </div>
@@ -774,34 +842,36 @@ export function MigrationObjectCard({
                                 </Tooltip>
                             )}
                         </div>
-                        {obj.description?.trim() ? (
-                            <p
-                                className="fiori-migration-object-card-desc"
-                                title={obj.description.trim()}
-                            >
-                                {obj.description.trim()}
-                            </p>
-                        ) : null}
+                    </div>
+
+                    <div className="fiori-migration-object-card-header-meta">
+                        <CardActivityGroupsControl
+                            groupIds={obj.activityGroupIds}
+                            allGroups={allGroups}
+                            editable={canEditCardMeta && !!onActivityGroupsChange}
+                            onChange={(ids) => onActivityGroupsChange?.(obj, ids)}
+                        />
+                        <CardStatusControl
+                            status={obj.status}
+                            editable={canEditCardMeta && !!onStatusChange}
+                            onChange={(nextStatus) => onStatusChange?.(obj, nextStatus)}
+                        />
                     </div>
                 </div>
-
-                <div className="fiori-migration-object-card-header-meta">
-                    <CardActivityGroupsControl
-                        groupIds={obj.activityGroupIds}
-                        allGroups={allGroups}
-                        editable={canEditCardMeta && !!onActivityGroupsChange}
-                        onChange={(ids) => onActivityGroupsChange?.(obj, ids)}
-                    />
-                    <CardStatusControl
-                        status={obj.status}
-                        editable={canEditCardMeta && !!onStatusChange}
-                        onChange={(nextStatus) => onStatusChange?.(obj, nextStatus)}
-                    />
-                </div>
+                {descriptionText && (
+                    <p className="fiori-migration-object-card-desc">
+                        {descriptionText}
+                    </p>
+                )}
             </div>
 
-            {obj.status !== 'INATIVO' && (
-                <div className="fiori-migration-object-card-metrics">
+            <div className="fiori-migration-object-card-bottom">
+                <div
+                    className={cn(
+                        "fiori-migration-object-card-metrics",
+                        isInactive && "fiori-migration-object-card-metrics--inactive",
+                    )}
+                >
                     <CardChargeGroupControl
                         displayLabel={chargeGroupLabel}
                         selectedGroupId={selectedChargeGroupId}
@@ -815,7 +885,7 @@ export function MigrationObjectCard({
                     <CardChargeOrderMetric
                         displayValue={chargeOrderLabel}
                         editable={canEditChargeOrder}
-                        dimmed={chargeOrderLabel === "—"}
+                        dimmed={chargeOrderLabel === "—" || isInactive}
                         onCommit={(newOrder) => onChargeOrderChange?.(obj, newOrder)}
                     />
 
@@ -824,13 +894,11 @@ export function MigrationObjectCard({
                     <div className="fiori-migration-object-card-metric">
                         <span className="fiori-migration-object-card-metric-label">Tipo Carga</span>
                         <span className="fiori-migration-object-card-metric-value fiori-migration-object-card-metric-value--tipo-carga">
-                            {isParallelLoad ? "PARALELO" : "SEQUENCIAL"}
+                            {isInactive ? "—" : isParallelLoad ? "PARALELO" : "SEQUENCIAL"}
                         </span>
                     </div>
                 </div>
-            )}
 
-            <div className="flex flex-col gap-1 mt-auto">
                 <div className="fiori-card-footer flex items-center justify-between gap-2">
                     <div className="fiori-card-toolbar">
                         {isAdmin && (

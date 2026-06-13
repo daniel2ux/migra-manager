@@ -19,7 +19,11 @@ function truncateLabel(name: string, maxLength = 10): string {
   return name.length > maxLength ? `${name.slice(0, maxLength)}…` : name;
 }
 
-export function ActivityGroupBadges({ groupIds, allGroups, maxVisible = 2 }: ActivityGroupBadgesProps) {
+export function ActivityGroupBadges({
+  groupIds,
+  allGroups,
+  maxVisible = 2,
+}: ActivityGroupBadgesProps) {
   if (!groupIds?.length) return null;
 
   const groups = groupIds

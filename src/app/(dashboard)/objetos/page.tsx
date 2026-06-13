@@ -5,7 +5,7 @@ import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Button } from '@/components/ui/button';
 import {
   Loader2, Plus, Search, Network, Database,
-  FileUp, RefreshCw, ArrowUpDown,
+  FileUp,
   Table as TableIcon, Grid3X3, X,
 } from 'lucide-react';
 import {
@@ -20,7 +20,6 @@ import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { PageHeader } from '@/components/layout/page-header';
 import {
   parseSequence,
-  isValidSequence,
   resolveDisplayChargeOrder,
 } from '@/lib/migration/sequence-utils';
 import { getConfiguredChargeGroupForObject, findChargeGroupIdForObject } from '@/lib/migration/charge-group-sync';
@@ -32,12 +31,10 @@ import {
   ParallelSelectDialog,
   SelectNextDialog,
   PrecedenceDialog,
-  ResetSequenceDialog,
-  MigrationDialog,
   ForceLockDialog,
-  ProgressDialog,
 } from './components/lazy-dialogs';
-import { MigrationObjectCard, type MasterObject } from './components/object-card';
+import { MigrationObjectCard } from './components/object-card';
+import type { MasterObject } from '@/types/master-object';
 import { ObjectsTable } from './components/objects-table';
 import { useObjectsPage } from './hooks/use-objects-page';
 import { ObjetosFilters } from './components/objetos-filters';
@@ -59,11 +56,7 @@ function ObjetosMasterPageContent() {
     importFinished, setImportFinished, importCounts, importLogs, setImportLogs,
     isDragging, selectedCardId, setSelectedCardId,
     draggedObjectId, setDraggedObjectId, dragOverObjectId, setDragOverObjectId,
-    isVisualReorderMode, setIsVisualReorderMode, visualOrder, setVisualOrder,
-    visualDragId, visualDragOverId,
-    isResetDialogOpen, setIsResetDialogOpen, progressState, setProgressState,
     editingObject, quickFormData, setQuickFormData, editFormData,
-    isMigrationDialogOpen, setIsMigrationDialogOpen, isMigrating,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,
     dependencySelectedIds, setDependencySelectedIds, dependencyTargetObject,
     isSelectNextOpen, setIsSelectNextOpen, selectNextTargetObject, selectNextSearchTerm, setSelectNextSearchTerm,
@@ -82,17 +75,13 @@ function ObjetosMasterPageContent() {
     // Handlers
     handleClearFilters, handleOpenDependencies, handleSaveDependencySelect, handleOpenParallelSelect, handleSaveParallelSelect,
     handleOpenSelectNext, handleSelectNextConfirm, handleOpenPrecedence,
-    handleVisualDragStart, handleVisualDragOver, handleVisualDrop, handleApplyVisualOrder,
     handleDragOver, handleDragLeave, handleDrop,
-    suggestNextParallelOrder, handleMigrateSequences,
-    handleResetApplyCurrentOrder, handleResetFullClear, handleFileImport, handleDelete,
+    suggestNextParallelOrder,
+    handleFileImport, handleDelete,
     handleOpenEditDialog, handleForceAcquire,
     handleSaveQuick, performReorder, handleSaveEdit, handlePatchMaster,
     releaseLock, editSaveError, clearEditSaveError,
   } = useObjectsPage();
-
-  const listForDisplay =
-    isVisualReorderMode && visualOrder.length > 0 ? visualOrder : sortedFilteredObjects;
 
   // Wrapper para visualização (mock bloqueado)
   const handleOpenViewDialog = (obj: MasterObject) => {
@@ -216,45 +205,6 @@ function ObjetosMasterPageContent() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            const next = !isVisualReorderMode;
-                            setIsVisualReorderMode(next);
-                            if (!next) setVisualOrder(sortedFilteredObjects as MasterObject[]);
-                          }}
-                          className={cn(
-                            PAGE_TOOLBAR_BTN,
-                            isVisualReorderMode && "fiori-toolbar-btn-active"
-                          )}
-                        >
-                          <ArrowUpDown className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" variant="fiori">
-                        {isVisualReorderMode ? "Sair da reordenação" : "Reordenar visualmente"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsResetDialogOpen(true)}
-                          className={cn(PAGE_TOOLBAR_BTN, "fiori-toolbar-btn-danger")}
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" variant="fiori">
-                        Reiniciar sequência de carga
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
                           onClick={() => setIsQuickCreateOpen(true)}
                           className={PAGE_TOOLBAR_BTN}
                         >
@@ -305,23 +255,6 @@ function ObjetosMasterPageContent() {
           handleClearFilters={handleClearFilters}
         />
 
-        {isVisualReorderMode && (
-          <div className="flex items-center justify-between gap-3 px-4 md:px-8 py-2 bg-amber-50 border-t border-amber-200">
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">Modo Reordenação — arraste os cards e clique em APLICAR para salvar a nova ordem.</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button variant="ghost" size="sm" onClick={() => { setIsVisualReorderMode(false); setVisualOrder([]); }} className="h-6 px-3 text-[10px] font-black uppercase tracking-wider text-slate-500 hover:bg-slate-100 rounded-none border-0">
-                CANCELAR
-              </Button>
-              <Button size="sm" onClick={handleApplyVisualOrder} className="h-6 px-3 text-[10px] font-black uppercase tracking-wider bg-amber-500 hover:bg-amber-600 text-white rounded-none border-0 shadow-xs">
-                APLICAR ORDEM
-              </Button>
-            </div>
-          </div>
-        )}
-
         <div className={cn("space-y-4 flex-1", viewMode === 'CARDS' && "px-4 md:px-8 py-4")}>
           <div className="bg-transparent">
             {isLoading ? (
@@ -330,12 +263,11 @@ function ObjetosMasterPageContent() {
               <TooltipProvider>
                 {viewMode === 'TABLE' ? (
                   <ObjectsTable
-                    objects={listForDisplay}
+                    objects={sortedFilteredObjects}
                     displayChargeOrderById={displayChargeOrderById}
                     configuredChargeGroupById={configuredChargeGroupById}
                     duplicateMasterNameKeys={duplicateMasterNameKeys}
                     allObjects={objects}
-                    activityGroups={activityGroups}
                     isAdmin={isAdmin}
                     usageMap={usageMap}
                     isMockLocked={isMockLocked}
@@ -351,7 +283,7 @@ function ObjetosMasterPageContent() {
                   />
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                    {listForDisplay.map((obj) => {
+                    {sortedFilteredObjects.map((obj) => {
                       const myParallelMajor = obj.parallelOrder ? parseSequence(obj.parallelOrder).major : 0;
                       const otherParallel = (myParallelMajor > 0 ? objects?.filter(o =>
                         o.id !== obj.id &&
@@ -383,42 +315,29 @@ function ObjetosMasterPageContent() {
                           isAdmin={isAdmin}
                           isAdminOrMaster={isAdminOrMaster}
                           isExecutionSort={sortMode === 'EXECUTION'}
-                          isVisualReorderMode={isVisualReorderMode}
-                          isVisualDragging={visualDragId === obj.id}
-                          isVisualDragTarget={visualDragOverId === obj.id}
                           isNormalDragging={draggedObjectId === obj.id}
                           isNormalDragTarget={dragOverObjectId === obj.id}
                           usageCount={usageMap[obj.id]?.size || 0}
                           precedenceChain={precedenceMap.get(obj.id) ?? { chain: [], isCircular: false }}
                           otherParallelObjects={otherParallel as any[]}
                           onDragStart={(e) => {
-                            if (isVisualReorderMode) {
-                              handleVisualDragStart(obj.id);
-                            } else {
-                              e.dataTransfer.setData("text/plain", obj.id);
-                              setDraggedObjectId(obj.id);
-                            }
+                            e.dataTransfer.setData("text/plain", obj.id);
+                            setDraggedObjectId(obj.id);
                           }}
                           onDragOver={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (isVisualReorderMode) {
-                              handleVisualDragOver(e, obj.id);
-                            } else {
-                              setDragOverObjectId(obj.id);
-                            }
+                            setDragOverObjectId(obj.id);
                           }}
                           onDragLeave={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (!isVisualReorderMode) setDragOverObjectId(null);
+                            setDragOverObjectId(null);
                           }}
                           onDrop={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (isVisualReorderMode) {
-                              handleVisualDrop(obj.id);
-                            } else if (draggedObjectId && sequenceContextRows.length > 0) {
+                            if (draggedObjectId && sequenceContextRows.length > 0) {
                               const moving = sequenceContextRows.find(o => o.id === draggedObjectId);
                               if (moving) performReorder(moving, String(obj.chargeOrder || ''), obj.id);
                               setDraggedObjectId(null);
@@ -445,7 +364,7 @@ function ObjetosMasterPageContent() {
                               newOrder,
                               undefined,
                               {
-                                orderedList: displayChargeOrderById ? listForDisplay : undefined,
+                                orderedList: displayChargeOrderById ? sortedFilteredObjects : undefined,
                                 onMoved: (id) => {
                                   setSelectedCardId(id);
                                   requestAnimationFrame(() => {
@@ -478,6 +397,13 @@ function ObjetosMasterPageContent() {
                                 }
                               : undefined
                           }
+                          onTypeChange={
+                            isAdminOrMaster
+                              ? (target, type) => {
+                                  void handlePatchMaster(target, { type });
+                                }
+                              : undefined
+                          }
                         />
                       );
                     })}
@@ -506,8 +432,7 @@ function ObjetosMasterPageContent() {
             )}
           </div>
 
-          {/* ── Dialogs (lazy: carregam só quando abertos) ─────────────────── */}
-          {isQuickCreateOpen && (
+          {/* ── Dialogs (cadastro/edição sempre montados; demais lazy) ─────── */}
           <QuickCreateObjectDialog
             open={isQuickCreateOpen}
             onOpenChange={setIsQuickCreateOpen}
@@ -519,9 +444,7 @@ function ObjetosMasterPageContent() {
             onSave={handleSaveQuick}
             nameInputRef={nameInputRef}
           />
-          )}
 
-          {open && (
           <EditObjectDialog
             open={open}
             onOpenChange={setOpen}
@@ -543,7 +466,6 @@ function ObjetosMasterPageContent() {
             saveError={editSaveError}
             onClearSaveError={clearEditSaveError}
           />
-          )}
 
           {isImportOpen && (
           <ImportDialog
@@ -665,25 +587,6 @@ function ObjetosMasterPageContent() {
           />
           )}
 
-          {isResetDialogOpen && (
-          <ResetSequenceDialog
-            open={isResetDialogOpen}
-            onOpenChange={setIsResetDialogOpen}
-            onApplyCurrent={handleResetApplyCurrentOrder}
-            onFullClear={handleResetFullClear}
-          />
-          )}
-
-          {isMigrationDialogOpen && (
-          <MigrationDialog
-            open={isMigrationDialogOpen}
-            onOpenChange={setIsMigrationDialogOpen}
-            isMigrating={isMigrating}
-            objectsToConvert={sequenceContextRows.filter(o => { const v = o.chargeOrder; return v && !(typeof v === 'string' && isValidSequence(v)); }).length}
-            onMigrate={handleMigrateSequences}
-          />
-          )}
-
           {isForceLockOpen && (
           <ForceLockDialog
             open={isForceLockOpen}
@@ -695,12 +598,6 @@ function ObjetosMasterPageContent() {
           />
           )}
 
-          {progressState.open && (
-          <ProgressDialog
-            state={progressState}
-            onOpenChange={(v) => setProgressState(prev => ({ ...prev, open: v }))}
-          />
-          )}
         </div>
       </div>
     </DashboardShell>

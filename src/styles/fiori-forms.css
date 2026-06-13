@@ -1988,6 +1988,105 @@
   padding: 0.375rem;
 }
 
+/* Dropdown em linhas de tabela (separador inferior suave por linha) */
+.fiori-dropdown-menu--table-rows {
+  min-width: 12.5rem;
+  padding: 0 !important;
+  gap: 0;
+  overflow: hidden;
+  --fiori-table-row-divider: #f0f1f2;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-label {
+  padding: 0.4375rem 0.625rem 0.375rem;
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--fiori-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  background: #fafafa;
+  border-bottom: 1px solid var(--fiori-table-row-divider);
+}
+
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item,
+.fiori-dropdown-menu--table-rows button.fiori-dropdown-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem !important;
+  width: 100%;
+  min-height: 0;
+  padding: 0.3125rem 0.625rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--fiori-text);
+  border: none !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--fiori-table-row-divider) !important;
+  background: transparent;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background 0.15s ease;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item:last-child {
+  border-bottom: none !important;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item[data-highlighted],
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item:hover:not([data-disabled]),
+.fiori-dropdown-menu--table-rows button.fiori-dropdown-menu-item:hover:not(:disabled) {
+  background: var(--fiori-brand-light) !important;
+  border-bottom-color: var(--fiori-table-row-divider) !important;
+  color: var(--fiori-text) !important;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item--selected {
+  background: var(--fiori-brand-light) !important;
+  color: var(--fiori-brand) !important;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item--selected[data-highlighted],
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item--selected:hover:not([data-disabled]) {
+  background: #d4e8ff !important;
+  color: var(--fiori-brand) !important;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-type-picker-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1875rem;
+  background: #f5f6f7;
+  border-radius: 0.1875rem;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-type-picker-row-icon svg {
+  width: 0.8125rem !important;
+  height: 0.8125rem !important;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item:hover .fiori-type-picker-row-icon,
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item[data-highlighted] .fiori-type-picker-row-icon,
+.fiori-dropdown-menu--table-rows .fiori-dropdown-menu-item--selected .fiori-type-picker-row-icon {
+  background: #d4e8ff;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-type-picker-row-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .fiori-dropdown-menu button.fiori-dropdown-menu-item {
   border: 1px solid transparent;
   background: transparent;

@@ -1414,6 +1414,39 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   color: var(--fiori-text, #32363a);
 }
 
+.fiori-migration-object-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.fiori-migration-object-card-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.fiori-migration-object-card-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.fiori-migration-object-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .fiori-migration-object-card-desc {
   font-size: 0.6875rem;
   font-weight: 400;
@@ -1422,11 +1455,15 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   letter-spacing: 0;
   line-height: 1.3;
   margin: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
 }
 
 .fiori-migration-object-card-header-meta {
@@ -1436,7 +1473,6 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   flex-wrap: wrap;
   gap: 0.375rem;
   flex-shrink: 0;
-  max-width: 48%;
 }
 
 .fiori-migration-object-card-header-meta .fiori-activity-group-badge {
@@ -1577,11 +1613,25 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   display: flex;
   align-items: stretch;
   gap: 0.75rem;
-  margin-top: 0.25rem;
+  min-height: 2.25rem;
+  flex-shrink: 0;
   padding: 0;
   background: transparent;
   border: none;
   border-radius: 0;
+}
+
+.fiori-migration-object-card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: auto;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.fiori-migration-object-card-metrics--inactive {
+  opacity: 0.45;
 }
 
 .fiori-migration-object-card-metric-divider {
@@ -1691,40 +1741,6 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
 
 .fiori-charge-order-preview-popover-input:focus {
   box-shadow: 0 0 0 1px var(--fiori-brand, #0070f2);
-}
-
-.fiori-migration-object-card-metric-input {
-  width: 100%;
-  min-width: 0;
-  font-size: 9.5px;
-  font-weight: 900;
-  font-family: var(--font-72);
-  text-transform: uppercase;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-  color: #1e293b;
-  text-align: center;
-  border: 1px solid var(--fiori-brand, #0070f2);
-  border-radius: 0.125rem;
-  background: #fff;
-  padding: 1px 2px;
-  outline: none;
-}
-
-.fiori-migration-object-card-metric-input--invalid {
-  border-color: #bb0000;
-}
-
-.fiori-migration-object-card-metric-input:focus {
-  box-shadow: 0 0 0 1px var(--fiori-brand, #0070f2);
-}
-
-.fiori-migration-object-card-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  line-height: 0;
 }
 
 body.dashboard-plaque-focus .fiori-card-plaque-active {

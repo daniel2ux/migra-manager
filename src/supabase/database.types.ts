@@ -182,39 +182,6 @@ export type Database = {
         }
         Relationships: []
       }
-      catalogo: {
-        Row: {
-          charge_group: string | null
-          charge_order: string | null
-          created_at: string
-          description: string | null
-          id: string
-          is_parallel: boolean
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          charge_group?: string | null
-          charge_order?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_parallel?: boolean
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          charge_group?: string | null
-          charge_order?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_parallel?: boolean
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       comments: {
         Row: {
           created_at: string

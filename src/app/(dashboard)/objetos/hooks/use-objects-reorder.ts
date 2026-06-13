@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { flushSync } from 'react-dom';
+import { useState, useRef } from 'react';
 import { doc, serverTimestamp, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
 import {
   parseSequence,
@@ -11,9 +10,7 @@ import {
   compareChargeSequenceGridOrder,
   compareGestaoExecutionOrder,
 } from '@/lib/migration/sequence-utils';
-import { DB_BATCH_SIZE } from '@/lib/constants';
-import type { MasterObject } from '../components/object-card';
-import type { ProgressState } from '../components/progress-dialog';
+import type { MasterObject } from '@/types/master-object';
 
 /** Catálogo global (`masterObjects`) vs sequência da mock (`migrationObjects`). */
 export type CatalogSequenceStore =
@@ -192,71 +189,6 @@ async function commitContiguousSequenceRenumber(
   }
 }
 
-// ── Sub-hook: Visual drag & drop ──────────────────────────────────────────
-
-function useVisualDrag(sortedFilteredObjects: MasterObject[]) {
-  const [isVisualReorderMode, setIsVisualReorderMode] = useState(false);
-  const [visualOrder, setVisualOrder] = useState<MasterObject[]>([]);
-  const [visualDragId, setVisualDragId] = useState<string | null>(null);
-  const [visualDragOverId, setVisualDragOverId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isVisualReorderMode && sortedFilteredObjects.length > 0) {
-      setVisualOrder(sortedFilteredObjects as MasterObject[]);
-    }
-  }, [sortedFilteredObjects, isVisualReorderMode]);
-
-  const handleVisualDragStart = (id: string) => setVisualDragId(id);
-  const handleVisualDragOver = (e: React.DragEvent, id: string) => { e.preventDefault(); setVisualDragOverId(id); };
-  const handleVisualDrop = (targetId: string) => {
-    if (!visualDragId || visualDragId === targetId) { setVisualDragId(null); setVisualDragOverId(null); return; }
-    setVisualOrder(prev => {
-      const from = prev.findIndex(o => o.id === visualDragId);
-      const to = prev.findIndex(o => o.id === targetId);
-      if (from === -1 || to === -1) return prev;
-      const next = [...prev];
-      const [item] = next.splice(from, 1);
-      next.splice(to, 0, item);
-      return next;
-    });
-    setVisualDragId(null); setVisualDragOverId(null);
-  };
-
-  return { isVisualReorderMode, setIsVisualReorderMode, visualOrder, setVisualOrder, visualDragId, visualDragOverId, handleVisualDragStart, handleVisualDragOver, handleVisualDrop };
-}
-
-// ── Sub-hook: Batch progress runner ───────────────────────────────────────
-
-function useBatchRunner(db: any, toast: (opts: any) => void) {
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [progressState, setProgressState] = useState<ProgressState>({ open: false, title: '', current: 0, total: 0, done: false, error: null });
-
-  const runWithProgress = async (title: string, items: { ref: any; data: Record<string, any> }[]) => {
-    const total = items.length;
-    setIsResetDialogOpen(false);
-    await new Promise(r => setTimeout(r, 80));
-    setProgressState({ open: true, title, current: 0, total, done: false, error: null });
-    await new Promise(r => setTimeout(r, 50));
-    try {
-      for (let i = 0; i < items.length; i += DB_BATCH_SIZE) {
-        const chunk = items.slice(i, i + DB_BATCH_SIZE);
-        const batch = writeBatch(db);
-        chunk.forEach(({ ref, data }) => batch.set(ref, data, { merge: true }));
-        await batch.commit();
-        flushSync(() => setProgressState(s => ({ ...s, current: Math.min(i + DB_BATCH_SIZE, total) })));
-      }
-      flushSync(() => setProgressState(s => ({ ...s, current: total, done: true })));
-      toast({ description: `${title} — CONCLUÍDO.` });
-      await new Promise(r => setTimeout(r, 500));
-      setProgressState(s => ({ ...s, open: false }));
-    } catch {
-      setProgressState(s => ({ ...s, error: 'Falha ao processar alguns objetos. Verifique permissões.' }));
-    }
-  };
-
-  return { isResetDialogOpen, setIsResetDialogOpen, progressState, setProgressState, runWithProgress };
-}
-
 // ── Sub-hook: Select Next ─────────────────────────────────────────────────
 
 function useSelectNext() {
@@ -312,76 +244,14 @@ export function useObjectsReorder({
   toast,
   sortedFilteredObjects,
   sortMode: _sortMode,
-  isAdmin,
+  isAdmin: _isAdmin,
   sequenceStore,
   refetchObjects,
 }: UseObjectsReorderDeps) {
-  const visual = useVisualDrag(sortedFilteredObjects);
-  const batchRunner = useBatchRunner(db, toast);
   const selectNext = useSelectNext();
   const parallel = useParallelSelect(objects);
   const [draggedObjectId, setDraggedObjectId] = useState<string | null>(null);
   const [dragOverObjectId, setDragOverObjectId] = useState<string | null>(null);
-  const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
-  const [isMigrating, setIsMigrating] = useState(false);
-
-  // ── Apply visual order ─────────────────────────────────────────────────
-  const handleApplyVisualOrder = async () => {
-    if (!db) return;
-    try {
-      const updated = visual.visualOrder.map((obj, i) => ({ ...obj, chargeOrder: formatSequence(i + 1, 0) }));
-      const batch = writeBatch(db);
-      let count = 0;
-      for (let i = 0; i < updated.length; i++) {
-        if (String(visual.visualOrder[i].chargeOrder) !== updated[i].chargeOrder) {
-          const ref = sequenceDoc(db, sequenceStore, updated[i]);
-          if (!ref && sequenceStore.kind === 'migration') {
-            toast({ variant: 'destructive', description: 'OBJETO SEM VÍNCULO À MOCK PARA SALVAR SEQUÊNCIA.' });
-            continue;
-          }
-          if (!ref) continue;
-          batch.update(ref as any, { chargeOrder: updated[i].chargeOrder, updatedAt: serverTimestamp() });
-          count++;
-        }
-      }
-      if (count > 0) { await batch.commit(); visual.setVisualOrder(updated); toast({ description: `${count} OBJETO(S) REORDENADO(S) COM SUCESSO.` }); }
-      else { toast({ description: 'NENHUMA ALTERAÇÃO NA ORDEM FOI DETECTADA.' }); }
-    } catch {
-      toast({ variant: 'destructive', description: 'ERRO AO SALVAR NOVA ORDEM. VERIFIQUE SUAS PERMISSÕES.' });
-    } finally {
-      visual.setIsVisualReorderMode(false);
-    }
-  };
-
-  // ── Reset operations ───────────────────────────────────────────────────
-  const handleResetApplyCurrentOrder = async () => {
-    if (!objects?.length || !db || !isAdmin) return;
-    const items = sortedFilteredObjects
-      .map((obj, i) => {
-        const newOrder = formatSequence(i + 1, 0);
-        if (String(obj.chargeOrder) === newOrder) return null;
-        const ref = sequenceDoc(db, sequenceStore, obj);
-        if (!ref) return null;
-        return { ref, data: { chargeOrder: newOrder, updatedAt: serverTimestamp() } };
-      })
-      .filter(Boolean) as { ref: any; data: any }[];
-    await batchRunner.runWithProgress('Atualizando sequência com posição atual', items);
-  };
-
-  const handleResetFullClear = async () => {
-    if (!objects?.length || !db || !isAdmin) return;
-    const items = objects
-      .map((obj) => {
-        const ref = sequenceDoc(db, sequenceStore, obj);
-        if (!ref) return null;
-        return { ref, data: { chargeOrder: '', parallelOrder: '', chargeGroup: '', updatedAt: serverTimestamp() } };
-      })
-      .filter(Boolean) as { ref: any; data: any }[];
-    await batchRunner.runWithProgress(
-      sequenceStore.kind === 'migration' ? 'Reiniciando sequência desta mock' : 'Reiniciando sequência completa',
-      items,
-    );
-  };
 
   // ── Perform reorder ────────────────────────────────────────────────────
   const performReorder = async (
@@ -554,48 +424,8 @@ export function useObjectsReorder({
     parallel.setParallelSelectTarget(null);
   };
 
-  // ── Migrate legacy sequences ───────────────────────────────────────────
-  const handleMigrateSequences = async () => {
-    if (!objects?.length || !db || !isAdmin) return;
-    if (sequenceStore.kind === 'migration') {
-      toast({ description: 'Migração de formato XX.XX aplica-se ao catálogo mestre inteiro — selecione o modo sem mock ou use outra tela.' });
-      setIsMigrationDialogOpen(false);
-      return;
-    }
-    setIsMigrating(true);
-    try {
-      const sorted = [...objects].sort((a, b) => { const na = typeof a.chargeOrder === 'number' ? a.chargeOrder : parseSequence(a.chargeOrder).major; const nb = typeof b.chargeOrder === 'number' ? b.chargeOrder : parseSequence(b.chargeOrder).major; return na - nb; });
-      const majorMap = new Map<number, number>();
-      let nextMajor = 1;
-      const batch = writeBatch(db);
-      let count = 0;
-      sorted.forEach(obj => {
-        const rawVal = obj.chargeOrder;
-        if (typeof rawVal === 'string' && isValidSequence(rawVal)) return;
-        const oldMajor = typeof rawVal === 'number' ? rawVal : parseSequence(rawVal).major;
-        if (oldMajor === 0) return;
-        if (!majorMap.has(oldMajor)) majorMap.set(oldMajor, nextMajor++);
-        batch.update(doc(db, 'masterObjects', obj.id), { chargeOrder: formatSequence(majorMap.get(oldMajor)!, 0), updatedAt: serverTimestamp() });
-        count++;
-      });
-      if (count > 0) { await batch.commit(); toast({ description: `MIGRAÇÃO CONCLUÍDA. ${count} OBJETO(S) CONVERTIDO(S) PARA O FORMATO XX.XX.` }); }
-    } catch {
-      toast({ variant: 'destructive', description: 'FALHA NA MIGRAÇÃO. VERIFIQUE SEU PERFIL ADMINISTRATIVO.' });
-    } finally {
-      setIsMigrating(false);
-      setIsMigrationDialogOpen(false);
-    }
-  };
-
   return {
-    isVisualReorderMode: visual.isVisualReorderMode, setIsVisualReorderMode: visual.setIsVisualReorderMode,
-    visualOrder: visual.visualOrder, setVisualOrder: visual.setVisualOrder,
-    visualDragId: visual.visualDragId, visualDragOverId: visual.visualDragOverId,
     draggedObjectId, setDraggedObjectId, dragOverObjectId, setDragOverObjectId,
-    handleVisualDragStart: visual.handleVisualDragStart, handleVisualDragOver: visual.handleVisualDragOver, handleVisualDrop: visual.handleVisualDrop, handleApplyVisualOrder,
-    isResetDialogOpen: batchRunner.isResetDialogOpen, setIsResetDialogOpen: batchRunner.setIsResetDialogOpen,
-    progressState: batchRunner.progressState, setProgressState: batchRunner.setProgressState,
-    handleResetApplyCurrentOrder, handleResetFullClear,
     performReorder,
     isSelectNextOpen: selectNext.isSelectNextOpen, setIsSelectNextOpen: selectNext.setIsSelectNextOpen,
     selectNextTargetObject: selectNext.selectNextTargetObject, selectNextSearchTerm: selectNext.selectNextSearchTerm, setSelectNextSearchTerm: selectNext.setSelectNextSearchTerm,
@@ -606,8 +436,5 @@ export function useObjectsReorder({
     parallelSelectedIds: parallel.parallelSelectedIds, setParallelSelectedIds: parallel.setParallelSelectedIds,
     parallelSearchRef: parallel.parallelSearchRef, parallelSearchTimerRef: parallel.parallelSearchTimerRef, parallelTriggerRef: parallel.parallelTriggerRef,
     handleOpenParallelSelect: parallel.handleOpenParallelSelect, handleSaveParallelSelect,
-    isMigrationDialogOpen, setIsMigrationDialogOpen,
-    isMigrating,
-    handleMigrateSequences,
   };
 }

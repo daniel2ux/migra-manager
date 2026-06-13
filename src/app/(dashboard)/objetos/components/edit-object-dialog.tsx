@@ -21,9 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Database, Box, Hash, Split, CheckCircle2, Network, Info, Layers, PlusCircle } from "lucide-react";
+import { Database, Box, Hash, Split, CheckCircle2, Network, Info, Layers, PlusCircle, Shapes } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isValidSequence } from "@/lib/migration/sequence-utils";
+import { MASTER_OBJECT_TYPE_OPTIONS, DEFAULT_MASTER_OBJECT_TYPE } from "@/lib/migration/master-object-type";
 import { EditLockAlert } from "@/components/ui/edit-lock-alert";
 import { FioriIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 
@@ -47,6 +48,7 @@ interface EditFormData {
   chargeGroup: string;
   chargeOrder: string;
   parallelOrder: string;
+  type: string;
   status: string;
   description: string;
   externalDependencies?: string[];
@@ -91,6 +93,7 @@ function parseExternalDependencies(text: string): string[] {
 function buildNormalizedPatch(draft: EditFormData): Partial<EditFormData> {
   return {
     parallelOrder: draft.parallelOrder,
+    type: draft.type,
     status: draft.status,
     description: draft.description.toUpperCase(),
     activityGroupIds: draft.activityGroupIds,
@@ -264,6 +267,38 @@ export function EditObjectDialog({
                   <p className="fiori-field-hint pl-0.5">
                     Primeiros 2 dígitos = grupo paralelo. Ex.: 01.00, 01.01 e 01.02 executam no mesmo grupo.
                   </p>
+                </div>
+
+                <div className="sm:col-span-12 space-y-1.5">
+                  <label className="fiori-field-label">
+                    <Shapes className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />
+                    Tipo do objeto
+                  </label>
+                  <Select
+                    value={formDraft.type || DEFAULT_MASTER_OBJECT_TYPE}
+                    onValueChange={(value) => patchForm({ type: value })}
+                    disabled={fieldsLocked}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "fiori-select-trigger shadow-none",
+                        fieldsLocked && "readable-disabled",
+                      )}
+                    >
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent className="fiori-select-content">
+                      {MASTER_OBJECT_TYPE_OPTIONS.map((option) => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className="fiori-select-item"
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="sm:col-span-12 space-y-1.5">

@@ -10,7 +10,7 @@ import {
     useProjects,
     useRunningMock,
     useMockData,
-    useCatalogue,
+    useMasterCatalog,
     useMigrationObjects,
 } from "@/hooks/use-report-data";
 import { useReportAggregation } from "@/hooks/use-report-aggregation";
@@ -32,7 +32,7 @@ function RelatoriosContent() {
     const { projects, isLoading: isProjectsLoading, accessibleProjectIds } = useProjects(isAdmin, isProfileLoading);
     const { projectMocks } = useRunningMock(selectedProjectId, selectedMockId);
     const { mockData } = useMockData(selectedProjectId, selectedMockId);
-    const { catalogue } = useCatalogue();
+    const { masterCatalog } = useMasterCatalog();
     const { objects, isLoading: isObjectsLoading } = useMigrationObjects(
         selectedProjectId,
         selectedMockId,
@@ -44,7 +44,7 @@ function RelatoriosContent() {
 
     const reportData = useReportAggregation({
         objects,
-        catalogue,
+        masterCatalog,
         projects,
         mockData,
         selectedProjectId,

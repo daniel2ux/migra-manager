@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import { normalizeMasterCatalogName } from "@/lib/migration/master-catalog";
+import { isObjectParallelLoad } from "@/lib/migration/sequence-utils";
 
 interface AggregatedObject {
   name: string;
@@ -111,18 +113,45 @@ function formatChargeOrder(chargeOrderRaw: any): string | undefined {
   return `${String(parseInt(str)).padStart(2, "0")}.00`;
 }
 
-function enrichWithCatalogue(
+/** Índice por nome normalizado; em duplicatas no catálogo, prefere registro ATIVO. */
+export function buildMasterCatalogByName(masters: any[] | null | undefined): Map<string, any> {
+  const map = new Map<string, any>();
+  if (!masters) return map;
+
+  for (const master of masters) {
+    const key = normalizeMasterCatalogName(master.name ?? "");
+    if (!key) continue;
+
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, master);
+      continue;
+    }
+
+    const existingInactive = existing.status === "INATIVO";
+    const incomingActive = master.status !== "INATIVO";
+    if (existingInactive && incomingActive) {
+      map.set(key, master);
+    }
+  }
+
+  return map;
+}
+
+function enrichWithMasterCatalog(
   objects: AggregatedObject[],
-  catalogue: any[] | null,
+  masterCatalogByName: Map<string, any>,
 ): AggregatedObject[] {
   return objects.map((obj) => {
-    const catItem = catalogue?.find((c) => c.name === obj.name);
+    const key = normalizeMasterCatalogName(obj.name ?? "");
+    const master = key ? masterCatalogByName.get(key) : undefined;
+    const masterParallel = master ? isObjectParallelLoad(master) : false;
 
     return {
       ...obj,
-      chargeGroup: catItem?.chargeGroup || obj.chargeGroup,
-      chargeOrder: formatChargeOrder(catItem?.chargeOrder || obj.chargeOrder),
-      isParallel: catItem?.isParallel || obj.isParallel,
+      chargeGroup: master?.chargeGroup || obj.chargeGroup,
+      chargeOrder: formatChargeOrder(master?.chargeOrder || obj.chargeOrder),
+      isParallel: master ? masterParallel : obj.isParallel,
       targetRecordsCount: obj.target,
       processedRecordsCount: obj.processed,
       errorRecordsCount: obj.error,
@@ -147,7 +176,7 @@ function calculateTotals(objects: AggregatedObject[]): ReportTotals {
 
 interface UseReportAggregationParams {
   objects: any[] | null;
-  catalogue: any[] | null;
+  masterCatalog: any[] | null;
   projects: any[] | null;
   mockData: any | null;
   selectedProjectId: string;
@@ -155,19 +184,24 @@ interface UseReportAggregationParams {
 
 export function useReportAggregation({
   objects,
-  catalogue,
+  masterCatalog,
   projects,
   mockData,
   selectedProjectId,
 }: UseReportAggregationParams): ReportData | null {
+  const masterCatalogByName = useMemo(
+    () => buildMasterCatalogByName(masterCatalog),
+    [masterCatalog],
+  );
+
   return useMemo(() => {
     if (!objects) return null;
 
     const deduped = deduplicateObjects(objects);
     const aggregated = aggregateByName(deduped);
-    const finalObjectsList = enrichWithCatalogue(
+    const finalObjectsList = enrichWithMasterCatalog(
       Array.from(aggregated.values()),
-      catalogue,
+      masterCatalogByName,
     );
 
     const totals = calculateTotals(finalObjectsList);
@@ -190,5 +224,5 @@ export function useReportAggregation({
       ),
       objectsCount: finalObjectsList.length,
     };
-  }, [objects, catalogue, projects, mockData, selectedProjectId]);
+  }, [objects, masterCatalogByName, projects, mockData, selectedProjectId]);
 }

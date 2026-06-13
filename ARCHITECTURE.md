@@ -222,7 +222,6 @@ Mapeamento de caminhos legados → tabela Supabase (via `src/supabase/path-mappe
 | `migrationLogs/{id}` | `migration_logs` | FK `project_id` opcional |
 | `appConfig/{key}` | `app_config` | chave/valor JSONB |
 | `fileAliases/{id}` | `file_aliases` | padrões de arquivo |
-| `catalogo` | `catalogo` | referência para relatórios |
 
 Tipos gerados: `src/supabase/database.types.ts` (`npm run db:gen-types`).
 

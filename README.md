@@ -26,7 +26,7 @@ Projeto configurado: **Migra** (`nisaukwqrdyomvrczwrf`, `sa-east-1`).
 4. Crie usuário master: `npm run db:seed-master`
 5. Guia completo: [`supabase/SETUP.md`](supabase/SETUP.md)
 
-Migrations em `supabase/migrations/` (inclui tabela `catalogo` e buckets Storage).
+Migrations em `supabase/migrations/` (inclui buckets Storage; catálogo em `master_objects`).
 
 ### 3. Dev server
 

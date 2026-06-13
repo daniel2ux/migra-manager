@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, serverTimestamp, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
 import type { User } from '@/supabase/auth-shim';
 import { DB_BATCH_SIZE } from '@/lib/constants';
-import type { MasterObject } from '../components/object-card';
+import type { MasterObject } from '@/types/master-object';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
 

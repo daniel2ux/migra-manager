@@ -29,7 +29,6 @@ const SEGMENT_TABLE: Record<string, string> = {
   audit_logs: 'audit_logs',
   migrationLogs: 'migration_logs',
   appConfig: 'app_config',
-  catalogo: 'catalogo',
 };
 
 export function parseCompatDbPath(path: string): TableTarget {

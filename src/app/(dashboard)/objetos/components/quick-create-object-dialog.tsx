@@ -31,13 +31,15 @@ import {
   Hash,
   Split,
   Trash2,
+  Shapes,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { computeNextChargeOrderAfterLastCard, computeChargeGroupFromLastCard } from "@/lib/migration/master-catalog-charge-reflow";
 import { expandParallelPeerIds } from "@/lib/migration/parallel-group-utils";
+import { MASTER_OBJECT_TYPE_OPTIONS, DEFAULT_MASTER_OBJECT_TYPE } from "@/lib/migration/master-object-type";
 import { DependencyMapperDialog } from "./dependency-mapper-dialog";
 import { ParallelSelectDialog } from "./parallel-select-dialog";
-import type { MasterObject } from "./object-card";
+import type { MasterObject } from "@/types/master-object";
 
 const QUICK_CREATE_DRAFT_ID = "__quick-create-draft__";
 
@@ -66,6 +68,7 @@ interface QuickFormData {
   chargeGroup: string;
   chargeOrder: string;
   parallelOrder: string;
+  type: string;
   status: string;
   description: string;
   dependencyIds?: string[];
@@ -326,6 +329,31 @@ export function QuickCreateObjectDialog({
                     aria-readonly
                     className="fiori-input readable-disabled shadow-none"
                   />
+                </div>
+                <div className="sm:col-span-4 space-y-1">
+                  <label className="fiori-field-label">
+                    <Shapes className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
+                    Tipo do objeto
+                  </label>
+                  <Select
+                    value={quickFormData.type || DEFAULT_MASTER_OBJECT_TYPE}
+                    onValueChange={(value) => onFormChange({ type: value })}
+                  >
+                    <SelectTrigger className="fiori-select-trigger shadow-none">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent className="fiori-select-content">
+                      {MASTER_OBJECT_TYPE_OPTIONS.map((option) => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className="fiori-select-item"
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="sm:col-span-4 space-y-1">
                   <label className="fiori-field-label">Status</label>
