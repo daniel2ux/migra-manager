@@ -168,7 +168,7 @@ export function PageHeader({
                         </div>
                     )}
 
-                    <div className="flex flex-col min-w-0 gap-1">
+                    <div className={cn("flex flex-col min-w-0", fioriHeaderTall ? "gap-0" : "gap-1")}>
                         <div className="fiori-page-title-row flex items-center gap-2 min-w-0 flex-wrap">
                             <h1
                                 className={cn(

@@ -1,13 +1,12 @@
 "use client";
 
-import React, { Suspense, useMemo } from 'react';
+import React, { Suspense } from 'react';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import {
   Loader2, Plus, Search, Network, Database,
   FileUp, RefreshCw, ArrowUpDown,
-  Table as TableIcon, Grid3X3,
+  Table as TableIcon, Grid3X3, X,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -22,21 +21,24 @@ import { PageHeader } from '@/components/layout/page-header';
 import {
   parseSequence,
   isValidSequence,
-  buildListPositionChargeOrderMap,
   resolveDisplayChargeOrder,
 } from '@/lib/migration/sequence-utils';
-import { ProgressDialog } from './components/progress-dialog';
-import { ImportDialog } from './components/import-dialog';
+import { getConfiguredChargeGroupForObject, findChargeGroupIdForObject } from '@/lib/migration/charge-group-sync';
+import {
+  QuickCreateObjectDialog,
+  EditObjectDialog,
+  ImportDialog,
+  DependencyMapperDialog,
+  ParallelSelectDialog,
+  SelectNextDialog,
+  PrecedenceDialog,
+  ResetSequenceDialog,
+  MigrationDialog,
+  ForceLockDialog,
+  ProgressDialog,
+} from './components/lazy-dialogs';
 import { MigrationObjectCard, type MasterObject } from './components/object-card';
 import { ObjectsTable } from './components/objects-table';
-import { ResetSequenceDialog, MigrationDialog, SuccessorDialog } from './components/sequence-dialogs';
-import { ForceLockDialog } from '@/components/migration/force-lock-dialog';
-import { DependencyMapperDialog } from './components/dependency-mapper-dialog';
-import { ParallelSelectDialog } from './components/parallel-select-dialog';
-import { SelectNextDialog } from './components/select-next-dialog';
-import { PrecedenceDialog } from './components/precedence-dialog';
-import { QuickCreateObjectDialog } from './components/quick-create-object-dialog';
-import { EditObjectDialog } from './components/edit-object-dialog';
 import { useObjectsPage } from './hooks/use-objects-page';
 import { ObjetosFilters } from './components/objetos-filters';
 
@@ -49,58 +51,48 @@ function ObjetosMasterPageContent() {
     nameInputRef, fileInputRef, depSearch1Ref, depSearch2Ref, depSearchTimerRef, depTriggerRef,
     selectNextSearchRef, selectNextTimerRef, selectNextTriggerRef,
     parallelSearchRef, parallelSearchTimerRef, parallelTriggerRef,
-    extDepEditRef, extDepEditTimerRef, mainSearchRef, mainSearchTimerRef,
-    chargeOrderEditRef, chargeOrderEditTimerRef, terminalEndRef,
+    terminalEndRef,
     // State
     open, setOpen, isQuickCreateOpen, setIsQuickCreateOpen,
     isImportOpen, setIsImportOpen, searchTerm, setSearchTerm,
-    isGenerating, isImporting, importProgress, setImportProgress,
+    isImporting, importProgress, setImportProgress,
     importFinished, setImportFinished, importCounts, importLogs, setImportLogs,
     isDragging, selectedCardId, setSelectedCardId,
     draggedObjectId, setDraggedObjectId, dragOverObjectId, setDragOverObjectId,
     isVisualReorderMode, setIsVisualReorderMode, visualOrder, setVisualOrder,
     visualDragId, visualDragOverId,
     isResetDialogOpen, setIsResetDialogOpen, progressState, setProgressState,
-    editingObject, quickFormData, setQuickFormData, editFormData, setEditFormData,
+    editingObject, quickFormData, setQuickFormData, editFormData,
     isMigrationDialogOpen, setIsMigrationDialogOpen, isMigrating,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,
     dependencyFilterType, setDependencyFilterType, dependencyTargetObject,
     isSelectNextOpen, setIsSelectNextOpen, selectNextTargetObject, selectNextSearchTerm, setSelectNextSearchTerm,
     isParallelSelectOpen, setIsParallelSelectOpen, parallelSelectTarget, parallelSelectSearch, setParallelSelectSearch,
     parallelSelectedIds, setParallelSelectedIds,
-    sortMode, setSortMode, statusFilter, setStatusFilter,
+    sortMode, statusFilter, setStatusFilter,
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode,
     isForceLockOpen, setIsForceLockOpen, forceLockTarget, forceLockBlockerName,
     activityGroups, activityGroupFilter, setActivityGroupFilter,
-    successorDialogObject, setSuccessorDialogObject, successorSearch, setSuccessorSearch,
+    chargeGroups, configuredChargeGroupById,
     isPrecedenceOpen, setIsPrecedenceOpen, precedenceObject, setPrecedenceObject, precedenceMode,
     // Derived
-    objects, isLoading, isAdmin, isLockedByOther, lockedByName,
+    objects, isLoading, isAdmin, isAdminOrMaster, isLockedByOther, lockedByName,
     usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, hasActiveFilters, selectedMockName, isMockLocked,
+    displayChargeOrderById,
     // Handlers
     handleClearFilters, handleOpenDependencies, handleOpenParallelSelect, handleSaveParallelSelect,
     handleOpenSelectNext, handleSelectNextConfirm, handleToggleDependency, handleOpenPrecedence,
     handleVisualDragStart, handleVisualDragOver, handleVisualDrop, handleApplyVisualOrder,
     handleDragOver, handleDragLeave, handleDrop,
-    suggestNextOrder, suggestNextParallelOrder, handleMigrateSequences,
+    suggestNextParallelOrder, handleMigrateSequences,
     handleResetApplyCurrentOrder, handleResetFullClear, handleFileImport, handleDelete,
-    handleAiGenerateQuick, handleOpenEditDialog, handleForceAcquire,
-    handleSaveQuick, handleSetSuccessor, performReorder, handleSaveEdit,
+    handleOpenEditDialog, handleForceAcquire,
+    handleSaveQuick, performReorder, handleSaveEdit, handlePatchMaster,
     releaseLock, editSaveError, clearEditSaveError,
   } = useObjectsPage();
 
   const listForDisplay =
     isVisualReorderMode && visualOrder.length > 0 ? visualOrder : sortedFilteredObjects;
-  const sequenceByListPosition = sortMode === 'EXECUTION' || isVisualReorderMode;
-  const displayChargeOrderById = useMemo(
-    () =>
-      sequenceByListPosition
-        ? buildListPositionChargeOrderMap(
-            isVisualReorderMode && visualOrder.length > 0 ? visualOrder : sortedFilteredObjects,
-          )
-        : undefined,
-    [sequenceByListPosition, isVisualReorderMode, visualOrder, sortedFilteredObjects],
-  );
 
   // Wrapper para visualização (mock bloqueado)
   const handleOpenViewDialog = (obj: MasterObject) => {
@@ -132,6 +124,34 @@ function ObjetosMasterPageContent() {
           actions={
             <TooltipProvider delayDuration={0}>
               <div className="fiori-toolbar">
+                <div className={cn("fiori-toolbar-search", isSearchOpen && "fiori-toolbar-search--open")}>
+                  <div className="fiori-search-shell">
+                    <Search className="fiori-search-icon" aria-hidden />
+                    <input
+                      type="search"
+                      autoFocus={isSearchOpen}
+                      placeholder="Pesquisar objetos..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setIsSearchOpen(false);
+                      }}
+                      className="fiori-search-input"
+                      aria-label="Pesquisar objetos"
+                    />
+                    {searchTerm && (
+                      <button
+                        type="button"
+                        className="fiori-search-clear"
+                        onClick={() => setSearchTerm("")}
+                        aria-label="Limpar busca"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -142,6 +162,7 @@ function ObjetosMasterPageContent() {
                         PAGE_TOOLBAR_BTN,
                         (isSearchOpen || searchTerm) && "fiori-toolbar-btn-active"
                       )}
+                      aria-label={isSearchOpen ? "Fechar busca" : "Pesquisar objetos"}
                     >
                       <Search className="w-4 h-4" />
                       {hasActiveFilters && !isSearchOpen && (
@@ -149,8 +170,8 @@ function ObjetosMasterPageContent() {
                       )}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" variant="fiori">
-                    {isSearchOpen ? "Fechar filtros" : "Filtrar objetos"}
+                  <TooltipContent side="top" variant="fiori">
+                    {isSearchOpen ? "Fechar busca" : "Pesquisar objetos"}
                   </TooltipContent>
                 </Tooltip>
 
@@ -272,16 +293,10 @@ function ObjetosMasterPageContent() {
 
         {/* TIER 2: SEARCH/FILTERS */}
         <ObjetosFilters
-          isSearchOpen={isSearchOpen}
-          setIsSearchOpen={setIsSearchOpen}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
-          mainSearchRef={mainSearchRef}
-          mainSearchTimerRef={mainSearchTimerRef}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
-          sortMode={sortMode}
-          setSortMode={setSortMode}
           activityGroups={activityGroups}
           activityGroupFilter={activityGroupFilter}
           setActivityGroupFilter={setActivityGroupFilter}
@@ -317,6 +332,7 @@ function ObjetosMasterPageContent() {
                   <ObjectsTable
                     objects={listForDisplay}
                     displayChargeOrderById={displayChargeOrderById}
+                    configuredChargeGroupById={configuredChargeGroupById}
                     duplicateMasterNameKeys={duplicateMasterNameKeys}
                     allObjects={objects}
                     activityGroups={activityGroups}
@@ -356,9 +372,16 @@ function ObjetosMasterPageContent() {
                                 ) ?? undefined)
                               : undefined
                           }
+                          displayChargeGroup={getConfiguredChargeGroupForObject(
+                            obj.id,
+                            configuredChargeGroupById,
+                          )}
+                          allChargeGroups={chargeGroups}
+                          selectedChargeGroupId={findChargeGroupIdForObject(obj.id, chargeGroups)}
                           catalogDuplicateName={duplicateMasterNameKeys.has(normalizeMasterCatalogName(obj.name))}
                           allGroups={activityGroups}
                           isAdmin={isAdmin}
+                          isAdminOrMaster={isAdminOrMaster}
                           isExecutionSort={sortMode === 'EXECUTION'}
                           isVisualReorderMode={isVisualReorderMode}
                           isVisualDragging={visualDragId === obj.id}
@@ -412,6 +435,49 @@ function ObjetosMasterPageContent() {
                           onSelectNext={handleOpenSelectNext}
                           onSelectParallel={handleOpenParallelSelect}
                           isMockLocked={isMockLocked}
+                          onChargeOrderChange={(target, newOrder) => {
+                            if (!isAdmin || isMockLocked) return;
+                            const displayed = displayChargeOrderById
+                              ? resolveDisplayChargeOrder(target.id, target.chargeOrder, displayChargeOrderById)
+                              : target.chargeOrder;
+                            void performReorder(
+                              { ...target, chargeOrder: displayed ?? target.chargeOrder ?? "" },
+                              newOrder,
+                              undefined,
+                              {
+                                orderedList: displayChargeOrderById ? listForDisplay : undefined,
+                                onMoved: (id) => {
+                                  setSelectedCardId(id);
+                                  requestAnimationFrame(() => {
+                                    document
+                                      .getElementById(`obj-card-${id}`)
+                                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  });
+                                },
+                              },
+                            );
+                          }}
+                          onStatusChange={
+                            isAdminOrMaster
+                              ? (target, status) => {
+                                  void handlePatchMaster(target, { status });
+                                }
+                              : undefined
+                          }
+                          onActivityGroupsChange={
+                            isAdminOrMaster
+                              ? (target, activityGroupIds) => {
+                                  void handlePatchMaster(target, { activityGroupIds });
+                                }
+                              : undefined
+                          }
+                          onChargeGroupChange={
+                            isAdminOrMaster
+                              ? (target, chargeGroupId) => {
+                                  void handlePatchMaster(target, { chargeGroupId });
+                                }
+                              : undefined
+                          }
                         />
                       );
                     })}
@@ -419,66 +485,67 @@ function ObjetosMasterPageContent() {
                 )}
               </TooltipProvider>
             ) : (
-              <div className="flex flex-col items-center justify-center p-20 bg-white border border-dashed border-slate-200 rounded-none gap-6 group hover:border-slate-300 transition-all">
-                <div className="p-6 bg-slate-50 rounded-none group-hover:bg-slate-100 transition-all">
-                  <Database className="w-12 h-12 text-slate-200 group-hover:text-slate-300 transition-all" />
+              <div className="fiori-page-empty">
+                <div className="fiori-page-empty__icon">
+                  <Database className="h-5 w-5" aria-hidden />
                 </div>
-                <div className="text-center space-y-2">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Nenhum objeto encontrado</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest max-w-[300px] leading-relaxed">
-                    Tente ajustar seus filtros de busca ou crie um novo objeto de migração no catálogo.
+                <div className="fiori-page-empty__body">
+                  <h3 className="fiori-page-empty__title">Nenhum objeto encontrado</h3>
+                  <p className="fiori-page-empty__desc">
+                    Tente ajustar os filtros de busca ou crie um novo objeto de migração no catálogo.
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={handleClearFilters}
-                  className="bg-white border-slate-200 font-black text-[10px] uppercase tracking-widest h-10 px-8 transition-all active:scale-95 rounded-none"
+                  className="fiori-page-empty__btn"
                 >
-                  LIMPAR FILTROS
-                </Button>
+                  Limpar filtros
+                </button>
               </div>
             )}
           </div>
 
-          {/* ── Dialogs ─────────────────────────────────────────────────────── */}
+          {/* ── Dialogs (lazy: carregam só quando abertos) ─────────────────── */}
+          {isQuickCreateOpen && (
           <QuickCreateObjectDialog
             open={isQuickCreateOpen}
             onOpenChange={setIsQuickCreateOpen}
             quickFormData={quickFormData}
+            activityGroups={activityGroups}
+            catalogObjects={sequenceContextRows}
             onFormChange={(patch) =>
               setQuickFormData((prev) => ({ ...prev, ...patch }))}
-            isGenerating={isGenerating}
             onSave={handleSaveQuick}
-            onAiGenerate={() => void handleAiGenerateQuick()}
-            onSuggestOrder={(group, _mode) => suggestNextOrder(group, 'quick')}
-            onSuggestParallelOrder={(group, _mode) => suggestNextParallelOrder(group, 'quick')}
             nameInputRef={nameInputRef}
           />
+          )}
 
+          {open && (
           <EditObjectDialog
             open={open}
             onOpenChange={setOpen}
             editingObject={editingObject}
             editFormData={editFormData}
-            onFormChange={(data) => setEditFormData({ ...editFormData, ...data, externalDependencies: data.externalDependencies ?? editFormData.externalDependencies })}
             isAdmin={isAdmin}
             isLockedByOther={isLockedByOther}
             lockedByName={lockedByName}
             activityGroups={activityGroups}
             onSave={handleSaveEdit}
             isMockLocked={isMockLocked}
-            onSuggestOrder={(group, _mode) => suggestNextOrder(group, 'edit')}
-            onSuggestParallelOrder={(group, _mode) => suggestNextParallelOrder(group, 'edit')}
+            displayChargeGroup={
+              editingObject
+                ? getConfiguredChargeGroupForObject(editingObject.id, configuredChargeGroupById)
+                : ""
+            }
+            onSuggestParallelOrder={(group) => suggestNextParallelOrder(group)}
             onReleaseLock={releaseLock}
-            chargeOrderEditRef={chargeOrderEditRef}
-            chargeOrderEditTimerRef={chargeOrderEditTimerRef}
-            extDepEditRef={extDepEditRef}
-            extDepEditTimerRef={extDepEditTimerRef}
             saveError={editSaveError}
             onClearSaveError={clearEditSaveError}
           />
+          )}
 
+          {isImportOpen && (
           <ImportDialog
             open={isImportOpen}
             onOpenChange={(o) => {
@@ -506,7 +573,9 @@ function ObjetosMasterPageContent() {
               setImportLogs([]);
             }}
           />
+          )}
 
+          {isDependenciesOpen && (
           <DependencyMapperDialog
             open={isDependenciesOpen}
             onOpenChange={(open) => { setIsDependenciesOpen(open); if (!open) setTimeout(() => depTriggerRef.current?.focus(), 0); }}
@@ -521,7 +590,9 @@ function ObjetosMasterPageContent() {
             searchRef={depSearch1Ref as React.RefObject<HTMLInputElement>}
             timerRef={depSearchTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
+          )}
 
+          {isParallelSelectOpen && (
           <ParallelSelectDialog
             open={isParallelSelectOpen}
             onOpenChange={(open) => {
@@ -545,7 +616,9 @@ function ObjetosMasterPageContent() {
             searchRef={parallelSearchRef as React.RefObject<HTMLInputElement>}
             timerRef={parallelSearchTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
+          )}
 
+          {isSelectNextOpen && (
           <SelectNextDialog
             open={isSelectNextOpen}
             onOpenChange={(open) => {
@@ -567,7 +640,9 @@ function ObjetosMasterPageContent() {
             searchRef={selectNextSearchRef as React.RefObject<HTMLInputElement>}
             timerRef={selectNextTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
+          )}
 
+          {isPrecedenceOpen && (
           <PrecedenceDialog
             open={isPrecedenceOpen}
             onOpenChange={setIsPrecedenceOpen}
@@ -587,14 +662,18 @@ function ObjetosMasterPageContent() {
             searchRef={depSearch2Ref as React.RefObject<HTMLInputElement | null>}
             timerRef={depSearchTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
+          )}
 
+          {isResetDialogOpen && (
           <ResetSequenceDialog
             open={isResetDialogOpen}
             onOpenChange={setIsResetDialogOpen}
             onApplyCurrent={handleResetApplyCurrentOrder}
             onFullClear={handleResetFullClear}
           />
+          )}
 
+          {isMigrationDialogOpen && (
           <MigrationDialog
             open={isMigrationDialogOpen}
             onOpenChange={setIsMigrationDialogOpen}
@@ -602,16 +681,9 @@ function ObjetosMasterPageContent() {
             objectsToConvert={sequenceContextRows.filter(o => { const v = o.chargeOrder; return v && !(typeof v === 'string' && isValidSequence(v)); }).length}
             onMigrate={handleMigrateSequences}
           />
+          )}
 
-          <SuccessorDialog
-            successorDialogObject={successorDialogObject}
-            onClose={() => { setSuccessorDialogObject(null); setSuccessorSearch(''); }}
-            successorSearch={successorSearch}
-            onSearchChange={setSuccessorSearch}
-            objects={sequenceContextRows}
-            onSelectSuccessor={(o) => successorDialogObject && handleSetSuccessor(successorDialogObject, o as any)}
-          />
-
+          {isForceLockOpen && (
           <ForceLockDialog
             open={isForceLockOpen}
             onOpenChange={setIsForceLockOpen}
@@ -620,27 +692,13 @@ function ObjetosMasterPageContent() {
             onForceAcquire={handleForceAcquire}
             contextLabel="no catálogo"
           />
+          )}
 
+          {progressState.open && (
           <ProgressDialog
             state={progressState}
             onOpenChange={(v) => setProgressState(prev => ({ ...prev, open: v }))}
           />
-
-          {progressState.open && (
-            <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/30 backdrop-blur-xs">
-              <div className="bg-white shadow-2xl p-6 w-[calc(100vw-32px)] max-w-[340px] space-y-3 rounded-none">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{progressState.title}</span>
-                  <span className="text-[10px] font-black text-SkyBlue-600">
-                    {progressState.total > 0 ? Math.round((progressState.current / progressState.total) * 100) : 0}%
-                  </span>
-                </div>
-                <Progress value={progressState.total > 0 ? (progressState.current / progressState.total) * 100 : 0} className="h-1.5 rounded-none" />
-                <p className="text-[7.5px] font-bold text-slate-300 uppercase tracking-wider text-right">
-                  {progressState.current} / {progressState.total} objetos
-                </p>
-              </div>
-            </div>
           )}
         </div>
       </div>

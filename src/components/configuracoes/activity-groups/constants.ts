@@ -14,6 +14,49 @@ export const COLOR_PALETTE = [
   "#8B5CF6", "#6366F1", "#A855F7", "#7C3AED", "#4F46E5", "#6D28D9", "#1E1B4B", "#4338CA"
 ];
 
+/** Próxima cor da paleta (circular) a partir da cor atual. */
+export function nextPaletteColor(current: string): string {
+  const idx = COLOR_PALETTE.indexOf(current);
+  if (idx === -1) return COLOR_PALETTE[0];
+  return COLOR_PALETTE[(idx + 1) % COLOR_PALETTE.length];
+}
+
+/** Cor sugerida ao abrir o formulário de criação (após o último grupo cadastrado). */
+export function suggestedCreateGroupColor(groups: { color: string; displayOrder?: number }[]): string {
+  if (groups.length === 0) return COLOR_PALETTE[0];
+  const last = groups.reduce((best, g) =>
+    (g.displayOrder ?? 0) >= (best.displayOrder ?? 0) ? g : best,
+  );
+  return nextPaletteColor(last.color);
+}
+
+/** Próxima ordem de exibição disponível (maior ordem existente + 1). */
+export function nextAvailableDisplayOrder(groups: { displayOrder?: number }[]): number {
+  if (groups.length === 0) return 1;
+  const maxOrder = groups.reduce((max, g) => Math.max(max, g.displayOrder ?? 0), 0);
+  return maxOrder + 1;
+}
+
+export function sortActivityGroupsByDisplayOrder<
+  T extends { displayOrder?: number; name: string },
+>(groups: T[]): T[] {
+  return [...groups].sort(
+    (a, b) =>
+      (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
+      a.name.localeCompare(b.name, "pt-BR"),
+  );
+}
+
+/** Renumera ordens de exibição para 1..n após remoção ou reorganização. */
+export function reindexActivityGroupDisplayOrders<
+  T extends { id: string; displayOrder?: number; name: string },
+>(groups: T[]): Array<T & { displayOrder: number }> {
+  return sortActivityGroupsByDisplayOrder(groups).map((group, index) => ({
+    ...group,
+    displayOrder: index + 1,
+  }));
+}
+
 export const DELETE_GROUP_EFFECTS = [
   "Registro do grupo de atividade",
   "Vínculos de objetos associados a este grupo",

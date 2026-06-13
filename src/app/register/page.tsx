@@ -17,11 +17,11 @@ import {
   Phone
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { doc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
-import { createUserWithEmailAndPassword, Auth } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, type CompatDb } from '@/supabase/compat-db-shim';
+import { ref, uploadBytes, getDownloadURL, type CompatStorage } from '@/supabase/storage-shim';
+import { createUserWithEmailAndPassword, Auth } from '@/supabase/auth-shim';
 import Link from 'next/link';
-import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase, useStorage } from '@/supabase';
+import { useAuth, useDb, useUser, useDoc, useMemoDb, useStorage } from '@/supabase';
 import { Camera, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -29,7 +29,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const db = useFirestore();
+  const db = useDb();
   const { user: currentUser, isUserLoading } = useUser();
 
   const [loading, setLoading] = useState(false);
@@ -73,7 +73,7 @@ export default function RegisterPage() {
     }
   };
 
-  const currentUserRef = useMemoFirebase(() => currentUser ? doc(db as Firestore, 'users', currentUser.uid) : null, [db, currentUser]);
+  const currentUserRef = useMemoDb(() => currentUser ? doc(db as CompatDb, 'users', currentUser.uid) : null, [db, currentUser]);
   const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc(currentUserRef);
   const isAdmin = !isProfileLoading && (
     (currentUserProfile as any)?.role === 'admin' ||
@@ -150,12 +150,12 @@ export default function RegisterPage() {
 
         let photoURL = "";
         if (photoFile) {
-          const storageRef = ref(storage as FirebaseStorage, `avatars/${newUserUid}`);
+          const storageRef = ref(storage as CompatStorage, `avatars/${newUserUid}`);
           await uploadBytes(storageRef, photoFile);
           photoURL = await getDownloadURL(storageRef);
         }
 
-        await setDoc(doc(db as Firestore, 'users', newUserUid), {
+        await setDoc(doc(db as CompatDb, 'users', newUserUid), {
           uid: newUserUid,
           name: formData.name.toUpperCase(),
           email: formData.email,

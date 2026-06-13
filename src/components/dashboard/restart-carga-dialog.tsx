@@ -27,7 +27,7 @@ export function RestartCargaDialog({
 }: RestartCargaDialogProps) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange} {...dashboardDialogRootProps}>
-            <AlertDialogContent className="border shadow-2xl bg-white rounded-none" {...dashboardAlertDialogContentProps}>
+            <AlertDialogContent className="border shadow-2xl bg-white rounded-none" open={open} {...dashboardAlertDialogContentProps}>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="font-bold uppercase tracking-tight text-slate-900 flex items-center gap-2">
                         <RefreshCcw className="w-5 h-5 text-amber-500" /> REINICIAR CICLO DA JANELA?

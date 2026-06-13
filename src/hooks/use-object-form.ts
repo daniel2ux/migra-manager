@@ -14,6 +14,8 @@ export interface ObjectFormData {
     status: string;
     isParallel: boolean;
     activityGroupIds: string[];
+    /** Objetos do catálogo que executarão em paralelo com este (cadastro rápido). */
+    parallelPeerIds: string[];
 }
 
 const DEFAULT_FORM: ObjectFormData = {
@@ -28,6 +30,7 @@ const DEFAULT_FORM: ObjectFormData = {
     status: "ATIVO",
     isParallel: false,
     activityGroupIds: [],
+    parallelPeerIds: [],
 };
 
 export function useObjectForm(initial: Partial<ObjectFormData> = {}) {

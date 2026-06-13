@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, KeyRound, Check, Copy, AlertTriangle, Trash2 } from "lucide-react";
+import { Loader2, KeyRound, Check, Copy, AlertTriangle, Trash2, Mail } from "lucide-react";
+import { FioriIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,7 +57,7 @@ export function ResetPasswordConfirmDialog({
         <div className="fiori-message-box-body">
           <p className="fiori-message-box-text">
             Deseja resetar a senha deste profissional? Uma senha temporária será gerada
-            e exibida na sequência.
+            e enviada por e-mail. A senha também ficará disponível aqui para cópia manual.
           </p>
         </div>
 
@@ -87,7 +88,9 @@ interface ResetPasswordResultDialogProps {
   onOpenChange: (open: boolean) => void;
   result: ResetPasswordResult | null;
   onCopy: () => Promise<void>;
+  onResend?: () => Promise<void>;
   copied: boolean;
+  isResending?: boolean;
 }
 
 export function ResetPasswordResultDialog({
@@ -95,7 +98,9 @@ export function ResetPasswordResultDialog({
   onOpenChange,
   result,
   onCopy,
+  onResend,
   copied,
+  isResending = false,
 }: ResetPasswordResultDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,26 +127,42 @@ export function ResetPasswordResultDialog({
         </DialogHeader>
 
         <div className="fiori-dialog-body space-y-4">
-          <p className="fiori-message-box-text m-0">
-            Copie a senha temporária abaixo e repasse ao profissional de forma segura.
-          </p>
+          {result?.emailSent ? (
+            <>
+              <p className="fiori-message-box-text m-0">
+                E-mail enviado para <strong>{result.email}</strong> com as instruções de acesso.
+                Uma cópia também foi enviada para a caixa do remetente SMTP configurado em Configurações.
+              </p>
+              <p className="fiori-message-box-text m-0 text-[var(--fiori-text-secondary,#6a6d70)]">
+                Se o profissional não encontrar, peça para verificar <strong>Spam/Lixo eletrônico</strong> e confirme que a caixa <strong>{result.email}</strong> existe no Hostinger.
+              </p>
+            </>
+          ) : result?.emailSent === false ? (
+            <div role="note" className="fiori-message-warning m-0">
+              O e-mail não foi enviado{result.emailError ? `: ${result.emailError}` : ''}.
+              Copie a senha abaixo e repasse ao profissional de forma segura.
+            </div>
+          ) : (
+            <p className="fiori-message-box-text m-0">
+              Copie a senha temporária abaixo e repasse ao profissional de forma segura.
+            </p>
+          )}
 
           <div className="fiori-id-preview items-center gap-2">
             <code className="fiori-id-preview-value min-w-0 flex-1 font-mono text-sm">
               {result?.tempPassword}
             </code>
-            <button
-              type="button"
+            <FioriIconButtonHint
+              hint={copied ? "Senha copiada" : "Copiar senha"}
               onClick={() => void onCopy()}
               className="fiori-icon-btn fiori-icon-btn-bordered shrink-0"
-              aria-label={copied ? "Senha copiada" : "Copiar senha"}
             >
               {copied ? (
                 <Check className="h-4 w-4 text-[var(--fiori-positive,#107e3e)]" aria-hidden />
               ) : (
                 <Copy className="h-4 w-4" aria-hidden />
               )}
-            </button>
+            </FioriIconButtonHint>
           </div>
 
           <div role="note" className="fiori-message-warning m-0">
@@ -149,7 +170,22 @@ export function ResetPasswordResultDialog({
           </div>
         </div>
 
-        <DialogFooter className="fiori-dialog-footer shrink-0">
+        <DialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end">
+          {result?.email && onResend && (
+            <button
+              type="button"
+              onClick={() => void onResend()}
+              disabled={isResending}
+              className="fiori-btn inline-flex items-center gap-1.5"
+            >
+              {isResending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <Mail className="h-3.5 w-3.5" aria-hidden />
+              )}
+              Reenviar e-mail
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -172,7 +208,7 @@ interface DeleteUserConfirmDialogProps {
 }
 
 const DELETE_EFFECTS = [
-  "Conta removida do Firebase Authentication",
+  "Conta removida da autenticação",
   "Perfil excluído do diretório de profissionais",
   "Vínculos e permissões associados revogados",
 ] as const;

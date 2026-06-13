@@ -72,8 +72,10 @@ ToastClose.displayName = ToastPrimitives.Close.displayName
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-  VariantProps<typeof toastVariants>
->(({ className, variant, children, ...props }, ref) => {
+  VariantProps<typeof toastVariants> & {
+    durationLabel?: React.ReactNode
+  }
+>(({ className, variant, children, durationLabel, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
       ref={ref}
@@ -83,8 +85,10 @@ const Toast = React.forwardRef<
       <div className="fiori-toast-inner">
         <ToastStatusIcon variant={variant} />
         <div className="fiori-toast-body">{children}</div>
+        {durationLabel}
         <ToastClose />
       </div>
+      <span className="fiori-toast-progress" aria-hidden />
     </ToastPrimitives.Root>
   )
 })

@@ -6,8 +6,8 @@ import { useSelection } from '@/context/selection-context';
 import {
   useCollection,
   useDoc,
-  useFirestore,
-  useMemoFirebase,
+  useDb,
+  useMemoDb,
   useUser,
 } from '@/supabase';
 import {
@@ -16,7 +16,7 @@ import {
   doc,
   query,
   where,
-} from 'firebase/firestore';
+} from '@/supabase/compat-db-shim';
 import { useToast } from '@/hooks/use-toast';
 import { buildLogExportMeta } from '@/lib/export/log-export-meta';
 import {
@@ -33,20 +33,20 @@ export function useMockObjectsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { selectedMockId, selectedProjectId } = useSelection();
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
   const isMasked = params.mockId === 'gestao';
   const projectId = isMasked ? selectedProjectId : searchParams.get('projectId');
   const routeMockId = isMasked ? selectedMockId : (params.mockId as string);
 
-  const projectDocRef = useMemoFirebase(
+  const projectDocRef = useMemoDb(
     () => (projectId && db ? doc(db, 'projects', projectId) : null),
     [db, projectId],
   );
   const { data: projectData } = useDoc<any>(projectDocRef);
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db ? doc(db, 'users', user.uid) : null),
     [db, user],
   );
@@ -54,19 +54,19 @@ export function useMockObjectsPage() {
   const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'master';
   const isAdminOrMaster = isAdmin;
 
-  const masterObjectsQuery = useMemoFirebase(
+  const masterObjectsQuery = useMemoDb(
     () => (db ? collection(db, 'masterObjects') : null),
     [db],
   );
   const { data: masterObjects } = useCollection<MasterObject>(masterObjectsQuery);
 
-  const directMockRef = useMemoFirebase(() => {
+  const directMockRef = useMemoDb(() => {
     if (!db || !projectId || !routeMockId) return null;
     return doc(db, 'projects', projectId, 'mocks', routeMockId);
   }, [db, projectId, routeMockId]);
   const { data: mockFromId, isLoading: isIdLoading } = useDoc<Mock>(directMockRef);
 
-  const slugQuery = useMemoFirebase(() => {
+  const slugQuery = useMemoDb(() => {
     if (!db || !projectId || !routeMockId || isMasked || mockFromId) return null;
     return query(collection(db, 'projects', projectId, 'mocks'), where('slug', '==', routeMockId));
   }, [db, projectId, routeMockId, isMasked, mockFromId]);
@@ -84,7 +84,7 @@ export function useMockObjectsPage() {
   const headerProjectName = companyName ? projectData?.name : undefined;
   const headerMockName = mockData?.name;
 
-  const objectsQuery = useMemoFirebase(() => {
+  const objectsQuery = useMemoDb(() => {
     if (!db || !projectId || !mockId || !userProfile) return null;
     return collection(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects');
   }, [db, projectId, mockId, userProfile]);
@@ -137,7 +137,7 @@ export function useMockObjectsPage() {
     };
   }, [ctxMenu]);
 
-  const allCommentsQuery = useMemoFirebase(() => {
+  const allCommentsQuery = useMemoDb(() => {
     if (!db || !projectId || !mockId) return null;
     return query(
       collectionGroup(db, 'comments'),

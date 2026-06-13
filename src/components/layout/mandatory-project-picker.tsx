@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { collection, doc, query, where } from "firebase/firestore";
+import { collection, doc, query, where } from "@/supabase/compat-db-shim";
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
+import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { UserProfile } from "@/types/migration";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { AlertCircle, Loader2, FolderKanban, LogOut } from "lucide-react";
 import { useAuth } from "@/supabase/provider";
-import { signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { signOut } from "@/supabase/auth-shim";
+import { useRouter, usePathname } from "next/navigation";
 
 type ProjectBrief = {
   id: string;
@@ -30,13 +30,14 @@ type ProjectBrief = {
  * (sessão + URL + eventos), alinhado ao restante do dashboard.
  */
 export function MandatoryProjectPicker() {
-  const db = useFirestore();
+  const db = useDb();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isUserLoading } = useUser();
   const { projectId: activeProjectId, updateActiveProject } = useActiveProjectId();
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db && !isUserLoading ? doc(db, "users", user.uid) : null),
     [db, user, isUserLoading],
   );
@@ -56,7 +57,7 @@ export function MandatoryProjectPicker() {
   }, [userProfile]);
 
   /** Mesmo critério de `use-dashboard-queries`: admin vê coleção inteira; demais apenas membros */
-  const projectsQuery = useMemoFirebase(() => {
+  const projectsQuery = useMemoDb(() => {
     if (!db || !user || isUserLoading || profileLoading) return null;
     const projectsRef = collection(db, "projects");
     if (isAdmin) return projectsRef;
@@ -170,6 +171,13 @@ export function MandatoryProjectPicker() {
     updateActiveProject(id);
   };
 
+  const shouldSkip =
+    pathname === "/alterar-senha" || userProfile?.mustChangePassword === true;
+
+  if (shouldSkip) {
+    return null;
+  }
+
   return (
     <>
       {showLoadingBackdrop && (
@@ -196,7 +204,7 @@ export function MandatoryProjectPicker() {
               Não foi possível carregar seus projetos
             </p>
             <p className="text-xs text-slate-600">
-              A conexão com o Firestore foi recusada. Tente sair e entrar novamente.
+              A conexão com o banco de dados foi recusada. Tente sair e entrar novamente.
             </p>
           </div>
           <Button

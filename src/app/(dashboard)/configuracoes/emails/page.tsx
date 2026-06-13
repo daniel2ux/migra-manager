@@ -5,8 +5,8 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useMemoFirebase, useDoc } from "@/supabase";
-import { doc } from "firebase/firestore";
+import { useDb, useUser, useMemoDb, useDoc } from "@/supabase";
+import { doc } from "@/supabase/compat-db-shim";
 import { PageHeader } from "@/components/layout/page-header";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { getProjectCompanyName } from "@/lib/migration/project-company";
@@ -47,19 +47,19 @@ const CARD_TOOLBAR_BTN =
   "fiori-card-toolbar-btn !rounded-[0.25rem] !size-[1.375rem] min-h-0 min-w-0";
 
 export default function EmailsPage() {
-  const db = useFirestore() as any;
+  const db = useDb() as any;
   const { user } = useUser();
   const { toast } = useToast();
 
   const { projectId } = useActiveProjectId();
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user ? doc(db, "users", user.uid) : null),
     [db, user]
   );
   const { data: userProfile, isLoading: isLoadingProfile } = useDoc<any>(userDocRef);
 
-  const projectRef = useMemoFirebase(
+  const projectRef = useMemoDb(
     () => (db && projectId ? doc(db, "projects", projectId) : null),
     [db, projectId],
   );

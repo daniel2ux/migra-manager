@@ -94,7 +94,7 @@ Registro de uma execução de carga. Contém: `type`, `startTime`, `endTime`, `t
 - Administradores (`role: 'admin'` ou `master`) têm visibilidade total
 - Presença de sessão rastreada em `sessions` via hook `usePresence`
 - API de sessão admin: `POST /api/admin/session-action` (logout, block, block-logout, delete, unlock)
-- **Imports client**: `@/supabase` (shims `firebase/firestore` e `firebase/auth` no tsconfig)
+- **Imports client**: `@/supabase` (hooks `useDb`, `useMemoDb`; shims em `@/supabase/*-shim`)
 
 ---
 
@@ -290,7 +290,7 @@ O offset `7rem` = header da página (`4rem`) + padding do conteúdo (`3rem`). Aj
 | `src/lib/migration/gestao-sequence.ts` | Ordem de exibição alinhada entre dashboard e gestão de objetos |
 | `src/supabase/client.ts` | Cliente browser Supabase |
 | `src/supabase/admin.ts` | Service role (API routes server-side) |
-| `src/supabase/query-builder.ts` | Compat Firestore → Postgres |
+| `src/supabase/query-builder.ts` | Compat caminhos documento → Postgres |
 | `src/components/layout/DashboardShell.tsx` | Shell principal das páginas |
 | `src/components/ui/button.tsx` | Variantes e tamanhos de botão |
 | `src/app/globals.css` (`@theme`) | Paleta SkyBlue e tokens shadcn (Tailwind v4) |

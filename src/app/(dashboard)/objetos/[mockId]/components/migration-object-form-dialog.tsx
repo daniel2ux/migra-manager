@@ -17,7 +17,8 @@ import { Clock, Database, History, Search, Timer, CalendarDays } from "lucide-re
 import { cn } from "@/lib/utils";
 import { formatNumber, unformatNumber, formatDurationInput } from "@/lib/migration/format-utils";
 import type { MigrationObject } from "@/types/migration";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent } from "@/components/ui/popover";
+import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ptBR } from "date-fns/locale";
@@ -316,17 +317,14 @@ export function MigrationObjectFormDialog({
                           className="fiori-input min-w-0 flex-1 font-mono readable-disabled shadow-none"
                         />
                         <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              disabled={!isAdmin || isMockLocked}
-                              aria-label="Abrir calendário — início da carga"
-                              className="fiori-icon-btn fiori-icon-btn-bordered"
-                              onMouseDown={(e) => e.preventDefault()}
-                            >
-                              <CalendarDays className="h-4 w-4" />
-                            </button>
-                          </PopoverTrigger>
+                          <FioriPopoverIconButtonHint
+                            hint="Abrir calendário — início da carga"
+                            disabled={!isAdmin || isMockLocked}
+                            className="fiori-icon-btn fiori-icon-btn-bordered"
+                            onMouseDown={(e) => e.preventDefault()}
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                          </FioriPopoverIconButtonHint>
                           <PopoverContent variant="fiori" className="w-auto max-h-[85vh] overflow-y-auto p-3" align="start">
                             <div className="space-y-3">
                               <Calendar
@@ -397,17 +395,14 @@ export function MigrationObjectFormDialog({
                           className="fiori-input min-w-0 flex-1 font-mono readable-disabled shadow-none"
                         />
                         <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              disabled={!isAdmin || isMockLocked}
-                              aria-label="Abrir calendário — término da carga"
-                              className="fiori-icon-btn fiori-icon-btn-bordered"
-                              onMouseDown={(e) => e.preventDefault()}
-                            >
-                              <CalendarDays className="h-4 w-4" />
-                            </button>
-                          </PopoverTrigger>
+                          <FioriPopoverIconButtonHint
+                            hint="Abrir calendário — término da carga"
+                            disabled={!isAdmin || isMockLocked}
+                            className="fiori-icon-btn fiori-icon-btn-bordered"
+                            onMouseDown={(e) => e.preventDefault()}
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                          </FioriPopoverIconButtonHint>
                           <PopoverContent variant="fiori" className="w-auto max-h-[85vh] overflow-y-auto p-3" align="start">
                             <div className="space-y-3">
                               <Calendar

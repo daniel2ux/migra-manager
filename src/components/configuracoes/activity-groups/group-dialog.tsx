@@ -13,18 +13,24 @@ import {
 import { cn } from "@/lib/utils";
 import { Layers } from "lucide-react";
 import type { ActivityGroup } from "@/types/activity-group";
-import { COLOR_PALETTE } from "./constants";
+import { COLOR_PALETTE, nextPaletteColor } from "./constants";
 
 export function GroupDialog({
   open,
   onClose,
   onSave,
   initial,
+  suggestedCreateColor = COLOR_PALETTE[0],
+  suggestedCreateOrder = 1,
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<ActivityGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">) => Promise<void>;
+  onSave: (data: Omit<ActivityGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">) => Promise<number | void>;
   initial?: ActivityGroup | null;
+  /** Cor inicial ao cadastrar (próxima após o último grupo existente). */
+  suggestedCreateColor?: string;
+  /** Ordem inicial ao cadastrar (próxima disponível após o maior displayOrder). */
+  suggestedCreateOrder?: number;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -33,31 +39,54 @@ export function GroupDialog({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      setName(initial?.name ?? "");
-      setDescription(initial?.description ?? "");
-      setColor(initial?.color ?? COLOR_PALETTE[0]);
-      setDisplayOrder(initial?.displayOrder ?? 1);
-    }
+    if (!open) return;
+    setName(initial?.name ?? "");
+    setDescription(initial?.description ?? "");
+    setColor(initial?.color ?? suggestedCreateColor);
+    setDisplayOrder(initial?.displayOrder ?? suggestedCreateOrder);
+  // suggestedCreateColor/suggestedCreateOrder só na abertura; não re-sincronizar após cada save com diálogo aberto
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- open/initial disparam reset do formulário
   }, [open, initial]);
 
   async function handleSave() {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await onSave({ name: name.trim().toUpperCase(), description: description.trim(), color, displayOrder });
-      onClose();
+      const nextOrder = await onSave({
+        name: name.trim().toUpperCase(),
+        description: description.trim(),
+        color,
+        displayOrder,
+      });
+      if (initial) {
+        onClose();
+        return;
+      }
+      setName("");
+      setDescription("");
+      setColor(nextPaletteColor(color));
+      setDisplayOrder(typeof nextOrder === "number" ? nextOrder : displayOrder + 1);
     } finally {
       setSaving(false);
     }
   }
 
+  const isCreateMode = open && !initial;
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && isCreateMode) return;
+        if (!nextOpen) onClose();
+      }}
+    >
       <DialogContent
         variant="fiori"
         overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog fiori-dialog--form flex h-[min(92vh,560px)] w-[calc(100vw-1rem)] max-w-[480px] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden"
+        onInteractOutside={isCreateMode ? (e) => e.preventDefault() : undefined}
+        onEscapeKeyDown={isCreateMode ? (e) => e.preventDefault() : undefined}
       >
         <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
           <DialogDescription className="sr-only">

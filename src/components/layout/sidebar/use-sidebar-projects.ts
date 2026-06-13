@@ -1,25 +1,25 @@
 "use client";
 
 import { useMemo } from "react";
-import type { User as FirebaseAuthUser } from "firebase/auth";
+import type { User as CompatAuthUser } from "@/supabase/auth-shim";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import { collection, query, where } from "firebase/firestore";
+import { signOut } from "@/supabase/auth-shim";
+import { collection, query, where } from "@/supabase/compat-db-shim";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
-import { useAuth, useFirestore, useMemoFirebase, useCollection } from "@/supabase";
+import { useAuth, useDb, useMemoDb, useCollection } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 /** Mesmos critérios do seletor pós-login: admin vê todos; demais apenas `memberUids`. */
 export function useSwitchableProjects(
-    user: FirebaseAuthUser | null,
+    user: CompatAuthUser | null,
     profileLoading: boolean,
     isAdmin: boolean,
     isUserLoading: boolean,
 ) {
-    const db = useFirestore();
+    const db = useDb();
     const { projectId: currentPid, updateActiveProject } = useActiveProjectId();
 
-    const projectsQuery = useMemoFirebase(() => {
+    const projectsQuery = useMemoDb(() => {
         if (!db || !user || isUserLoading || profileLoading) return null;
         const projectsRef = collection(db, "projects");
         if (isAdmin) return projectsRef;

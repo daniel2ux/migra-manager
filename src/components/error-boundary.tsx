@@ -23,8 +23,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
-    
-    // Auto-reload on ChunkLoadError
+
+    // Auto-reload só em produção (em dev, HMR invalida chunks e causaria loop de reload)
+    if (process.env.NODE_ENV !== "production") return;
+
     if (error.name === 'ChunkLoadError' || 
         error.message?.includes('chunk') || 
         error.message?.includes('Loading chunk')) {

@@ -178,3 +178,19 @@ export function resolveDashboardCardChargeSequence(
     parallelOrder: master?.parallelOrder ?? migration?.parallelOrder,
   });
 }
+
+/** Paralelismo efetivo: flag explícita ou `parallelOrder` válida com major > 0. */
+export function isObjectParallelLoad(
+  obj: { isParallel?: boolean | null; parallelOrder?: string | number | null },
+): boolean {
+  if (obj.isParallel) return true;
+  return isValidSequence(obj.parallelOrder) && parseSequence(obj.parallelOrder).major > 0;
+}
+
+/** Persistência: garante `isParallel` quando há ordem paralela válida. */
+export function resolveParallelPersistFlag(
+  isParallel: boolean | undefined | null,
+  parallelOrder: string | number | undefined | null,
+): boolean {
+  return isObjectParallelLoad({ isParallel, parallelOrder });
+}

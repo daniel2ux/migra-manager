@@ -6,8 +6,10 @@ import {
   normalizeSeqForDisplay,
   parseSequence,
   resolveDisplayChargeOrder,
+  isObjectParallelLoad,
 } from "@/lib/migration/sequence-utils";
 import { normalizeMasterCatalogName } from "@/lib/migration/master-catalog";
+import { getConfiguredChargeGroupForObject } from "@/lib/migration/charge-group-sync";
 import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
 import {
@@ -21,6 +23,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { FioriIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 
 interface ObjectsTableProps {
   objects: MasterObject[];
@@ -41,6 +44,7 @@ interface ObjectsTableProps {
   onSelectNext: (obj: MasterObject) => void;
   onSelectParallel: (obj: MasterObject) => void;
   displayChargeOrderById?: ReadonlyMap<string, string>;
+  configuredChargeGroupById?: ReadonlyMap<string, string>;
 }
 
 export function ObjectsTable({
@@ -61,6 +65,7 @@ export function ObjectsTable({
   onSelectNext,
   onSelectParallel,
   displayChargeOrderById,
+  configuredChargeGroupById,
 }: ObjectsTableProps) {
   return (
     <div className="relative w-full">
@@ -102,6 +107,11 @@ export function ObjectsTable({
               o.parallelOrder &&
               parseSequence(o.parallelOrder).major === myParallelMajor
             ) : []) || [];
+            const isParallelLoad = isObjectParallelLoad(obj);
+            const chargeGroupLabel = getConfiguredChargeGroupForObject(
+              obj.id,
+              configuredChargeGroupById ?? new Map(),
+            );
 
             return (
               <tr
@@ -131,7 +141,7 @@ export function ObjectsTable({
                             <AlertTriangle className="w-3 h-3 text-amber-500" aria-hidden />
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[260px] text-[10px] leading-snug">
+                        <TooltipContent side="top" variant="fiori" className="max-w-[260px]">
                           Outro objeto mestre com o mesmo nome (ID diferente). Verifique qual está em uso nos mocks antes de excluir.
                         </TooltipContent>
                       </Tooltip>
@@ -142,7 +152,7 @@ export function ObjectsTable({
                   {obj.description || "—"}
                 </td>
                 <td className="px-3 py-0 text-center font-mono text-slate-600 align-middle">
-                  {obj.chargeGroup || "—"}
+                  {chargeGroupLabel || "—"}
                 </td>
                 <td className="px-3 py-0 text-center font-mono text-slate-600 align-middle">
                   {normalizeSeqForDisplay(
@@ -150,7 +160,7 @@ export function ObjectsTable({
                   )}
                 </td>
                 <td className="px-3 py-0 text-center align-middle">
-                  {obj.isParallel ? (
+                  {isParallelLoad ? (
                     <div className="flex items-center justify-center gap-1">
                       <Zap className="w-3 h-3 text-violet-500 animate-pulse" />
                       <span className="font-mono text-[10px] text-violet-600 font-bold">{obj.parallelOrder || "—"}</span>
@@ -180,13 +190,13 @@ export function ObjectsTable({
                 </td>
                 <td className="px-3 py-0 text-center align-middle">
                   <div className="flex items-center justify-center gap-1">
-                    {obj.isParallel ? (
+                    {isParallelLoad ? (
                       <GitFork className="w-3 h-3 text-slate-500" />
                     ) : (
                       <Box className="w-3 h-3 text-slate-400" />
                     )}
                     <span className="text-[8px] font-black uppercase text-slate-600">
-                      {obj.isParallel ? "PARALELO" : "SEQ."}
+                      {isParallelLoad ? "PARALELO" : "SEQ."}
                     </span>
                   </div>
                 </td>
@@ -245,7 +255,7 @@ export function ObjectsTable({
                             "h-6 w-6 flex items-center justify-center bg-slate-100 transition-colors border-0",
                             isMockLocked
                               ? "text-slate-300 cursor-not-allowed"
-                              : obj.isParallel
+                              : isParallelLoad
                                 ? "hover:bg-slate-200 text-slate-500 hover:text-slate-700"
                                 : "hover:bg-slate-200 text-slate-400 hover:text-slate-600"
                           )}
@@ -253,9 +263,8 @@ export function ObjectsTable({
                           <GitFork className="w-3.5 h-3.5" />
                         </button>
                         {showDelete && (
-                          <button
-                            type="button"
-                            title={deleteDisabled ? `Em uso em ${usageCount} mock(s) ou projeto(s)` : "Excluir do catálogo"}
+                          <FioriIconButtonHint
+                            hint={deleteDisabled ? `Em uso em ${usageCount} mock(s) ou projeto(s)` : "Excluir do catálogo"}
                             disabled={deleteDisabled}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -269,7 +278,7 @@ export function ObjectsTable({
                             )}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </FioriIconButtonHint>
                         )}
                       </>
                     )}

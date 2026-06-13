@@ -1,17 +1,31 @@
 import { useState, useRef, useCallback } from 'react';
-import { doc, serverTimestamp, writeBatch, type Firestore } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/supabase/mutations';
-import { aiDescriptionGenerator } from '@/ai/flows/ai-description-generator';
-import { isValidSequence } from '@/lib/migration/sequence-utils';
-import { generateShortId } from '@/lib/id-utils';
+import { doc, setDoc, serverTimestamp, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
+import type { User } from '@/supabase/auth-shim';
+import { deleteDocumentNonBlocking } from '@/supabase/mutations';
+import { isValidSequence, resolveDisplayChargeOrder, resolveParallelPersistFlag, isObjectParallelLoad } from '@/lib/migration/sequence-utils';
 import { useToast } from '@/hooks/use-toast';
+import type { PerformReorderOptions } from './use-objects-reorder';
 import type { MasterObject } from '../components/object-card';
 import { findMasterCatalogNameConflict, normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
 import {
   computeMasterCatalogGroupReflowUpdates,
+  computeNextChargeOrderAfterLastCard,
   type MasterCatalogChargeReflowRow,
 } from '@/lib/migration/master-catalog-charge-reflow';
+import {
+  buildParallelGroupPlan,
+  expandParallelPeerIds,
+  parallelOrderForGroupIndex,
+} from '@/lib/migration/parallel-group-utils';
+import {
+  sameStringSet,
+  syncObjectActivityGroupMembership,
+} from '@/lib/migration/activity-group-sync';
+import {
+  findChargeGroupIdForObject,
+  syncObjectChargeGroupMembership,
+} from '@/lib/migration/charge-group-sync';
+import type { ChargeGroup } from '@/types/charge-group';
 
 type ToastFn = ReturnType<typeof useToast>['toast'];
 
@@ -19,10 +33,11 @@ interface ObjectFormData {
   name: string; description: string; chargeGroup: string; chargeOrder: string;
   parallelOrder: string; dependencyIds: string[]; externalDependencies: string[];
   type: string; status: string; isParallel: boolean; activityGroupIds: string[];
+  parallelPeerIds: string[];
 }
 
 /** Validação antes de salvar o objeto mestre (mensagem para exibir no formulário). */
-export function getEditFormValidationError(
+function getEditFormValidationError(
   formData: ObjectFormData,
   chargeOrderResolved: string
 ): string | null {
@@ -41,10 +56,14 @@ export function getEditFormValidationError(
 }
 
 interface UseObjectsCRUDDeps {
-  db: Firestore | null; 
+  db: CompatDb | null; 
   user: User | null; 
-  objects: MasterObject[] | null | undefined; 
+  objects: MasterObject[] | null | undefined;
+  /** Linhas de sequência no escopo atual (mock/catálogo) para sugerir próxima posição. */
+  sequenceContextRows?: MasterObject[] | null | undefined;
   isAdmin: boolean;
+  /** Governança (admin) ou Master — obrigatório para alterar status/grupos no card. */
+  isAdminOrMaster: boolean;
   isMockLocked: boolean; 
   acquireLock: (path: string, force?: boolean) => Promise<{ acquired: boolean; lockedByName?: string }>;
   releaseLock: (path: string) => void; 
@@ -55,28 +74,120 @@ interface UseObjectsCRUDDeps {
   setEditFormData: React.Dispatch<React.SetStateAction<ObjectFormData>>;
   usageMap: Record<string, Set<string>>; 
   extractChargeOrderDisplay: (order: string | number | undefined) => string;
-  performReorder: (obj: MasterObject, targetOrder: string) => Promise<void>;
-  editingObject: MasterObject | null; 
+  performReorder: (
+    obj: MasterObject,
+    targetOrder: string,
+    targetId?: string,
+    opts?: PerformReorderOptions,
+  ) => Promise<boolean>;
+  editingObject: MasterObject | null;
   setEditingObject: (obj: MasterObject | null) => void;
+  refetchObjects?: () => void;
+  refetchChargeGroups?: () => void | Promise<void>;
+  chargeGroups?: ChargeGroup[];
+  displayChargeOrderById?: ReadonlyMap<string, string>;
+  reorderDisplayList?: MasterObject[];
 }
 
-// ── Sub-hook: Validation ──────────────────────────────────────────────────
+function resolveFormChargeOrder(
+  obj: MasterObject,
+  displayChargeOrderById: ReadonlyMap<string, string> | undefined,
+  extractChargeOrderDisplay: (order: string | number | undefined) => string,
+): string {
+  const resolved = resolveDisplayChargeOrder(obj.id, obj.chargeOrder, displayChargeOrderById);
+  return extractChargeOrderDisplay(resolved ?? obj.chargeOrder);
+}
 
-function useFormValidation(formData: ObjectFormData, toast: ToastFn) {
-  const validateQuick = (): boolean => {
-    if (!formData.name) { toast({ variant: 'destructive', description: 'O NOME DO OBJETO É OBRIGATÓRIO.' }); return false; }
-    if (formData.chargeOrder && !isValidSequence(formData.chargeOrder)) {
-      toast({ variant: 'destructive', description: 'SEQUÊNCIA INVÁLIDA. USE O FORMATO XX.XX (EX: 01.00).' });
-      return false;
-    }
-    if (formData.parallelOrder && !isValidSequence(formData.parallelOrder)) {
-      toast({ variant: 'destructive', description: 'ORDEM PARALELA INVÁLIDA. USE O FORMATO XX.XX (EX: 01.00).' });
-      return false;
-    }
-    return true;
+function buildObjectFormFromMaster(
+  obj: MasterObject,
+  displayChargeOrderById: ReadonlyMap<string, string> | undefined,
+  extractChargeOrderDisplay: (order: string | number | undefined) => string,
+  overrides?: Partial<ObjectFormData>,
+): ObjectFormData {
+  return {
+    name: obj.name,
+    description: obj.description ?? '',
+    chargeGroup: obj.chargeGroup || '',
+    chargeOrder: resolveFormChargeOrder(obj, displayChargeOrderById, extractChargeOrderDisplay),
+    parallelOrder: obj.parallelOrder && isValidSequence(obj.parallelOrder) ? String(obj.parallelOrder) : '',
+    dependencyIds: obj.dependencyIds || [],
+    externalDependencies: obj.externalDependencies || [],
+    type: obj.type || 'SCRIPT',
+    status: obj.status || 'ATIVO',
+    isParallel: isObjectParallelLoad(obj),
+    activityGroupIds: obj.activityGroupIds || [],
+    parallelPeerIds: [],
+    ...overrides,
   };
-  return { validateQuick };
 }
+
+function sameStringArray(a: string[] = [], b: string[] = []): boolean {
+  return sameStringSet(a, b);
+}
+
+async function persistMasterInactiveReflow(
+  db: CompatDb,
+  target: MasterObject,
+  form: ObjectFormData,
+  objects: MasterObject[] | null | undefined,
+  displayChargeOrderById: ReadonlyMap<string, string> | undefined,
+  extractChargeOrderDisplay: (order: string | number | undefined) => string,
+  refetchObjects?: () => void,
+): Promise<void> {
+  const chargeOrderVal = resolveFormChargeOrder(target, displayChargeOrderById, extractChargeOrderDisplay).trim();
+  const newGroup = (target.chargeGroup || 'G').toUpperCase();
+  const oldGroup = newGroup;
+  const oldOrderDisplayed = chargeOrderVal;
+  const extDepList = form.externalDependencies || [];
+  const patched = buildPatchedMasterForReflow(
+    target,
+    form,
+    newGroup,
+    chargeOrderVal,
+    oldOrderDisplayed,
+    extDepList,
+  );
+  const listWithPatch = (objects ?? []).map((o) => (o.id === target.id ? patched : o));
+  const oldRows =
+    oldGroup !== newGroup
+      ? computeMasterCatalogGroupReflowUpdates(objects ?? [], oldGroup, { excludeId: target.id })
+      : [];
+  const newRows = computeMasterCatalogGroupReflowUpdates(listWithPatch, newGroup, { patched });
+  const rowMap = mergeReflowRows(oldRows, newRows);
+
+  const batch = writeBatch(db);
+  for (const row of rowMap.values()) {
+    if (row.id === target.id) continue;
+    batch.update(doc(db, 'masterObjects', row.id), {
+      chargeOrder: row.data.chargeOrder,
+      chargeGroup: row.data.chargeGroup,
+      updatedAt: serverTimestamp(),
+    });
+  }
+  const selfRow = rowMap.get(target.id);
+  batch.set(
+    doc(db, 'masterObjects', target.id),
+    {
+      name: patched.name,
+      description: patched.description,
+      chargeGroup: newGroup,
+      chargeOrder: selfRow?.data.chargeOrder ?? (chargeOrderVal || oldOrderDisplayed),
+      parallelOrder: patched.parallelOrder,
+      dependencyIds: patched.dependencyIds,
+      externalDependencies: patched.externalDependencies,
+      type: patched.type,
+      status: patched.status,
+      isParallel: patched.isParallel,
+      activityGroupIds: patched.activityGroupIds,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+  await batch.commit();
+  refetchObjects?.();
+}
+
+// ── Sub-hook: Quick create helpers ────────────────────────────────────────
 
 function mergeReflowRows(
   oldRows: MasterCatalogChargeReflowRow[],
@@ -107,53 +218,100 @@ function buildPatchedMasterForReflow(
     externalDependencies,
     type: editFormData.type as MasterObject['type'],
     status: editFormData.status as MasterObject['status'],
-    isParallel: editFormData.isParallel,
+    isParallel: resolveParallelPersistFlag(editFormData.isParallel, editFormData.parallelOrder),
     activityGroupIds: editFormData.activityGroupIds ?? [],
   };
+}
+
+async function commitQuickCreateParallelGroup(
+  db: CompatDb,
+  plan: NonNullable<ReturnType<typeof buildParallelGroupPlan>>,
+) {
+  const batch = writeBatch(db);
+  plan.memberIds.forEach((id, idx) => {
+    batch.update(doc(db, 'masterObjects', id), {
+      parallelOrder: parallelOrderForGroupIndex(plan.parallelMajor, idx),
+      isParallel: true,
+      updatedAt: serverTimestamp(),
+    });
+  });
+  plan.removedFromGroupIds.forEach((id) => {
+    batch.update(doc(db, 'masterObjects', id), {
+      parallelOrder: '',
+      isParallel: false,
+      updatedAt: serverTimestamp(),
+    });
+  });
+  await batch.commit();
 }
 
 // ── Sub-hook: Quick create ────────────────────────────────────────────────
 
 function useQuickCreate(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   user: User | null, 
   isAdmin: boolean, 
   objects: MasterObject[] | null | undefined,
+  sequenceContextRows: MasterObject[] | null | undefined,
   quickFormData: ObjectFormData, 
   setQuickFormData: React.Dispatch<React.SetStateAction<ObjectFormData>>, 
-  toast: ToastFn
+  toast: ToastFn,
+  refetchObjects?: () => void,
 ) {
-  const { validateQuick } = useFormValidation(quickFormData, toast);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
 
-  const handleSave = async (e?: React.FormEvent, stayOpen = false) => {
-    if (!isAdmin || !validateQuick() || !db || !user) return;
-    if (findMasterCatalogNameConflict(objects, quickFormData.name, undefined)) {
+  const handleSave = async (e?: React.FormEvent, stayOpen = false, patch?: Partial<ObjectFormData>) => {
+    const form = { ...quickFormData, ...patch };
+    if (!isAdmin || !db || !user) return;
+    if (!form.name) {
+      toast({ variant: 'destructive', description: 'O NOME DO OBJETO É OBRIGATÓRIO.' });
+      return;
+    }
+    if (findMasterCatalogNameConflict(objects, form.name, undefined)) {
       toast({
         variant: 'destructive',
-        description: `JÁ EXISTE UM OBJETO MESTRE COM O NOME "${normalizeMasterCatalogName(quickFormData.name)}". ESCOLHA OUTRO NOME.`,
+        description: `JÁ EXISTE UM OBJETO MESTRE COM O NOME "${normalizeMasterCatalogName(form.name)}". ESCOLHA OUTRO NOME.`,
       });
       return;
     }
     if (e) e.preventDefault();
-    const objectId = generateShortId();
-    const groupUpper = (quickFormData.chargeGroup || 'G').toUpperCase();
+    const objectId = crypto.randomUUID();
+    const groupUpper = (form.chargeGroup || 'G').toUpperCase();
+    const sequenceRows =
+      sequenceContextRows && sequenceContextRows.length > 0
+        ? sequenceContextRows
+        : (objects ?? []);
+    const autoChargeOrder = computeNextChargeOrderAfterLastCard(sequenceRows);
+    const catalogRows = objects ?? [];
+    const parallelPeerIds = expandParallelPeerIds(
+      catalogRows,
+      (form.parallelPeerIds ?? []).filter((id) => id !== objectId),
+      objectId,
+    );
+    const parallelPlan = parallelPeerIds.length > 0 && form.status !== 'INATIVO'
+      ? buildParallelGroupPlan(catalogRows, objectId, parallelPeerIds)
+      : null;
+    const hasParallelPeers = Boolean(parallelPlan);
+    const autoParallelOrder = parallelPlan
+      ? parallelOrderForGroupIndex(parallelPlan.parallelMajor, 0)
+      : '';
+    const autoIsParallel = hasParallelPeers;
 
-    if (quickFormData.status === 'INATIVO') {
+    if (form.status === 'INATIVO') {
       const newMaster = {
         id: objectId,
-        name: quickFormData.name.trim().toUpperCase(),
-        description: quickFormData.description.toUpperCase(),
+        name: form.name.trim().toUpperCase(),
+        description: form.description.toUpperCase(),
         chargeGroup: groupUpper,
-        chargeOrder: quickFormData.chargeOrder || '',
-        parallelOrder: quickFormData.parallelOrder || '',
-        dependencyIds: quickFormData.dependencyIds,
-        externalDependencies: quickFormData.externalDependencies,
-        type: quickFormData.type as MasterObject['type'],
+        chargeOrder: autoChargeOrder,
+        parallelOrder: '',
+        dependencyIds: form.dependencyIds,
+        externalDependencies: form.externalDependencies,
+        type: form.type as MasterObject['type'],
         status: 'INATIVO' as const,
-        isParallel: quickFormData.isParallel,
-        activityGroupIds: quickFormData.activityGroupIds ?? [],
+        isParallel: false,
+        activityGroupIds: form.activityGroupIds ?? [],
       } satisfies MasterObject;
       const listWithNew = [...(objects ?? []), newMaster];
       const rows = computeMasterCatalogGroupReflowUpdates(listWithNew, groupUpper, { patched: newMaster });
@@ -189,36 +347,58 @@ function useQuickCreate(
           });
         }
         await batch.commit();
-        toast({
-          description:
-            'OBJETO INATIVO ADICIONADO AO CATÁLOGO. SEQUÊNCIA DE CARGA DO GRUPO REORGANIZADA (INATIVOS AO FINAL).',
-        });
-      } catch {
+      } catch (err) {
+        console.error('[useQuickCreate] save INATIVO', err);
         toast({ variant: 'destructive', description: 'ERRO AO SALVAR OBJETO OU REORDENAR SEQUÊNCIA.' });
         return;
       }
     } else {
-      setDocumentNonBlocking(
-        doc(db, 'masterObjects', objectId),
-        {
-          id: objectId,
-          name: quickFormData.name.trim().toUpperCase(),
-          description: quickFormData.description.toUpperCase(),
-          chargeGroup: groupUpper,
-          chargeOrder: quickFormData.chargeOrder || '',
-          parallelOrder: quickFormData.parallelOrder || '',
-          dependencyIds: quickFormData.dependencyIds,
-          externalDependencies: quickFormData.externalDependencies,
-          type: quickFormData.type,
-          status: quickFormData.status,
-          isParallel: quickFormData.isParallel,
-          ownerId: user.uid,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-      toast({ description: 'OBJETO ADICIONADO AO CATÁLOGO.' });
+      try {
+        await setDoc(
+          doc(db, 'masterObjects', objectId),
+          {
+            id: objectId,
+            name: form.name.trim().toUpperCase(),
+            description: form.description.toUpperCase(),
+            chargeGroup: groupUpper,
+            chargeOrder: autoChargeOrder,
+            parallelOrder: autoParallelOrder,
+            dependencyIds: form.dependencyIds,
+            externalDependencies: form.externalDependencies,
+            type: form.type,
+            status: form.status,
+            isParallel: autoIsParallel,
+            activityGroupIds: form.activityGroupIds ?? [],
+            ownerId: user.uid,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+        if (hasParallelPeers && parallelPlan) {
+          await commitQuickCreateParallelGroup(db, parallelPlan);
+        }
+      } catch (err) {
+        console.error('[useQuickCreate] save ATIVO', err);
+        const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+        toast({ variant: 'destructive', description: `ERRO AO SALVAR OBJETO NO CATÁLOGO: ${msg}` });
+        return;
+      }
     }
+
+    const quickActivityGroupIds = form.activityGroupIds ?? [];
+    if (quickActivityGroupIds.length > 0) {
+      try {
+        await syncObjectActivityGroupMembership(db, objectId, [], quickActivityGroupIds);
+      } catch (syncErr) {
+        console.error('[useQuickCreate] sync activity groups', syncErr);
+        toast({
+          variant: 'destructive',
+          description: 'OBJETO SALVO, MAS FALHA AO SINCRONIZAR GRUPOS DE ATIVIDADE.',
+        });
+      }
+    }
+
+    refetchObjects?.();
     setQuickFormData({
       name: '',
       description: '',
@@ -231,28 +411,19 @@ function useQuickCreate(
       status: 'ATIVO',
       isParallel: false,
       activityGroupIds: [],
+      parallelPeerIds: [],
     });
     if (!stayOpen) setIsQuickCreateOpen(false);
     setTimeout(() => nameInputRef.current?.focus(), 0);
   };
 
-  const handleAiGenerate = async (e?: React.MouseEvent) => {
-    if (!isAdmin) return;
-    e?.preventDefault?.();
-    if (!quickFormData.name) { toast({ variant: 'destructive', description: 'DIGITE UM NOME PARA A IA GERAR A DESCRIÇÃO.' }); return; }
-    try {
-      const result = await aiDescriptionGenerator({ type: 'object', keywords: quickFormData.name });
-      setQuickFormData({ ...quickFormData, description: result.description.toUpperCase() });
-    } catch { toast({ variant: 'destructive', description: 'ERRO AO GERAR DESCRIÇÃO COM IA.' }); }
-  };
-
-  return { isQuickCreateOpen, setIsQuickCreateOpen, nameInputRef, handleSave, handleAiGenerate };
+  return { isQuickCreateOpen, setIsQuickCreateOpen, nameInputRef, handleSave };
 }
 
 // ── Sub-hook: Edit dialog ─────────────────────────────────────────────────
 
 function useEditDialog(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   user: User | null, 
   isAdmin: boolean, 
   isMockLocked: boolean, 
@@ -263,26 +434,31 @@ function useEditDialog(
   setEditingObject: (obj: MasterObject | null) => void, 
   acquireLock: (path: string, force?: boolean) => Promise<{ acquired: boolean; lockedByName?: string }>, 
   releaseLock: (path: string) => void, 
-  performReorder: (obj: MasterObject, targetOrder: string) => Promise<void>, 
-  extractChargeOrderDisplay: (order: string | number | undefined) => string, 
-  toast: ToastFn
+  performReorder: (
+    obj: MasterObject,
+    targetOrder: string,
+    targetId?: string,
+    opts?: PerformReorderOptions,
+  ) => Promise<boolean>,
+  extractChargeOrderDisplay: (order: string | number | undefined) => string,
+  toast: ToastFn,
+  refetchObjects?: () => void,
+  displayChargeOrderById?: ReadonlyMap<string, string>,
+  reorderDisplayList?: MasterObject[],
 ) {
   const [open, setOpen] = useState(false);
   const [isForceLockOpen, setIsForceLockOpen] = useState(false);
   const [forceLockTarget, setForceLockTarget] = useState<MasterObject | null>(null);
   const [forceLockBlockerName, setForceLockBlockerName] = useState<string | null>(null);
-  const chargeOrderEditRef = useRef<HTMLInputElement>(null);
-  const chargeOrderEditTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const extDepEditRef = useRef<HTMLTextAreaElement>(null);
-  const extDepEditTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [editSaveError, setEditSaveError] = useState<string | null>(null);
 
   const buildFormData = (obj: MasterObject): ObjectFormData => ({
     name: obj.name, description: obj.description ?? '', chargeGroup: obj.chargeGroup || '',
-    chargeOrder: extractChargeOrderDisplay(obj.chargeOrder),
+    chargeOrder: resolveFormChargeOrder(obj, displayChargeOrderById, extractChargeOrderDisplay),
     parallelOrder: (obj.parallelOrder && isValidSequence(obj.parallelOrder)) ? String(obj.parallelOrder) : '',
     dependencyIds: obj.dependencyIds || [], externalDependencies: obj.externalDependencies || [],
-    type: obj.type || 'SCRIPT', status: obj.status || 'ATIVO', isParallel: !!obj.isParallel, activityGroupIds: obj.activityGroupIds || [],
+    type: obj.type || 'SCRIPT', status: obj.status || 'ATIVO', isParallel: isObjectParallelLoad(obj), activityGroupIds: obj.activityGroupIds || [],
+    parallelPeerIds: [],
   });
 
   const handleOpen = async (obj: MasterObject, viewOnly = false) => {
@@ -297,37 +473,47 @@ function useEditDialog(
 
   const clearEditSaveError = useCallback(() => setEditSaveError(null), []);
 
-  const handleSave = async () => {
+  const handleSave = async (patch?: Partial<ObjectFormData>) => {
     if (!isAdmin || isMockLocked || !user || !editingObject || !db) return;
     setEditSaveError(null);
-    const chargeOrderVal = (chargeOrderEditRef.current?.value ?? editFormData.chargeOrder ?? '').trim();
-    const validationErr = getEditFormValidationError(editFormData, chargeOrderVal);
+    const catalogOrder = resolveFormChargeOrder(
+      editingObject,
+      displayChargeOrderById,
+      extractChargeOrderDisplay,
+    );
+    const form = {
+      ...editFormData,
+      ...patch,
+      name: editingObject.name,
+      chargeGroup: editingObject.chargeGroup || '',
+      chargeOrder: catalogOrder,
+    };
+    const chargeOrderVal = catalogOrder.trim();
+    const validationErr = getEditFormValidationError(form, chargeOrderVal);
     if (validationErr) {
       setEditSaveError(validationErr);
       return;
     }
-    if (findMasterCatalogNameConflict(objects, editFormData.name, editingObject.id)) {
+    if (findMasterCatalogNameConflict(objects, form.name, editingObject.id)) {
       setEditSaveError(
-        `Já existe outro objeto mestre com o nome "${normalizeMasterCatalogName(editFormData.name)}". Escolha outro nome.`,
+        `Já existe outro objeto mestre com o nome "${normalizeMasterCatalogName(form.name)}". Escolha outro nome.`,
       );
       return;
     }
-    const oldOrder = editingObject.chargeOrder || '';
-    const newOrder = chargeOrderEditRef.current?.value || editFormData.chargeOrder || '';
-    const newGroup = (editFormData.chargeGroup || 'G').toUpperCase();
+    const oldOrderDisplayed = resolveFormChargeOrder(editingObject, displayChargeOrderById, extractChargeOrderDisplay);
+    const newOrder = chargeOrderVal;
+    const newGroup = (form.chargeGroup || 'G').toUpperCase();
     const oldGroup = (editingObject.chargeGroup || 'G').toUpperCase();
-    const orderChanged = String(oldOrder) !== newOrder && newOrder !== '';
-    const extDepList = extDepEditRef.current
-      ? extDepEditRef.current.value.toUpperCase().split('\n').filter((s) => s.trim() !== '')
-      : editFormData.externalDependencies || [];
+    const orderChanged = oldOrderDisplayed !== newOrder && newOrder !== '';
+    const extDepList = form.externalDependencies || [];
 
-    if (editFormData.status === 'INATIVO') {
+    if (form.status === 'INATIVO') {
       const patched = buildPatchedMasterForReflow(
         editingObject,
-        editFormData,
+        form,
         newGroup,
         chargeOrderVal,
-        String(oldOrder),
+        oldOrderDisplayed,
         extDepList,
       );
       const listWithPatch = (objects ?? []).map((o) => (o.id === editingObject.id ? patched : o));
@@ -355,7 +541,7 @@ function useEditDialog(
             name: patched.name,
             description: patched.description,
             chargeGroup: newGroup,
-            chargeOrder: selfRow?.data.chargeOrder ?? (chargeOrderVal || String(oldOrder)),
+            chargeOrder: selfRow?.data.chargeOrder ?? (chargeOrderVal || oldOrderDisplayed),
             parallelOrder: patched.parallelOrder,
             dependencyIds: patched.dependencyIds,
             externalDependencies: patched.externalDependencies,
@@ -368,11 +554,25 @@ function useEditDialog(
           { merge: true },
         );
         await batch.commit();
+        try {
+          await syncObjectActivityGroupMembership(
+            db,
+            editingObject.id,
+            editingObject.activityGroupIds ?? [],
+            form.activityGroupIds ?? [],
+          );
+        } catch (syncErr) {
+          console.error('[useEditDialog] sync activity groups INATIVO', syncErr);
+        }
+        refetchObjects?.();
         toast({
           description:
             'OBJETO ATUALIZADO. SEQUÊNCIA DE CARGA DO(S) GRUPO(S) REORGANIZADA — OBJETOS INATIVOS AO FINAL.',
         });
-      } catch {
+      } catch (err) {
+        console.error('[useEditDialog] save INATIVO', err);
+        const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+        setEditSaveError(`Erro ao salvar: ${msg}`);
         toast({ variant: 'destructive', description: 'ERRO AO SALVAR OU REORDENAR SEQUÊNCIA DE CARGA.' });
         return;
       }
@@ -382,31 +582,52 @@ function useEditDialog(
       return;
     }
 
-    if (orderChanged) {
-      void performReorder(
-        { ...editingObject, chargeGroup: newGroup, chargeOrder: String(oldOrder), isParallel: editFormData.isParallel },
-        newOrder,
-      );
+    const savePayload = {
+      name: form.name.trim().toUpperCase(),
+      description: form.description.toUpperCase(),
+      chargeGroup: newGroup,
+      ...(orderChanged ? {} : { chargeOrder: newOrder || oldOrderDisplayed }),
+      parallelOrder: form.parallelOrder || '',
+      dependencyIds: form.dependencyIds,
+      externalDependencies: extDepList,
+      type: form.type,
+      status: form.status,
+      isParallel: resolveParallelPersistFlag(form.isParallel, form.parallelOrder),
+      activityGroupIds: form.activityGroupIds,
+      updatedAt: serverTimestamp(),
+    };
+
+    try {
+      if (orderChanged) {
+        await performReorder(
+          { ...editingObject, chargeGroup: newGroup, chargeOrder: oldOrderDisplayed, isParallel: resolveParallelPersistFlag(form.isParallel, form.parallelOrder) },
+          newOrder,
+          undefined,
+          {
+            orderedList: displayChargeOrderById ? reorderDisplayList : undefined,
+          },
+        );
+      }
+      await setDoc(doc(db, 'masterObjects', editingObject.id), savePayload, { merge: true });
+      try {
+        await syncObjectActivityGroupMembership(
+          db,
+          editingObject.id,
+          editingObject.activityGroupIds ?? [],
+          form.activityGroupIds ?? [],
+        );
+      } catch (syncErr) {
+        console.error('[useEditDialog] sync activity groups', syncErr);
+      }
+      refetchObjects?.();
+      toast({ description: 'OBJETO ATUALIZADO COM SUCESSO.' });
+    } catch (err) {
+      console.error('[useEditDialog] save', err);
+      const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+      setEditSaveError(`Erro ao salvar: ${msg}`);
+      toast({ variant: 'destructive', description: `ERRO AO SALVAR OBJETO: ${msg}` });
+      return;
     }
-    setDocumentNonBlocking(
-      doc(db, 'masterObjects', editingObject.id),
-      {
-        name: editFormData.name.trim().toUpperCase(),
-        description: editFormData.description.toUpperCase(),
-        chargeGroup: newGroup,
-        ...(orderChanged ? {} : { chargeOrder: newOrder || String(oldOrder) }),
-        parallelOrder: editFormData.parallelOrder || '',
-        dependencyIds: editFormData.dependencyIds,
-        externalDependencies: extDepList,
-        type: editFormData.type,
-        status: editFormData.status,
-        isParallel: editFormData.isParallel,
-        activityGroupIds: editFormData.activityGroupIds,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
-    if (!orderChanged) toast({ description: 'OBJETO ATUALIZADO COM SUCESSO.' });
     setEditSaveError(null);
     releaseLock(`masterObjects/${editingObject.id}`);
     setOpen(false);
@@ -428,10 +649,6 @@ function useEditDialog(
     setIsForceLockOpen,
     forceLockTarget,
     forceLockBlockerName,
-    chargeOrderEditRef,
-    chargeOrderEditTimerRef,
-    extDepEditRef,
-    extDepEditTimerRef,
     handleOpen,
     handleSave,
     handleForceAcquire,
@@ -444,8 +661,109 @@ function useEditDialog(
 
 export function useObjectsCRUD(deps: UseObjectsCRUDDeps) {
   const { db, user, isAdmin, usageMap, toast } = deps;
-  const quick = useQuickCreate(db, user, isAdmin, deps.objects, deps.quickFormData, deps.setQuickFormData, toast);
-  const edit = useEditDialog(db, user, isAdmin, deps.isMockLocked, deps.objects, deps.editFormData, deps.setEditFormData, deps.editingObject, deps.setEditingObject, deps.acquireLock, deps.releaseLock, deps.performReorder, deps.extractChargeOrderDisplay, toast);
+  const quick = useQuickCreate(
+    db,
+    user,
+    isAdmin,
+    deps.objects,
+    deps.sequenceContextRows,
+    deps.quickFormData,
+    deps.setQuickFormData,
+    toast,
+    deps.refetchObjects,
+  );
+  const edit = useEditDialog(db, user, isAdmin, deps.isMockLocked, deps.objects, deps.editFormData, deps.setEditFormData, deps.editingObject, deps.setEditingObject, deps.acquireLock, deps.releaseLock, deps.performReorder, deps.extractChargeOrderDisplay, toast, deps.refetchObjects, deps.displayChargeOrderById, deps.reorderDisplayList);
+
+  const handlePatchMaster = async (
+    target: MasterObject,
+    patch: { status?: string; activityGroupIds?: string[]; chargeGroupId?: string | null },
+  ) => {
+    if (!db || deps.isMockLocked) return;
+
+    if (patch.chargeGroupId !== undefined) {
+      if (!deps.isAdminOrMaster) return;
+      const groups = deps.chargeGroups ?? [];
+      const currentGroupId = findChargeGroupIdForObject(target.id, groups);
+      const nextGroupId = patch.chargeGroupId;
+      if (currentGroupId === nextGroupId) return;
+      try {
+        await syncObjectChargeGroupMembership(db, target.id, nextGroupId, groups);
+        await deps.refetchChargeGroups?.();
+        deps.refetchObjects?.();
+        toast({ description: 'GRUPO DE CARGA ATUALIZADO.' });
+      } catch (err) {
+        console.error('[useObjectsCRUD] patch chargeGroupId', err);
+        const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+        toast({ variant: 'destructive', description: `ERRO AO ATUALIZAR GRUPO: ${msg}` });
+      }
+      return;
+    }
+
+    if (!isAdmin || !deps.isAdminOrMaster) return;
+
+    if (patch.activityGroupIds !== undefined) {
+      const current = target.activityGroupIds ?? [];
+      if (sameStringArray(patch.activityGroupIds, current)) return;
+      try {
+        await syncObjectActivityGroupMembership(
+          db,
+          target.id,
+          current,
+          patch.activityGroupIds,
+        );
+        deps.refetchObjects?.();
+        toast({ description: 'GRUPOS DE ATIVIDADE ATUALIZADOS.' });
+      } catch (err) {
+        console.error('[useObjectsCRUD] patch activityGroupIds', err);
+        const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+        toast({ variant: 'destructive', description: `ERRO AO ATUALIZAR GRUPOS: ${msg}` });
+      }
+      return;
+    }
+
+    if (patch.status === undefined) return;
+    const currentStatus = (target.status || 'ATIVO').trim().toUpperCase();
+    const nextStatus = patch.status.trim().toUpperCase();
+    if (nextStatus === currentStatus) return;
+
+    const form = buildObjectFormFromMaster(
+      target,
+      deps.displayChargeOrderById,
+      deps.extractChargeOrderDisplay,
+      { status: nextStatus },
+    );
+
+    try {
+      if (nextStatus === 'INATIVO') {
+        await persistMasterInactiveReflow(
+          db,
+          target,
+          form,
+          deps.objects,
+          deps.displayChargeOrderById,
+          deps.extractChargeOrderDisplay,
+          deps.refetchObjects,
+        );
+        toast({
+          description:
+            'OBJETO INATIVADO. SEQUÊNCIA DE CARGA DO(S) GRUPO(S) REORGANIZADA — OBJETOS INATIVOS AO FINAL.',
+        });
+        return;
+      }
+
+      await setDoc(
+        doc(db, 'masterObjects', target.id),
+        { status: nextStatus, updatedAt: serverTimestamp() },
+        { merge: true },
+      );
+      deps.refetchObjects?.();
+      toast({ description: 'STATUS ATUALIZADO.' });
+    } catch (err) {
+      console.error('[useObjectsCRUD] patch status', err);
+      const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+      toast({ variant: 'destructive', description: `ERRO AO ATUALIZAR STATUS: ${msg}` });
+    }
+  };
 
   const handleDelete = (id: string) => {
     if (!isAdmin || !db) return;
@@ -471,12 +789,11 @@ export function useObjectsCRUD(deps: UseObjectsCRUDDeps) {
     isQuickCreateOpen: quick.isQuickCreateOpen, setIsQuickCreateOpen: quick.setIsQuickCreateOpen,
     isForceLockOpen: edit.isForceLockOpen, setIsForceLockOpen: edit.setIsForceLockOpen,
     forceLockTarget: edit.forceLockTarget, forceLockBlockerName: edit.forceLockBlockerName,
-    isGenerating: false,
-    nameInputRef: quick.nameInputRef, chargeOrderEditRef: edit.chargeOrderEditRef, chargeOrderEditTimerRef: edit.chargeOrderEditTimerRef,
-    extDepEditRef: edit.extDepEditRef, extDepEditTimerRef: edit.extDepEditTimerRef,
+    nameInputRef: quick.nameInputRef,
     editSaveError: edit.editSaveError, clearEditSaveError: edit.clearEditSaveError,
     handleSaveQuick: quick.handleSave, handleSaveEdit: edit.handleSave, handleDelete,
-    handleAiGenerateQuick: quick.handleAiGenerate, handleOpenEditDialog: edit.handleOpen, handleForceAcquire: edit.handleForceAcquire,
+    handlePatchMaster,
+    handleOpenEditDialog: edit.handleOpen, handleForceAcquire: edit.handleForceAcquire,
   };
 }
 

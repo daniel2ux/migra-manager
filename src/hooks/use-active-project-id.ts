@@ -46,16 +46,16 @@ export function useActiveProjectId() {
   const pathname = usePathname();
   const urlProjectId = normalizeProjectId(searchParams?.get("projectId"));
 
-  const [projectId, setProjectId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return urlProjectId ?? readStoredProjectId();
-  });
+  const [projectId, setProjectId] = useState<string | null>(urlProjectId);
 
+  // URL primeiro; sessionStorage só após mount (evita hydration mismatch no SSR).
   useEffect(() => {
     if (urlProjectId) {
       setProjectId(urlProjectId);
       persistProjectId(urlProjectId);
+      return;
     }
+    setProjectId(readStoredProjectId());
   }, [urlProjectId]);
 
   useEffect(() => {

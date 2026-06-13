@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent } from "@/components/ui/popover";
+import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 import { Calendar } from "@/components/ui/calendar";
 import type { UserProfile, UserFormData } from "@/types/usuarios";
+import { formatBrazilianPhone } from "@/lib/formatters";
 import { ptBR } from "date-fns/locale";
 
 interface EditUserDialogProps {
@@ -155,16 +157,13 @@ function DateField({
           className="fiori-input min-w-0 flex-1 font-mono readable-disabled shadow-none"
         />
         <Popover open={calOpen} onOpenChange={onCalOpenChange}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              disabled={disabled}
-              className="fiori-icon-btn fiori-icon-btn-bordered shrink-0"
-              aria-label={pickerAriaLabel}
-            >
-              <CalendarDays className="h-4 w-4" aria-hidden />
-            </button>
-          </PopoverTrigger>
+          <FioriPopoverIconButtonHint
+            hint={pickerAriaLabel}
+            disabled={disabled}
+            className="fiori-icon-btn fiori-icon-btn-bordered shrink-0"
+          >
+            <CalendarDays className="h-4 w-4" aria-hidden />
+          </FioriPopoverIconButtonHint>
           <PopoverContent
             variant="fiori"
             className="fiori-datetime-popover"
@@ -284,8 +283,10 @@ export function EditUserDialog({
                 </label>
                 <Input
                   id="edit-user-phone"
-                  value={getField(formData, user, "phone")}
-                  onChange={(e) => updateField("phone", e.target.value)}
+                  type="tel"
+                  inputMode="numeric"
+                  value={formatBrazilianPhone(getField(formData, user, "phone"))}
+                  onChange={(e) => updateField("phone", formatBrazilianPhone(e.target.value))}
                   placeholder="(11) 99999-9999"
                   disabled={readonly}
                   className="fiori-input readable-disabled shadow-none"

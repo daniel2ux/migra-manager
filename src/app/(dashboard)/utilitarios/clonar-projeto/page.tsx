@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
-import { useFirestore, useUser } from "@/supabase/provider";
+import { useDb, useUser } from "@/supabase/provider";
 import {
   collection,
   query,
@@ -13,7 +13,7 @@ import {
   doc,
   getDoc,
   serverTimestamp
-} from "firebase/firestore";
+} from "@/supabase/compat-db-shim";
 import { 
   Loader2, 
   Copy, 
@@ -74,7 +74,7 @@ function WizardStepsNav({ step }: { step: Step }) {
 }
 
 export default function ClonarProjetoPage() {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const { toast } = useToast();
   const { isAdmin, isProfileLoading } = useUsersData("");
@@ -178,7 +178,7 @@ export default function ClonarProjetoPage() {
 
         setMocksList(list);
       } catch (error) {
-        console.error("Erro Firestore Mocks:", error);
+        console.error("Erro CompatDb Mocks:", error);
         toast({ variant: "destructive", description: "Erro ao buscar mocks." });
       } finally {
         setLoading(false);

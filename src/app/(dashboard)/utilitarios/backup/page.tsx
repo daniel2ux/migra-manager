@@ -8,8 +8,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { BackupManager, type BackupManagerHandle } from "@/components/backup/backup-manager";
 import { useUsersData } from "@/hooks/use-users-data";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
-import { useFirestore, useDoc, useMemoFirebase } from "@/supabase";
-import { doc } from "firebase/firestore";
+import { useDb, useDoc, useMemoDb } from "@/supabase";
+import { doc } from "@/supabase/compat-db-shim";
 import { getProjectCompanyName } from "@/lib/migration/project-company";
 import { safeRouterReplace, useRouterReady } from "@/lib/navigation/safe-router";
 import { AccessDeniedScreen } from "@/components/usuarios";
@@ -25,11 +25,11 @@ export default function BackupPage() {
   const { projectId } = useActiveProjectId();
   const router = useRouter();
   const isRouterReady = useRouterReady();
-  const db = useFirestore();
+  const db = useDb();
   const backupRef = useRef<BackupManagerHandle>(null);
   const [isRefreshingList, setIsRefreshingList] = useState(false);
 
-  const projectRef = useMemoFirebase(
+  const projectRef = useMemoDb(
     () => (db && projectId ? doc(db, "projects", projectId) : null),
     [db, projectId],
   );
@@ -71,7 +71,7 @@ export default function BackupPage() {
         <PageHeader
           variant="fiori"
           title="Backup & restore"
-          subtitle="Exportação e restauração completa dos dados do Firestore"
+          subtitle="Exportação e restauração completa dos dados do sistema"
           icon={<HardDrive className="w-5 h-5" aria-hidden />}
           empresa={getProjectCompanyName(projectData) ?? undefined}
           projectName={projectData?.name}

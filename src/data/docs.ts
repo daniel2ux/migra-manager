@@ -626,7 +626,7 @@ export const DOCS: DocCategory[] = [
                 section: "6",
                 synopsis: "Impede que dois usuários editem o mesmo recurso ao mesmo tempo.",
                 description:
-                    "O sistema utiliza bloqueios de presença armazenados no Firestore (coleção editLocks). Quando um usuário abre um dialog de edição, o sistema tenta adquirir o bloqueio atomicamente via transaction. Se outro usuário já possui o bloqueio, a edição é recusada e o nome do editor atual é exibido. O bloqueio expira automaticamente em 5 minutos sem atividade (TTL) e é renovado a cada 90 segundos enquanto o dialog estiver aberto.",
+                    "O sistema utiliza bloqueios de presença armazenados no banco de dados (tabela edit_locks). Quando um usuário abre um dialog de edição, o sistema tenta adquirir o bloqueio atomicamente via transação. Se outro usuário já possui o bloqueio, a edição é recusada e o nome do editor atual é exibido. O bloqueio expira automaticamente em 5 minutos sem atividade (TTL) e é renovado a cada 90 segundos enquanto o dialog estiver aberto.",
                 warnings: [
                     { level: "info", text: "O TTL de 5 minutos garante que bloqueios orphans (ex: browser fechado abruptamente) sejam limpos automaticamente sem intervenção manual." },
                     { level: "warn", text: "Se o banner âmbar aparecer indicando que outro usuário está editando, aguarde a liberação. Não tente forçar a edição — o sistema bloqueará a tentativa." },
@@ -647,14 +647,14 @@ export const DOCS: DocCategory[] = [
                 section: "7",
                 synopsis: "Define o diretório do servidor onde os arquivos .err de migração estão armazenados.",
                 description:
-                    "O caminho de logs é um parâmetro global persistido na coleção appConfig/settings do Firestore. Ele é lido pelo servidor Node.js no momento da importação — portanto deve ser um caminho absoluto acessível pelo processo que executa a aplicação. Somente perfis Master e Administrador podem ler e gravar esta configuração. Se o caminho não estiver configurado ao abrir o dialog de importação, o próprio dialog exibirá um campo para informá-lo sem necessidade de acessar a tela de Configurações.",
+                    "O caminho de logs é um parâmetro global persistido em app_config/settings no banco de dados. Ele é lido pelo servidor Node.js no momento da importação — portanto deve ser um caminho absoluto acessível pelo processo que executa a aplicação. Somente perfis Master e Administrador podem ler e gravar esta configuração. Se o caminho não estiver configurado ao abrir o dialog de importação, o próprio dialog exibirá um campo para informá-lo sem necessidade de acessar a tela de Configurações.",
                 params: [
                     { name: "Caminho do Diretório", type: "string", required: true, description: "Caminho absoluto no servidor. Ex: /var/logs/migration ou C:\\migra\\logs. Deve conter arquivos com extensão .err." },
                 ],
                 steps: [
                     { n: 1, title: "Acessar Configurações", body: "Na sidebar, clique em Configurações → Sistema. A tela está disponível apenas para perfis Master e Administrador." },
                     { n: 2, title: "Informar o caminho", body: "No campo 'Caminho do diretório', insira o caminho absoluto do diretório no servidor onde os arquivos .err estão armazenados." },
-                    { n: 3, title: "Salvar", body: "Clique em Salvar. A configuração é persistida no Firestore (appConfig/settings) com timestamp e responsável." },
+                    { n: 3, title: "Salvar", body: "Clique em Salvar. A configuração é persistida no banco de dados (app_config/settings) com timestamp e responsável." },
                 ],
                 warnings: [
                     { level: "warn", text: "O diretório deve ser acessível pelo processo Node.js do servidor. Caminhos de rede (UNC/NFS) são suportados desde que o processo tenha permissão de leitura." },
@@ -695,7 +695,7 @@ export const DOCS: DocCategory[] = [
                 section: "7",
                 synopsis: "Define as credenciais do servidor de e-mail utilizado para envio direto de estatísticas de carga.",
                 description:
-                    "As configurações SMTP são persistidas na coleção appConfig/smtpConfig do Firestore e lidas pelo servidor Node.js no momento do envio. O envio é realizado via Nodemailer. Somente perfis Master e Administrador podem configurar o SMTP. As credenciais são armazenadas no Firestore e nunca expostas ao cliente.",
+                    "As configurações SMTP são persistidas em app_config/smtp_config no banco de dados e lidas pelo servidor Node.js no momento do envio. O envio é realizado via Nodemailer. Somente perfis Master e Administrador podem configurar o SMTP. As credenciais são armazenadas no servidor e nunca expostas ao cliente.",
                 params: [
                     { name: "Host SMTP", type: "string", required: true, description: "Endereço do servidor SMTP. Ex: smtp.gmail.com ou smtp.office365.com." },
                     { name: "Porta", type: "number", required: true, description: "587 para STARTTLS (padrão) ou 465 para SSL/TLS." },
@@ -721,7 +721,7 @@ export const DOCS: DocCategory[] = [
                 section: "7",
                 synopsis: "Configura o nome do migrador, e-mail de origem e assinaturas pessoais utilizados nos relatórios e e-mails.",
                 description:
-                    "O Perfil está disponível apenas para perfis Master e Administrador via Configurações → Perfil. As informações são persistidas no documento do usuário na coleção users/{uid} do Firestore. O nome do migrador é preenchido automaticamente na coluna Migrador da Estatística de Carga. O e-mail de origem é usado como padrão no campo De ao compor e-mails. As assinaturas são selecionáveis no dialog de composição.",
+                    "O Perfil está disponível apenas para perfis Master e Administrador via Configurações → Perfil. As informações são persistidas no perfil do usuário (profiles). O nome do migrador é preenchido automaticamente na coluna Migrador da Estatística de Carga. O e-mail de origem é usado como padrão no campo De ao compor e-mails. As assinaturas são selecionáveis no dialog de composição.",
                 params: [
                     { name: "Nome do Migrador", type: "string", required: false, description: "Identificador do executor da carga. Gravado em maiúsculas. Preenche automaticamente a coluna Migrador na Estatística." },
                     { name: "E-mail de Origem", type: "email", required: false, description: "Endereço exibido no campo De ao compor e-mails. Se vazio, usa o e-mail de login." },
@@ -745,7 +745,7 @@ export const DOCS: DocCategory[] = [
                 section: "7",
                 synopsis: "Substitui todos os registros de logs de um par MOCK+OBJECT por novos dados do arquivo .err.",
                 description:
-                    "Ao importar um arquivo para um par MOCK+OBJECT que já possui registros em migrationLogs, o sistema executa exclusão prévia em lotes de 400 documentos seguida de gravação dos novos registros em batches de 400. Não há operação atômica global por limitação do Firestore (máx. 500 ops/batch). A estratégia adotada garante idempotência: se o processo for interrompido, a próxima importação retomará o delete e reinserirá corretamente. O estado transitório (dados parciais) existe apenas durante a janela de execução e é aceitável para este contexto de uso interno.",
+                    "Ao importar um arquivo para um par MOCK+OBJECT que já possui registros em migration_logs, o sistema executa exclusão prévia em lotes de 400 registros seguida de gravação dos novos em lotes de 400. Não há operação atômica global por limitação de tamanho de lote (máx. 500 ops/lote). A estratégia adotada garante idempotência: se o processo for interrompido, a próxima importação retomará o delete e reinserirá corretamente. O estado transitório (dados parciais) existe apenas durante a janela de execução e é aceitável para este contexto de uso interno.",
                 warnings: [
                     { level: "warn", text: "Durante a reimportação, existe uma janela transitória em que os dados antigos foram excluídos mas os novos ainda não foram todos gravados. Evite consultar migrationLogs neste intervalo." },
                     { level: "info", text: "A contagem de 'Excluídos' no resumo final reflete os documentos do lote anterior que foram removidos antes da nova carga." },
@@ -795,10 +795,10 @@ export const DOCS: DocCategory[] = [
                 steps: [
                     { n: 1, title: "Selecionar projeto", body: "Certifique-se de que um projeto está selecionado no seletor de contexto da sidebar. Sem projectId, nenhum registro será retornado." },
                     { n: 2, title: "Configurar filtros", body: "Escolha a mock e, opcionalmente, o objeto. Ajuste o intervalo de datas se necessário. O filtro de texto livre pode ser preenchido antes ou após a busca." },
-                    { n: 3, title: "Buscar", body: "Clique em Buscar. O sistema consulta o Firestore com os filtros ativos e exibe os primeiros 1.000 registros ordenados por data de importação decrescente." },
+                    { n: 3, title: "Buscar", body: "Clique em Buscar. O sistema consulta o banco de dados com os filtros ativos e exibe os primeiros 1.000 registros ordenados por data de importação decrescente." },
                     { n: 4, title: "Vista Resumo (padrão)", body: "Os resultados são agrupados por objeto + ERRO ID + CÓD. ERRO + mensagem. Cada linha exibe o número de ocorrências e a data da última ocorrência. Clique em uma linha para expandir e ver todos os registros individuais do grupo — com data/hora, INFOKEY e filename. Clique novamente para colapsar." },
                     { n: 5, title: "Vista Todos", body: "Clique no botão TODOS no cabeçalho para alternar para a lista completa de registros individuais. Cada linha é clicável e abre o modal de detalhe com ERRO ID, CÓD. ERRO, OBJECT, MOCK, INFOKEY, IMPORTADO EM, FILENAME e MESSAGE completo." },
-                    { n: 6, title: "Navegar páginas", body: "Se existirem mais de 1.000 registros, os botões de paginação (‹ ›) ficam habilitados no canto direito. A navegação usa cursor-based pagination do Firestore — voltar a uma página anterior usa o cursor armazenado da primeira consulta daquela página." },
+                    { n: 6, title: "Navegar páginas", body: "Se existirem mais de 1.000 registros, os botões de paginação (‹ ›) ficam habilitados no canto direito. A navegação usa paginação por cursor — voltar a uma página anterior usa o cursor armazenado da primeira consulta daquela página." },
                     { n: 7, title: "Filtrar localmente", body: "Use o campo 'Buscar em MESSAGE / INFOKEY' para refinar os registros já carregados sem nova consulta ao banco." },
                     { n: 8, title: "Limpar filtros", body: "Clique em 'Limpar filtros' para resetar todos os campos e voltar ao estado inicial (sem resultados exibidos)." },
                 ],
@@ -823,9 +823,9 @@ export const DOCS: DocCategory[] = [
                 id: "utilitarios-backup-completo",
                 title: "Criar Backup Completo",
                 section: "7",
-                synopsis: "Exporta todas as coleções do Firestore para um arquivo comprimido no Firebase Storage.",
+                synopsis: "Exporta todos os dados do sistema para um arquivo comprimido no armazenamento na nuvem.",
                 description:
-                    "O backup completo percorre recursivamente todas as coleções e subcoleções do Firestore (profundidade máxima de 6 níveis), serializa tipos nativos do Firestore (Timestamp, GeoPoint, DocumentReference, Date) para JSON e armazena o resultado como um arquivo .json.gz no Firebase Storage. Um checksum SHA-256 é calculado sobre os dados brutos e embutido no payload para validação de integridade na restauração. Somente usuários com role Master podem executar esta operação.",
+                    "O backup completo percorre recursivamente todas as tabelas e relacionamentos do banco (profundidade máxima de 6 níveis), serializa tipos de data e referência para JSON e armazena o resultado como um arquivo .json.gz no armazenamento na nuvem. Um checksum SHA-256 é calculado sobre os dados brutos e embutido no payload para validação de integridade na restauração. Somente usuários com role Master podem executar esta operação.",
                 params: [
                     { name: "Tipo", type: "radio", required: true, description: "Selecione 'Backup Completo' para exportar todo o banco de dados." },
                 ],
@@ -867,9 +867,9 @@ export const DOCS: DocCategory[] = [
                 id: "utilitarios-restore",
                 title: "Restaurar Backup",
                 section: "7",
-                synopsis: "Restaura dados do Firestore a partir de um backup armazenado no Storage ou de um arquivo local.",
+                synopsis: "Restaura dados do sistema a partir de um backup armazenado na nuvem ou de um arquivo local.",
                 description:
-                    "A restauração descomprime o arquivo .json.gz, valida o checksum SHA-256, deserializa os tipos Firestore e grava os documentos em batch (400 docs/batch). Suporta dois modos: Merge (upsert sem apagar documentos existentes) e Overwrite (substitui o conteúdo de cada documento). Opcionalmente, é possível purgar as coleções antes da restauração (apaga todos os documentos existentes antes de escrever). É possível filtrar quais coleções raiz serão restauradas. Somente usuários Master podem executar restaurações.",
+                    "A restauração descomprime o arquivo .json.gz, valida o checksum SHA-256, deserializa os tipos do backup e grava os registros em lote (400 registros/lote). Suporta dois modos: Merge (upsert sem apagar registros existentes) e Overwrite (substitui o conteúdo de cada registro). Opcionalmente, é possível purgar tabelas antes da restauração (apaga todos os registros existentes antes de escrever). É possível filtrar quais tabelas raiz serão restauradas. Somente usuários Master podem executar restaurações.",
                 params: [
                     { name: "Fonte", type: "radio", required: true, description: "Storage (backup listado na tabela) ou Arquivo Local (upload de .json.gz)." },
                     { name: "Modo", type: "radio", required: true, description: "Merge: upsert sem deletar docs extras. Overwrite: substitui o conteúdo de cada documento existente." },

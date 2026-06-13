@@ -52,7 +52,7 @@ export function ActivityGroupBadges({ groupIds, allGroups, maxVisible = 2 }: Act
                     style={{ backgroundColor: g.color }}
                     aria-hidden
                   />
-                  <span className="fiori-activity-group-badge-label" title={g.name}>
+                  <span className="fiori-activity-group-badge-label">
                     {truncateLabel(g.name)}
                   </span>
                 </span>

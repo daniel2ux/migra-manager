@@ -1,23 +1,23 @@
 "use client";
 
 import { useMemo } from "react";
-import { collection, doc, deleteDoc, setDoc } from "firebase/firestore";
-import { useFirestore, useCollection, useMemoFirebase } from "@/supabase";
+import { collection, doc, deleteDoc, setDoc } from "@/supabase/compat-db-shim";
+import { useDb, useCollection, useMemoDb } from "@/supabase";
 import { useUser } from "@/supabase/provider";
 import type { EmailContact, EmailGroup, EmailRecipientSelection } from "@/types/email";
-import { getDocRef, validateUpsert, buildAuditData } from "@/lib/firestore-upsert";
-import type { Firestore } from "firebase/firestore";
+import { getDocRef, validateUpsert, buildAuditData } from "@/lib/db-upsert";
+import type { CompatDb } from "@/supabase/compat-db-shim";
 
 /**
  * Hook para gerenciar agrupadores de e-mail
  */
 export function useEmailGroups() {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
-  const groupsQuery = useMemoFirebase(() => {
+  const groupsQuery = useMemoDb(() => {
     if (!db || !user) return null;
-    return collection(db as Firestore, "emailGroups");
+    return collection(db as CompatDb, "emailGroups");
   }, [db, user]);
 
   const { data: groups, isLoading, error } = useCollection<EmailGroup>(groupsQuery);
@@ -25,7 +25,7 @@ export function useEmailGroups() {
 
   const upsertGroup = async (groupData: Partial<EmailGroup> & { name: string }) => {
     validateUpsert(user?.uid, db);
-    const groupRef = getDocRef(db as Firestore, "emailGroups", groupData.id);
+    const groupRef = getDocRef(db as CompatDb, "emailGroups", groupData.id);
     await setDoc(groupRef, buildAuditData(user!.uid, {
       name: groupData.name.trim(),
       description: groupData.description?.trim() ?? "",
@@ -35,7 +35,7 @@ export function useEmailGroups() {
 
   const deleteGroup = async (groupId: string) => {
     if (!db) return;
-    await deleteDoc(doc(db as Firestore, "emailGroups", groupId));
+    await deleteDoc(doc(db as CompatDb, "emailGroups", groupId));
   };
 
   return { groups: sortedGroups ?? [], isLoading, error, upsertGroup, deleteGroup };
@@ -45,17 +45,17 @@ export function useEmailGroups() {
  * Hook para gerenciar contatos de e-mail
  */
 export function useEmailContacts() {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
-  const contactsCollectionRef = useMemoFirebase(() => db ? collection(db as Firestore, "emailContacts") : null, [db]);
-  const contactsQuery = useMemoFirebase(() => user ? contactsCollectionRef : null, [contactsCollectionRef, user]);
+  const contactsCollectionRef = useMemoDb(() => db ? collection(db as CompatDb, "emailContacts") : null, [db]);
+  const contactsQuery = useMemoDb(() => user ? contactsCollectionRef : null, [contactsCollectionRef, user]);
   const { data: contacts, isLoading, error } = useCollection<EmailContact>(contactsQuery);
   const sortedContacts = useMemo(() => contacts ? [...contacts].sort((a, b) => a.name.localeCompare(b.name)) : [], [contacts]);
 
   const upsertContact = async (contactData: Partial<EmailContact> & { name: string; email: string; groupIds?: string[] }) => {
     validateUpsert(user?.uid, db);
-    const contactRef = getDocRef(db as Firestore, "emailContacts", contactData.id);
+    const contactRef = getDocRef(db as CompatDb, "emailContacts", contactData.id);
     await setDoc(contactRef, buildAuditData(user!.uid, {
       name: contactData.name.trim(),
       email: contactData.email.trim().toLowerCase(),
@@ -66,12 +66,12 @@ export function useEmailContacts() {
 
   const deleteContact = async (contactId: string) => {
     if (!db) return;
-    await deleteDoc(doc(db as Firestore, "emailContacts", contactId));
+    await deleteDoc(doc(db as CompatDb, "emailContacts", contactId));
   };
 
   const getContactsByGroup = async (groupId: string): Promise<EmailContact[]> => {
     if (!contactsCollectionRef) return [];
-    const { query, where, getDocs } = await import("firebase/firestore");
+    const { query, where, getDocs } = await import("@/supabase/compat-db-shim");
     const snap = await getDocs(query(contactsCollectionRef, where("groupIds", "array-contains", groupId)));
     return snap.docs.map(d => ({ ...d.data(), id: d.id } as EmailContact));
   };

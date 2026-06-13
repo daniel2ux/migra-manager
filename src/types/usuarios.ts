@@ -45,12 +45,18 @@ export interface CreateUserData {
   name: string;
   email: string;
   role: UserRole;
+  company: string;
+  position: string;
   reason: string;
 }
 
 export interface ResetPasswordResult {
   name: string;
+  email?: string;
   tempPassword: string;
+  emailSent?: boolean;
+  emailError?: string;
+  messageId?: string;
 }
 
 export const ROLE_LABELS: Record<UserRole, string> = {

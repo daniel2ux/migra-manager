@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase/firestore";
+import { Timestamp } from "@/supabase/compat-db-shim";
 import { MigrationObjectStatus } from "@/types/migration";
 
 export interface MasterObject {

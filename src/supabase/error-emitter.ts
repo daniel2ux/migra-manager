@@ -1,8 +1,8 @@
 'use client';
-import { FirestorePermissionError } from '@/supabase/errors';
+import { SupabasePermissionError } from '@/supabase/errors';
 
 export interface AppEvents extends Record<string, unknown> {
-  'permission-error': FirestorePermissionError;
+  'permission-error': SupabasePermissionError;
 }
 
 type Callback<T> = (data: T) => void;

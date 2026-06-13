@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { collection, query, where, doc } from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
+import { collection, query, where, doc } from "@/supabase/compat-db-shim";
+import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { WithId } from "@/supabase";
 import { dedupeDirectoryUsers } from "@/lib/user-directory";
 import { SUPERADMIN_UID } from "@/lib/constants";
@@ -50,11 +50,11 @@ interface UseProjectsDataReturn {
 }
 
 export function useProjectsData(__searchTerm: string): UseProjectsDataReturn {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const [userSearchTerm, setUserSearchTerm] = useState("");
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db ? doc(db, "users", user.uid) : null),
     [db, user],
   );
@@ -75,7 +75,7 @@ export function useProjectsData(__searchTerm: string): UseProjectsDataReturn {
   );
 
   /** Admin/master: coleção inteira (como dashboard e project picker). Demais: só memberships. */
-  const projectsQuery = useMemoFirebase(() => {
+  const projectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading || !userProfile) return null;
     const projectsRef = collection(db, "projects");
     if (isAdmin) return projectsRef;
@@ -85,7 +85,7 @@ export function useProjectsData(__searchTerm: string): UseProjectsDataReturn {
   const { data: projects, isLoading: isProjectsLoading } =
     useCollection<Project>(projectsQuery);
 
-  const usersQuery = useMemoFirebase(() => {
+  const usersQuery = useMemoDb(() => {
     if (!db) return null;
     return collection(db, "users");
   }, [db]);

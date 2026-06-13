@@ -1,6 +1,6 @@
 import type { Project } from "@/types/migration";
 
-/** Nome da empresa-cliente (`company` no Firestore; `empresa` legado). */
+/** Nome da empresa-cliente (`company` no CompatDb; `empresa` legado). */
 export function getProjectCompanyName(
     project?: Pick<Project, "name" | "company" | "empresa"> | null
 ): string | null {

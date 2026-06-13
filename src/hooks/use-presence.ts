@@ -1,58 +1,45 @@
 'use client';
 
 import { useEffect } from 'react';
-import { doc, setDoc, deleteDoc, serverTimestamp, type FirestoreError } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/supabase';
+import { doc, setDoc, deleteDoc, serverTimestamp, type CompatDbError } from '@/supabase/compat-db-shim';
+import { useDb, useUser } from '@/supabase';
 
 function ignorePresenceError(error: unknown) {
-  const code = (error as FirestoreError)?.code;
+  const code = (error as CompatDbError)?.code;
   if (code === 'permission-denied') return;
   console.warn('[usePresence]', error);
 }
 
 /**
- * Registra e mantém a presença do usuário na coleção `sessions` do Firestore.
+ * Registra e mantém a presença do usuário na coleção `sessions` do CompatDb.
  * Deve ser chamado em um componente raiz (ex: layout ou DashboardShell).
  *
  * Estrutura do documento sessions/{uid}:
  *   uid, userName, userEmail, userRole, loginAt, lastSeen, isOnline
  */
-export function usePresence(userProfile?: {
+export function usePresence(_userProfile?: {
   name?: string;
   email?: string;
   role?: string;
 }) {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
   useEffect(() => {
     if (!db || !user) return;
 
     const sessionRef = doc(db, 'sessions', user.uid);
-    const loginAt = new Date().toISOString();
 
-    const writePresence = () => {
-      const userAgent = window.navigator.userAgent;
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-      const browser = userAgent.includes('Chrome') ? 'Chrome' : userAgent.includes('Firefox') ? 'Firefox' : userAgent.includes('Safari') ? 'Safari' : 'Browser';
-
-      return setDoc(
+    const writePresence = () =>
+      setDoc(
         sessionRef,
         {
-          uid: user.uid,
-          userName: userProfile?.name ?? user.displayName ?? user.email ?? 'Usuário',
-          userEmail: user.email ?? '',
-          userRole: userProfile?.role ?? 'user',
-          loginAt,
           lastSeen: serverTimestamp(),
           isOnline: true,
-          device: isMobile ? 'Mobile' : 'Desktop',
-          browser: browser,
-          userAgent: userAgent,
+          userAgent: window.navigator.userAgent,
         },
-        { merge: true }
+        { merge: true },
       );
-    };
 
     void writePresence().catch(ignorePresenceError);
 

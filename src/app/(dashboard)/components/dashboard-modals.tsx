@@ -10,8 +10,8 @@ import { RestartCargaDialog } from "@/components/dashboard/restart-carga-dialog"
 import { ResetObjectDialog } from "@/components/dashboard/reset-object-dialog";
 import { LogViewerDialog } from "@/components/logs/log-viewer-dialog";
 import { EmailComposeDialog } from "@/components/email/email-compose-dialog";
-import { PrecedenceDialog } from "@/app/(dashboard)/objetos/components/precedence-dialog";
-import type { User } from "firebase/auth";
+import { PrecedenceDialog } from "@/app/(dashboard)/objetos/components/lazy-dialogs";
+import type { User } from "@/supabase/auth-shim";
 import type { Mock, AggregatedObject, UserProfile } from "@/types/migration";
 import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
@@ -268,6 +268,7 @@ export function DashboardModals(props: DashboardModalsProps) {
                 />
             )}
 
+            {props.isPrecedenceOpen && (
             <PrecedenceDialog
                 open={props.isPrecedenceOpen}
                 onOpenChange={props.setIsPrecedenceOpen}
@@ -281,6 +282,7 @@ export function DashboardModals(props: DashboardModalsProps) {
                 searchRef={props.precedenceSearchRef}
                 timerRef={props.precedenceSearchTimerRef}
             />
+            )}
         </>
     );
 }

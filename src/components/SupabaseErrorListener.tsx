@@ -3,7 +3,7 @@
 
 import { useEffect, useRef } from 'react';
 import { errorEmitter } from '@/supabase/error-emitter';
-import { FirestorePermissionError } from '@/supabase/errors';
+import { SupabasePermissionError } from '@/supabase/errors';
 import { useUser } from '@/supabase/provider';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,7 +17,7 @@ export function SupabaseErrorListener() {
   useEffect(() => {
     if (!user) return;
 
-    const handleError = (error: FirestorePermissionError) => {
+    const handleError = (error: SupabasePermissionError) => {
       const now = Date.now();
       if (now - lastShownAt.current < COOLDOWN_MS) {
         console.warn("Acesso negado (suprimido):", error.request.path, error.request.method);

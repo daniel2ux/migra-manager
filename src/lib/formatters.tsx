@@ -22,6 +22,21 @@ export function unformatNumber(val: string): number {
     return parseInt(val.replace(/\D/g, ""), 10) || 0;
 }
 
+/** Ex.: `(35) 98452-8545` — máscara celular/fixo BR (10 ou 11 dígitos). */
+export function formatBrazilianPhone(value: string | undefined | null): string {
+    const digits = String(value ?? "").replace(/\D/g, "").slice(0, 11);
+    if (!digits) return "";
+
+    let formatted = `(${digits.slice(0, 2)}`;
+    if (digits.length > 2) {
+        formatted += `) ${digits.slice(2, digits.length > 10 ? 7 : 6)}`;
+    }
+    if (digits.length > 6) {
+        formatted += digits.length > 10 ? `-${digits.slice(7, 11)}` : `-${digits.slice(6, 10)}`;
+    }
+    return formatted;
+}
+
 export function formatPercentage(
     pct: number,
     formatType?: "success" | "error" | "default",

@@ -65,7 +65,7 @@ export function CloneMockDialog({
       <DialogContent
         variant="fiori"
         overlayClassName="fiori-dialog-overlay"
-        className="fiori-dialog fiori-dialog--form flex h-[min(92vh,560px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
+        className="fiori-dialog fiori-dialog--form fiori-dialog--mock-form flex h-auto max-h-[min(92vh,420px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
       >
         <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
           <DialogDescription className="sr-only">
@@ -94,7 +94,7 @@ export function CloneMockDialog({
                 <span className="fiori-mock-summary-value uppercase">{sourceMock.name}</span>
               </div>
             </div>
-            <p className="fiori-message-box-text mt-3">
+            <p className="fiori-message-box-text mt-2">
               Todos os objetos vinculados a esta janela serão duplicados para a nova mock.
               Históricos de carga não serão copiados.
             </p>
@@ -105,15 +105,15 @@ export function CloneMockDialog({
               <Hash className="h-3.5 w-3.5" />
               Nova mock
             </h3>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
+            <div className="space-y-2">
+              <div className="space-y-1">
                 <label className="fiori-field-label">Parte numérica</label>
                 <Input
                   value={sequence}
                   onChange={(e) => setSequence(e.target.value.toUpperCase().slice(0, 4))}
                   placeholder="01"
                   disabled={isSubmitting}
-                  className="fiori-input text-center uppercase shadow-none"
+                  className="fiori-input text-sm text-center uppercase shadow-none"
                 />
               </div>
 
@@ -126,7 +126,7 @@ export function CloneMockDialog({
                 </span>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <label className="fiori-field-label">
                   <FileText className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
                   Texto explicativo
@@ -136,7 +136,7 @@ export function CloneMockDialog({
                   onChange={(e) => setExplanatoryText(e.target.value.toUpperCase())}
                   placeholder="Descreva a finalidade desta cópia..."
                   disabled={isSubmitting}
-                  className="fiori-textarea min-h-[88px] resize-none shadow-none"
+                  className="fiori-textarea text-sm min-h-[3.5rem] resize-none shadow-none"
                 />
               </div>
             </div>

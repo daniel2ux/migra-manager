@@ -7,7 +7,7 @@ export type UserDirectoryDoc = WithId<UserProfile & { projectIds?: string[] }>;
 type RowWithProjects = { id: string; uid?: string; email?: string; projectIds?: string[] };
 
 /**
- * Garante `uid` alinhado ao ID do documento quando o campo `uid` estiver ausente no Firestore.
+ * Garante `uid` alinhado ao ID do documento quando o campo `uid` estiver ausente no CompatDb.
  */
 export function withCanonicalUid<T extends RowWithProjects>(u: T): T & { uid: string } {
   const uid = (u.uid && String(u.uid).trim()) || u.id;

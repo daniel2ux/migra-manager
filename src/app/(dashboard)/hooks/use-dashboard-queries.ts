@@ -7,12 +7,12 @@ import {
     doc, 
     limit,
     type QueryConstraint 
-} from "firebase/firestore";
+} from "@/supabase/compat-db-shim";
 import { 
-    useFirestore, 
+    useDb, 
     useUser, 
     useCollection, 
-    useMemoFirebase, 
+    useMemoDb, 
     useDoc 
 } from "@/supabase";
 import type { 
@@ -24,15 +24,15 @@ import type {
 } from "@/types/migration";
 import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
-import { idsForFirestoreIn } from "@/lib/constants";
+import { idsForDbIn } from "@/lib/constants";
 
 export function useDashboardQueries(selectedProjectId: string, selectedMockId: string) {
-    const db = useFirestore();
+    const db = useDb();
     const { user, isUserLoading } = useUser();
     const authReady = !!user && !isUserLoading;
 
     // 1. User Profile
-    const userDocRef = useMemoFirebase(
+    const userDocRef = useMemoDb(
         () => (user && db ? doc(db, "users", user.uid) : null),
         [db, user],
     );
@@ -44,11 +44,11 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
         userProfile?.role?.toLowerCase() === "master";
 
     // 2. All Users (for email suggestions)
-    const allUsersQuery = useMemoFirebase(() => (db && isAdmin ? collection(db, "users") : null), [db, isAdmin]);
+    const allUsersQuery = useMemoDb(() => (db && isAdmin ? collection(db, "users") : null), [db, isAdmin]);
     const { data: allUsers } = useCollection<UserProfile>(allUsersQuery);
 
     // 3. Projects
-    const projectsQuery = useMemoFirebase(() => {
+    const projectsQuery = useMemoDb(() => {
         if (!db || !user || isProfileLoading || !userProfile) return null;
         const projectsRef = collection(db, "projects");
         if (isAdmin) return projectsRef;
@@ -66,7 +66,7 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
     }, [projects]);
 
     // 4. Mocks
-    const mocksQuery = useMemoFirebase(() => {
+    const mocksQuery = useMemoDb(() => {
         if (!db || !user || isProfileLoading || !userProfile || isProjectsLoading)
             return null;
 
@@ -76,7 +76,7 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
 
         const mocksRef = collectionGroup(db, "mocks");
         if (!isAdmin) {
-            const projectIds = idsForFirestoreIn(accessibleProjectIds);
+            const projectIds = idsForDbIn(accessibleProjectIds);
             if (!projectIds) return null;
             return query(mocksRef, where("projectId", "in", projectIds), limit(500));
         }
@@ -86,7 +86,7 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
     const { data: allMocks, isLoading: isMocksLoading } = useCollection<Mock>(mocksQuery);
 
     // 5. Migration Objects
-    const objectsQuery = useMemoFirebase(() => {
+    const objectsQuery = useMemoDb(() => {
         if (!db || !user || isProfileLoading || !userProfile || isProjectsLoading)
             return null;
 
@@ -136,7 +136,7 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
                     }
                 }
 
-                const mockIds = idsForFirestoreIn(
+                const mockIds = idsForDbIn(
                     previousMockId ? [selectedMockId, previousMockId] : [selectedMockId],
                 );
                 if (mockIds) constraints.push(where("mockId", "in", mockIds));
@@ -147,7 +147,7 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
         }
 
         if (!isAdmin) {
-            const projectIds = idsForFirestoreIn(accessibleProjectIds, 10);
+            const projectIds = idsForDbIn(accessibleProjectIds, 10);
             if (!projectIds) return null;
             return query(objectsRef, where("projectId", "in", projectIds), limit(500));
         }
@@ -157,7 +157,7 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
     const { data: objects, isLoading: isObjectsLoading } = useCollection<MigrationObject>(objectsQuery);
 
     // 6. Comments
-    const allCommentsQuery = useMemoFirebase(() => {
+    const allCommentsQuery = useMemoDb(() => {
         if (!db || !authReady || isProfileLoading || !userProfile) return null;
         const constraints: QueryConstraint[] = [];
         if (selectedProjectId !== "all") {
@@ -165,7 +165,7 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
         } else if (isAdmin) {
             // All
         } else {
-            const projectIds = idsForFirestoreIn(accessibleProjectIds);
+            const projectIds = idsForDbIn(accessibleProjectIds);
             if (projectIds) constraints.push(where("projectId", "in", projectIds));
             else return null;
         }
@@ -178,13 +178,13 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
     const { data: allComments } = useCollection<Comment>(allCommentsQuery);
 
     // 7. Master Objects & Activity Groups
-    const masterObjectsQuery = useMemoFirebase(
+    const masterObjectsQuery = useMemoDb(
         () => (db && authReady ? collection(db, "masterObjects") : null),
         [db, authReady],
     );
     const { data: masterObjects } = useCollection<MasterObject>(masterObjectsQuery);
 
-    const activityGroupsQuery = useMemoFirebase(
+    const activityGroupsQuery = useMemoDb(
         () => (db && authReady ? collection(db, "activityGroups") : null),
         [db, authReady],
     );

@@ -3,7 +3,6 @@ import {
   subscribeCollection,
   subscribeDoc,
   getDocs,
-  getDoc,
   type CollectionReference,
   type DocumentReference,
   type Query,
@@ -13,8 +12,8 @@ import {
 } from '@/supabase/query-builder';
 import { toCamelRow } from '@/supabase/field-map';
 
-export type Firestore = import('@supabase/supabase-js').SupabaseClient;
-export type FirestoreError = Error & { code?: string };
+export type CompatDb = import('@supabase/supabase-js').SupabaseClient;
+export type CompatDbError = Error & { code?: string };
 export type DocumentData = Record<string, unknown>;
 export type { CollectionReference, DocumentReference, Query, DocumentSnapshot, QuerySnapshot, QueryConstraint };
 
@@ -54,7 +53,7 @@ export function arrayUnion<T>(...items: T[]) {
 }
 
 /** collectionGroup('migrationObjects') → query migration_objects table */
-export function collectionGroup(_db: Firestore, segment: string): CollectionReference {
+export function collectionGroup(_db: CompatDb, segment: string): CollectionReference {
   const tableMap: Record<string, string> = {
     migrationObjects: 'migration_objects',
     mocks: 'mocks',
@@ -91,7 +90,6 @@ export function onSnapshot(
 ): () => void;
 export function onSnapshot(
   ref: DocumentReference | CollectionReference | Query<CollectionReference>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- overload impl must accept both snapshot shapes
   onNext: (snap: any) => void,
   onError?: (err: Error) => void,
 ): () => void {
@@ -135,5 +133,5 @@ export function onSnapshot(
       onNext({ docs, empty: docs.length === 0, size: docs.length });
     },
     (err) => onError?.(err),
-  );
+  ).unsubscribe;
 }

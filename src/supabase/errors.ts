@@ -13,7 +13,7 @@ interface SecurityRuleRequest {
   resource?: { data: unknown };
 }
 
-export class FirestorePermissionError extends Error {
+export class SupabasePermissionError extends Error {
   public readonly request: SecurityRuleRequest;
   public code = 'permission-denied';
 

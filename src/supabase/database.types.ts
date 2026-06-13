@@ -101,6 +101,39 @@ export type Database = {
         }
         Relationships: []
       }
+      charge_groups: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          object_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          object_ids?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          object_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           key: string
@@ -666,60 +699,78 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company: string | null
           created_at: string
+          department: string | null
           email: string
           email_signatures: Json
+          end_date: string | null
           from_email: string | null
           id: string
           is_disabled: boolean
           is_master: boolean
+          manager: string | null
           migrador_name: string | null
           must_change_password: boolean
           name: string
           notes: string | null
+          phone: string | null
           photo_url: string | null
           position: string | null
           project_ids: string[]
           project_order: string[]
           role: Database["public"]["Enums"]["user_role"]
+          start_date: string | null
           updated_at: string
         }
         Insert: {
+          company?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           email_signatures?: Json
+          end_date?: string | null
           from_email?: string | null
           id: string
           is_disabled?: boolean
           is_master?: boolean
+          manager?: string | null
           migrador_name?: string | null
           must_change_password?: boolean
           name?: string
           notes?: string | null
+          phone?: string | null
           photo_url?: string | null
           position?: string | null
           project_ids?: string[]
           project_order?: string[]
           role?: Database["public"]["Enums"]["user_role"]
+          start_date?: string | null
           updated_at?: string
         }
         Update: {
+          company?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           email_signatures?: Json
+          end_date?: string | null
           from_email?: string | null
           id?: string
           is_disabled?: boolean
           is_master?: boolean
+          manager?: string | null
           migrador_name?: string | null
           must_change_password?: boolean
           name?: string
           notes?: string | null
+          phone?: string | null
           photo_url?: string | null
           position?: string | null
           project_ids?: string[]
           project_order?: string[]
           role?: Database["public"]["Enums"]["user_role"]
+          start_date?: string | null
           updated_at?: string
         }
         Relationships: []

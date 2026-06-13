@@ -25,7 +25,7 @@ function parseResponseData(
   return data.error;
 }
 
-/** Extrai mensagem legível de erros do Firebase Storage / Gaxios. */
+/** Extrai mensagem legível de erros de armazenamento na nuvem / Gaxios. */
 export function getBackupApiError(err: unknown): { message: string; status: number } {
   const e = err as GaxiosLikeError;
 
@@ -41,8 +41,8 @@ export function getBackupApiError(err: unknown): { message: string; status: numb
   ) {
     return {
       message:
-        'Conta de faturamento do Firebase/Google Cloud inativa ou em atraso. ' +
-        'Reative o billing no console do Firebase para gravar backups no Storage.',
+        'Conta de faturamento do provedor de nuvem inativa ou em atraso. ' +
+        'Reative o billing no painel do provedor para gravar backups no armazenamento.',
       status: 503,
     };
   }

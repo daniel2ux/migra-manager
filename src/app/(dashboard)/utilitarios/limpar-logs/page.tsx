@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { PageHeader } from '@/components/layout/page-header';
-import { useAuth, useFirestore } from '@/supabase';
+import { useUser, useDb } from '@/supabase';
 import { AccessDeniedScreen } from '@/components/usuarios';
 import { useToast } from '@/hooks/use-toast';
 import { useUsersData } from '@/hooks/use-users-data';
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
-import { useDoc, useMemoFirebase } from '@/supabase';
-import { doc, collection, getDocs } from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
+import { useDoc, useMemoDb } from '@/supabase';
+import { doc, collection, getDocs } from '@/supabase/compat-db-shim';
+import type { CompatDb } from '@/supabase/compat-db-shim';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { safeRouterReplace, useRouterReady } from '@/lib/navigation/safe-router';
 import { Loader2, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -20,22 +20,22 @@ import { cn } from '@/lib/utils';
 import type { Mock, Project } from '@/types/migration';
 
 export default function LimparLogsPage() {
-  const auth = useAuth();
-  const db = useFirestore();
+  const { user } = useUser();
+  const db = useDb();
   const router = useRouter();
   const isRouterReady = useRouterReady();
   const { projectId } = useActiveProjectId();
   const { isMaster, isProfileLoading } = useUsersData('');
   const { toast } = useToast();
 
-  const projectRef = useMemoFirebase(
+  const projectRef = useMemoDb(
     () => (db && projectId ? doc(db, 'projects', projectId) : null),
     [db, projectId],
   );
   const { data: projectData } = useDoc<Project>(projectRef);
 
-  const authRef = useRef(auth);
-  authRef.current = auth;
+  const userRef = useRef(user);
+  userRef.current = user;
   const toastRef = useRef(toast);
   toastRef.current = toast;
 
@@ -47,7 +47,7 @@ export default function LimparLogsPage() {
   const [lastResult, setLastResult] = useState<{ deleted: number; message: string } | null>(null);
 
   const getToken = useCallback(async (): Promise<string> => {
-    const token = await authRef.current?.currentUser?.getIdToken(true);
+    const token = await userRef.current?.getIdToken(true);
     if (!token) throw new Error('Sessão expirada. Faça login novamente.');
     return token;
   }, []);
@@ -65,7 +65,7 @@ export default function LimparLogsPage() {
 
     setIsLoadingMocks(true);
     try {
-      const mocksColl = collection(db as Firestore, 'projects', activeProjectId, 'mocks');
+      const mocksColl = collection(db as CompatDb, 'projects', activeProjectId, 'mocks');
       const snapshot = await getDocs(mocksColl);
       const mocksData = snapshot.docs.map((mockDoc) => ({ id: mockDoc.id, ...mockDoc.data() } as Mock));
       setMocks(mocksData);

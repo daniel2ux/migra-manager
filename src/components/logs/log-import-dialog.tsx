@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { doc, updateDoc } from "firebase/firestore";
-import { useFirestore, useAuth, useMemoFirebase } from "@/supabase/provider";
+import { doc, updateDoc } from "@/supabase/compat-db-shim";
+import { useDb, useUser, useMemoDb } from "@/supabase/provider";
 import { useDoc } from "@/supabase/hooks/use-doc";
 import { useFileAliases } from "@/hooks/use-file-aliases";
 import type { AppConfig } from "@/types/migration";
@@ -60,14 +60,14 @@ export function LogImportDialog({
   allObjects,
   selectedObjectIds,
 }: LogImportDialogProps) {
-  const firestore = useFirestore();
-  const auth = useAuth();
+  const db = useDb();
+  const { user } = useUser();
   const { aliases } = useFileAliases();
 
   // Ler configuração de maxImportLines
-  const settingsDocRef = useMemoFirebase(
-    () => open && firestore ? doc(firestore, "appConfig", "settings") : null,
-    [firestore, open]
+  const settingsDocRef = useMemoDb(
+    () => open && db ? doc(db, "appConfig", "settings") : null,
+    [db, open]
   );
   const { data: settingsData } = useDoc<AppConfig>(settingsDocRef as any); // AppConfig defines maxImportLines
   const [lineLimit, setLineLimit] = useState<number | undefined>(undefined);
@@ -257,7 +257,7 @@ export function LogImportDialog({
     });
 
   const runImport = async () => {
-    if (selectedFiles.length === 0 || !directoryHandle || !firestore) {
+    if (selectedFiles.length === 0 || !directoryHandle || !db) {
       return;
     }
 
@@ -269,15 +269,15 @@ export function LogImportDialog({
 
     let totalImported = 0;
     try {
-      // Get Firebase Auth ID token (required by API route)
-      if (!auth?.currentUser) {
+      // Token de sessão do usuário autenticado (exigido pela API)
+      if (!user) {
         log(`  erro: usuário não autenticado`, 'error');
         return;
       }
 
       let token: string;
       try {
-        token = await auth.currentUser.getIdToken();
+        token = await user.getIdToken();
       } catch (tokenErr: unknown) {
         log(`  erro ao obter token: ${tokenErr instanceof Error ? tokenErr.message : 'desconhecido'}`, 'error');
         return;
@@ -353,7 +353,7 @@ export function LogImportDialog({
                 totalImported += evt.recordsWritten;
 
                 if (evt.recordsWritten > 0) {
-                  const objRef = doc(firestore, 'projects', projectId, 'mocks', mockId, 'migrationObjects', objectId);
+                  const objRef = doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', objectId);
                   await updateDoc(objRef, { hasTechLogs: true });
                 }
               } else if (evt.type === 'error') {

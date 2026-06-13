@@ -137,7 +137,7 @@ export const dashboardDialogContentProps = {
 } as const;
 
 export const dashboardAlertDialogContentProps = {
-  /* Overlay leve: mantém cards e contexto visíveis atrás da confirmação */
-  overlayClassName: "fiori-message-box-overlay",
+  manualBackdrop: true as const,
+  overlayClassName: "fiori-dashboard-dialog-overlay",
   ...dashboardDialogFocusProps,
 } as const;

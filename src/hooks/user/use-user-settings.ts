@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
-import { useFirestore } from "@/supabase";
+import { doc, updateDoc, arrayUnion, arrayRemove } from "@/supabase/compat-db-shim";
+import { useDb } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
 import type { EmailSignature } from "@/types/usuarios";
 
@@ -11,7 +11,7 @@ interface UseUserSettingsProps {
 }
 
 export function useUserSettings({ user }: UseUserSettingsProps) {
-  const db = useFirestore();
+  const db = useDb();
   const { toast } = useToast();
 
   const [isSavingMigrador, setIsSavingMigrador] = useState(false);

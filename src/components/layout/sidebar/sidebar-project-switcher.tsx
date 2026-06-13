@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronsUpDown } from "lucide-react";
-import type { User as FirebaseAuthUser } from "firebase/auth";
+import type { User as CompatAuthUser } from "@/supabase/auth-shim";
 import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSwitchableProjects } from "./use-sidebar-projects";
 
-/** Troca de projeto (Firestore: mesmos critérios do seletor pós-login). Só aparece com 2+ projetos. */
+/** Troca de projeto (CompatDb: mesmos critérios do seletor pós-login). Só aparece com 2+ projetos. */
 export function SidebarProjectSwitcher({
     user,
     profileLoading,
@@ -26,7 +26,7 @@ export function SidebarProjectSwitcher({
     layout,
     onNavItemClick,
 }: {
-    user: FirebaseAuthUser | null;
+    user: CompatAuthUser | null;
     profileLoading: boolean;
     isAdmin: boolean;
     isUserLoading: boolean;
@@ -80,7 +80,7 @@ export function SidebarProjectSwitcher({
                             </button>
                         </DropdownMenuTrigger>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="border-0 bg-slate-800 text-[9px] font-bold uppercase tracking-widest text-white">
+                    <TooltipContent side="bottom">
                         Trocar projeto
                     </TooltipContent>
                 </Tooltip>

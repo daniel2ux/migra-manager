@@ -1,18 +1,17 @@
 import { useState, useCallback } from "react";
-import { useFirestore, useUser } from "@/supabase";
+import { useDb, useUser } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { doc, serverTimestamp, type Firestore } from "firebase/firestore";
-import type { User } from "firebase/auth";
+import { doc, serverTimestamp, setDoc, type CompatDb } from "@/supabase/compat-db-shim";
+import type { User } from "@/supabase/auth-shim";
 import { setDocumentNonBlocking } from "@/supabase/mutations";
 import { slugify } from "@/lib/formatters";
-import { generateShortId } from "@/lib/id-utils";
-import { FIRESTORE_BATCH_SIZE } from "@/lib/constants";
+import { DB_BATCH_SIZE } from "@/lib/constants";
 import type { Mock, MigrationObject, UserProfile } from "@/types/migration";
 
 type ToastFn = ReturnType<typeof useToast>['toast'];
 
 function useMockLocking(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   user: User | null, 
   isAdmin: boolean, 
   projectId: string | null, 
@@ -52,7 +51,7 @@ function useMockLocking(
 }
 
 function useMockLifecycle(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   isAdmin: boolean, 
   projectId: string | null, 
   _toast: ToastFn
@@ -109,7 +108,7 @@ function useMockLifecycle(
 }
 
 function useMockBulkOps(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   isAdmin: boolean, 
   projectId: string | null, 
   toast: ToastFn
@@ -120,10 +119,10 @@ function useMockBulkOps(
 
   const _deleteObjects = useCallback(async (mockId: string) => {
     if (!projectId || !db) return;
-    const { writeBatch, getDocs, collection } = await import("firebase/firestore");
+    const { writeBatch, getDocs, collection } = await import("@/supabase/compat-db-shim");
     let batch = writeBatch(db); let opCount = 0;
     const snap = await getDocs(collection(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects'));
-    for (const d of snap.docs) { batch.delete(d.ref); opCount++; if (opCount >= FIRESTORE_BATCH_SIZE) { await batch.commit(); batch = writeBatch(db); opCount = 0; } }
+    for (const d of snap.docs) { batch.delete(d.ref); opCount++; if (opCount >= DB_BATCH_SIZE) { await batch.commit(); batch = writeBatch(db); opCount = 0; } }
     if (opCount > 0) await batch.commit();
   }, [db, projectId]);
 
@@ -138,7 +137,7 @@ function useMockBulkOps(
       if (mock && (mock.status === 'CARGA_EM_ANDAMENTO' || mock.isRunning)) {
         toast({ variant: "destructive", description: "NÃO É POSSÍVEL EXCLUIR UM MOCK EM EXECUÇÃO." }); return;
       }
-      try { await _deleteObjects(selectedMockId!); const { writeBatch, doc } = await import("firebase/firestore"); const b = writeBatch(db); b.delete(doc(db, 'projects', projectId, 'mocks', selectedMockId)); await b.commit(); setIsBulkDeleteConfirmOpen(false); }
+      try { await _deleteObjects(selectedMockId!); const { writeBatch, doc } = await import("@/supabase/compat-db-shim"); const b = writeBatch(db); b.delete(doc(db, 'projects', projectId, 'mocks', selectedMockId)); await b.commit(); setIsBulkDeleteConfirmOpen(false); }
       catch { toast({ variant: "destructive", description: "FALHA AO EXCLUIR." }); }
     }, [isAdmin, projectId, db, toast, _deleteObjects]),
 
@@ -163,7 +162,7 @@ function useMockBulkOps(
 }
 
 function useMockCloneFeature(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   user: User | null, 
   isAdmin: boolean, 
   projectId: string | null, 
@@ -174,12 +173,12 @@ function useMockCloneFeature(
 
   const _cloneObjects = useCallback(async (sourceMockId: string, targetMockId: string) => {
     if (!projectId || !db) return;
-    const { collection, writeBatch, getDocs, doc, serverTimestamp } = await import("firebase/firestore");
+    const { collection, writeBatch, getDocs, doc, serverTimestamp } = await import("@/supabase/compat-db-shim");
     const snap = await getDocs(collection(db, 'projects', projectId, 'mocks', sourceMockId, 'migrationObjects'));
     if (snap.empty) return;
     let batch = writeBatch(db); let count = 0;
     for (const d of snap.docs) {
-      const newObjId = generateShortId();
+      const newObjId = crypto.randomUUID();
       const docData = d.data() as Partial<MigrationObject> & { updatedAt?: unknown; __path?: string };
       const { id: _id, updatedAt: _u, __path: _p, ...objData } = docData;
       batch.set(doc(db, 'projects', projectId, 'mocks', targetMockId, 'migrationObjects', newObjId), {
@@ -189,7 +188,7 @@ function useMockCloneFeature(
         currentChargeDurationMs: 0, previousMigratedRecordsCount: objData.targetRecordsCount || 0,
         previousChargeDurationMs: objData.currentChargeDurationMs || 0, status: 'PENDENTE', loadHistory: [], updatedAt: serverTimestamp()
       });
-      count++; if (count >= FIRESTORE_BATCH_SIZE) { await batch.commit(); batch = writeBatch(db); count = 0; }
+      count++; if (count >= DB_BATCH_SIZE) { await batch.commit(); batch = writeBatch(db); count = 0; }
     }
     if (count > 0) await batch.commit();
   }, [db, projectId]);
@@ -201,15 +200,15 @@ function useMockCloneFeature(
     handleConfirmClone: useCallback(async (sourceMock: Mock | null, cloneData: { sequence: string; explanatoryText: string }) => {
       if (!sourceMock || !isAdmin || !projectId || !user || !db) return;
       try {
-        const finalId = generateShortId();
+        const finalId = crypto.randomUUID();
         const parts = sourceMock.name.split('-');
         const baseName = parts.length > 1 ? parts.slice(0, -1).join('-') : sourceMock.name;
         const finalName = `${baseName.toUpperCase()}-${cloneData.sequence.toUpperCase()}`;
         const { id: _id, loadHistory: _lh, isRunning: _ir, status: _st, isLocked: _il, updatedAt: _up, data_inicio_carga: _dic, data_fim_carga: _dfc, ...srcData } = sourceMock as Partial<Mock> & { updatedAt?: unknown };
-        await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', finalId), {
+        await setDoc(doc(db, 'projects', projectId, 'mocks', finalId), {
           ...srcData, id: finalId, projectId, name: finalName, slug: slugify(finalName),
           explanatoryText: cloneData.explanatoryText.toUpperCase(), status: 'PENDENTE', isRunning: false, isLocked: false,
-          loadHistory: [], ownerId: user.uid, updatedAt: serverTimestamp(),
+          loadHistory: [], updatedAt: serverTimestamp(),
         }, { merge: true });
         await _cloneObjects(sourceMock.id, finalId);
         setIsCloneDialogOpen(false); setCloneSourceMock(null);
@@ -226,7 +225,7 @@ export function useMocksActions(
   userProfile: UserProfile | null,
   isMaster: boolean
 ) {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const { toast } = useToast();
 
@@ -272,50 +271,79 @@ export function useMocksActions(
       masterObjects: any[],
       onSuccess: () => void
     ) => {
-      if (!db || !projectId || !user) return;
-      const isNew = !editingMock;
-      const mockId = editingMock?.id || generateShortId();
-      const finalName = `${formData.name.toUpperCase()}-${formData.sequence}`;
-      const { sequence: _s, ...dataToSave } = formData;
-      await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', mockId), {
-        ...dataToSave, id: mockId, projectId, name: finalName, slug: slugify(finalName),
-        explanatoryText: formData.explanatoryText.toUpperCase(), updatedAt: serverTimestamp(),
-        ...(isNew ? { ownerId: user.uid, status: 'PENDENTE', isRunning: false, isLocked: false, loadHistory: [] } : {})
-      }, { merge: true });
-
-      if (isNew && selectedMasterIds.length > 0) {
-        selectedMasterIds.forEach((masterId) => {
-          const master = masterObjects?.find((m: any) => m.id === masterId);
-          if (!master) return;
-          const objectId = generateShortId();
-          const objectRef = doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', objectId);
-          setDocumentNonBlocking(objectRef, {
-            id: objectId,
-            mockId,
-            projectId,
-            masterObjectId: masterId,
-            name: master.name || '',
-            description: master.description || '',
-            chargeGroup: master.chargeGroup || '',
-            chargeOrder: master.chargeOrder || '',
-            isParallel: master.isParallel || false,
-            chargeStartTime: '',
-            chargeEndTime: '',
-            targetRecordsCount: 0,
-            processedRecordsCount: 0,
-            migratedRecordsCount: 0,
-            successfulRecordsCount: 0,
-            errorRecordsCount: 0,
-            currentChargeDurationMs: 0,
-            previousMigratedRecordsCount: 0,
-            previousChargeDurationMs: 0,
-            dependencyIds: master.dependencyIds || [],
-            ownerId: user.uid,
-            updatedAt: serverTimestamp(),
-          }, { merge: true });
-        });
+      if (!db || !projectId || !user) {
+        toast({ variant: "destructive", description: "Sessão ou projeto indisponível. Tente novamente." });
+        return;
       }
-      onSuccess();
-    }, [db, projectId, user]),
+
+      const trimmedPrefix = String(formData.name ?? "").trim();
+      const trimmedSequence = String(formData.sequence ?? "").trim();
+      if (!trimmedPrefix) {
+        toast({ variant: "destructive", description: "Informe o prefixo da mock." });
+        return;
+      }
+
+      const isNew = !editingMock;
+      const mockId = editingMock?.id ?? crypto.randomUUID();
+      const finalName = trimmedSequence
+        ? `${trimmedPrefix.toUpperCase()}-${trimmedSequence}`
+        : trimmedPrefix.toUpperCase();
+      const { sequence: _s, ...dataToSave } = formData;
+
+      try {
+        await setDoc(doc(db, 'projects', projectId, 'mocks', mockId), {
+          ...dataToSave,
+          id: mockId,
+          projectId,
+          name: finalName,
+          slug: slugify(finalName),
+          explanatoryText: String(formData.explanatoryText ?? "").toUpperCase(),
+          updatedAt: serverTimestamp(),
+          ...(isNew
+            ? { status: 'PENDENTE', isRunning: false, isLocked: false, loadHistory: [] }
+            : {}),
+        }, { merge: true });
+
+        if (isNew && selectedMasterIds.length > 0) {
+          for (const masterId of selectedMasterIds) {
+            const master = masterObjects?.find((m: any) => m.id === masterId);
+            if (!master) continue;
+            const objectId = crypto.randomUUID();
+            await setDoc(doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', objectId), {
+              id: objectId,
+              mockId,
+              projectId,
+              masterObjectId: masterId,
+              name: master.name || '',
+              description: master.description || '',
+              chargeGroup: master.chargeGroup || '',
+              chargeOrder: master.chargeOrder || '',
+              isParallel: master.isParallel || false,
+              chargeStartTime: '',
+              chargeEndTime: '',
+              targetRecordsCount: 0,
+              processedRecordsCount: 0,
+              migratedRecordsCount: 0,
+              successfulRecordsCount: 0,
+              errorRecordsCount: 0,
+              currentChargeDurationMs: 0,
+              previousMigratedRecordsCount: 0,
+              previousChargeDurationMs: 0,
+              dependencyIds: master.dependencyIds || [],
+              ownerId: user.uid,
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+          }
+        }
+
+        toast({
+          description: isNew ? `Mock ${finalName} criada com sucesso.` : `Mock ${finalName} atualizada.`,
+        });
+        onSuccess();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Falha ao salvar a mock.";
+        toast({ variant: "destructive", description: message });
+      }
+    }, [db, projectId, user, toast]),
   };
 }

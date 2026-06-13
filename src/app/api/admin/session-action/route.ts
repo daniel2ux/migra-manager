@@ -4,7 +4,7 @@ import { verifyCallerRole } from '@/lib/admin-auth';
 import { ActionRequest } from '@/types/admin';
 import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
 
-type FirestoreUserRole = 'master' | 'admin' | 'especialista' | 'membro';
+type UserRole = 'master' | 'admin' | 'especialista' | 'membro';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const caller = verification.decoded;
 
     const callerUserDoc = await adminDb.collection('users').doc(caller.uid).get();
-    const callerRole = callerUserDoc.data()?.role as FirestoreUserRole | undefined;
+    const callerRole = callerUserDoc.data()?.role as UserRole | undefined;
 
     const targetUserRef = adminDb.collection('users').doc(targetUid);
     const targetUserDoc = await targetUserRef.get();
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       if (!targetUserDoc.exists || !targetUserData) {
         return NextResponse.json({ error: 'Usuário alvo não encontrado.' }, { status: 404 });
       }
-      const targetRole = targetUserData?.role as FirestoreUserRole | undefined;
+      const targetRole = targetUserData?.role as UserRole | undefined;
       const targetIsMaster = targetRole === 'master' || targetUserData?.isMaster === true;
       if (targetIsMaster) {
         return NextResponse.json(

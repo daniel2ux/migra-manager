@@ -7,10 +7,8 @@ import {
   deleteDoc,
   onSnapshot,
   runTransaction,
-  Timestamp,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { useFirestore } from '@/supabase';
+} from '@/supabase/compat-db-shim';
+import { useDb } from '@/supabase';
 
 const LOCK_COLLECTION = 'editLocks';
 
@@ -55,8 +53,25 @@ function sanitize(id: string) {
   return id.replace(/\//g, '_');
 }
 
+function buildLockPayload(
+  userId: string,
+  userName: string,
+  userEmail: string | null,
+  resourceId: string,
+) {
+  const now = new Date();
+  return {
+    userId,
+    userName,
+    userEmail,
+    lockedAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + LOCK_TTL_MS).toISOString(),
+    resourceId,
+  };
+}
+
 /**
- * Manages edit-presence locks stored in Firestore `editLocks` collection.
+ * Manages edit-presence locks stored in CompatDb `editLocks` collection.
  *
  * @param watchResourceId  Resource to watch in real-time (pass the currently open
  *                         resource ID so the dialog can react if someone else tries
@@ -70,7 +85,7 @@ export function useEditLock(
   userName: string | null,
   userEmail: string | null = null
 ) {
-  const db = useFirestore();
+  const db = useDb();
   const [state, setState] = useState<EditLockState>({
     isLockedByOther: false,
     lockedByName: null,
@@ -158,28 +173,14 @@ export function useEditLock(
               throw new LockConflictError(blockerName || 'Outro usuário');
             }
           }
-          tx.set(lockRef, { 
-            userId, 
-            userName,
-            userEmail,
-            lockedAt: Timestamp.now(), 
-            resourceId,
-            updatedAt: serverTimestamp()
-          });
+          tx.set(lockRef, buildLockPayload(userId, userName, userEmail, resourceId));
         });
 
         heldLockIds.current.add(resourceId);
 
         // Keepalive: refresh lock every 90 s while editing
         const interval = setInterval(() => {
-          setDoc(lockRef, { 
-            userId, 
-            userName,
-            userEmail,
-            lockedAt: Timestamp.now(), 
-            resourceId,
-            updatedAt: serverTimestamp()
-          }).catch(() => {});
+          setDoc(lockRef, buildLockPayload(userId, userName, userEmail, resourceId)).catch(() => {});
         }, 300_000);
         keepaliveRefs.current.set(resourceId, interval);
 

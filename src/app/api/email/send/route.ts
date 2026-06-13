@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/supabase/admin';
-import nodemailer from 'nodemailer';
+import { adminAuth } from '@/supabase/admin';
+import { sendSmtpMail } from '@/lib/email/smtp';
 import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
 import { z } from 'zod';
 
@@ -20,7 +20,7 @@ const EmailRequestSchema = z.object({
 
 
 /**
- * Verifica o token de ID do Firebase Admin.
+ * Verifica o token de ID do usuário autenticado.
  */
 async function verifyUser(token: string): Promise<{ uid: string } | { error: string }> {
   if (!token) return { error: 'Token não fornecido.' };
@@ -34,7 +34,7 @@ async function verifyUser(token: string): Promise<{ uid: string } | { error: str
 }
 
 /**
- * Handler POST para envio de e-mails via SMTP configurado no Firestore.
+ * Handler POST para envio de e-mails via SMTP configurado no banco de dados.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -74,43 +74,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    // 4. Configuração SMTP (Firestore)
-    const smtpDoc = await adminDb.collection('appConfig').doc('smtpConfig').get();
-    const smtp = smtpDoc.data();
-
-    if (!smtp?.host || !smtp?.user || !smtp?.pass) {
-      return NextResponse.json(
-        { error: 'Configuração SMTP não definida no sistema.' }, 
-        { status: 500 }
-      );
-    }
-
-    // 5. Preparação do Transporter
-    const transporter = nodemailer.createTransport({
-      host: smtp.host,
-      port: Number(smtp.port) || 587,
-      secure: Boolean(smtp.secure) || false,
-      auth: { user: smtp.user, pass: smtp.pass },
-      connectionTimeout: 10000,
-    });
-
-    // 6. Lógica de Remetente (Smart From)
-    // Para garantir entrega (SPF/DKIM), o 'from' técnico deve ser o usuário autenticado no SMTP.
-    const senderEmail = (from && from.trim() !== '') ? from : null;
+    const senderEmail = from && from.trim() !== '' ? from : undefined;
     const finalName = fromName || (senderEmail ? senderEmail.split('@')[0] : 'Sistema Migra');
-    
-    const finalFrom = senderEmail && senderEmail !== smtp.user 
-      ? `"${finalName}" <${smtp.user}>` 
-      : `"${finalName}" <${smtp.user}>`;
 
-    // 7. Disparo
-    await transporter.sendMail({
-      from: finalFrom,
-      replyTo: senderEmail || undefined,
+    await sendSmtpMail({
       to,
       subject,
       html,
       text,
+      fromName: finalName,
+      replyTo: senderEmail,
     });
 
     return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });

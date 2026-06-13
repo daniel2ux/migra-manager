@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth, useFirestore } from '@/supabase';
+import { useUser, useDb } from '@/supabase';
 import { useToast } from '@/hooks/use-toast';
 import type { BackupDestination } from '@/lib/backup/build-backup';
 import {
@@ -15,8 +15,8 @@ import {
 } from '@/lib/backup/local-registry';
 import type { BackupListItem, RestoreOptions } from '@/lib/backup/types';
 import type { Mock } from '@/types/migration';
-import { collection, getDocs } from 'firebase/firestore';
-import type { Firestore } from 'firebase/firestore';
+import { collection, getDocs } from '@/supabase/compat-db-shim';
+import type { CompatDb } from '@/supabase/compat-db-shim';
 import { extractRoots, fmtBytes } from './backup-formatters';
 
 interface LocalBackupRegistryContext {
@@ -38,12 +38,12 @@ export function useBackupManager({
   projectName,
   onLoadingListChange,
 }: UseBackupManagerOptions) {
-  const auth = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
-  const db = useFirestore();
+  const db = useDb();
 
-  const authRef = useRef(auth);
-  authRef.current = auth;
+  const userRef = useRef(user);
+  userRef.current = user;
   const toastRef = useRef(toast);
   toastRef.current = toast;
 
@@ -76,7 +76,7 @@ export function useBackupManager({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getToken = useCallback(async (): Promise<string> => {
-    const token = await authRef.current?.currentUser?.getIdToken();
+    const token = await userRef.current?.getIdToken();
     if (!token) throw new Error('Sessão expirada. Faça login novamente.');
     return token;
   }, []);
@@ -224,14 +224,14 @@ export function useBackupManager({
 
       setIsLoadingMocks(true);
       try {
-        const mocksColl = collection(db as Firestore, 'projects', targetProjectId, 'mocks');
+        const mocksColl = collection(db as CompatDb, 'projects', targetProjectId, 'mocks');
         const snapshot = await getDocs(mocksColl);
         const mocksWithCounts = await Promise.all(
           snapshot.docs.map(async (mockDoc) => {
             const mock = { id: mockDoc.id, ...mockDoc.data() } as Mock;
             const objectsSnap = await getDocs(
               collection(
-                db as Firestore,
+                db as CompatDb,
                 'projects',
                 targetProjectId,
                 'mocks',

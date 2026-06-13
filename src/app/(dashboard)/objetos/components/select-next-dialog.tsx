@@ -52,12 +52,15 @@ export function SelectNextDialog({
   displayChargeOrderById,
 }: SelectNextDialogProps) {
   const candidates = objects
-    .filter(o =>
-      o.id !== targetObject?.id &&
-      (searchTerm === "" ||
-        o.name.toUpperCase().includes(searchTerm) ||
-        (o.description || "").toUpperCase().includes(searchTerm))
-    )
+    .filter((o) => {
+      if (o.id === targetObject?.id) return false;
+      if (searchTerm === "") return true;
+      const term = searchTerm.toUpperCase();
+      return (
+        o.name.toUpperCase().includes(term) ||
+        (o.description || "").toUpperCase().includes(term)
+      );
+    })
     .sort(compareObjectNames);
 
   const handleClose = (val: boolean) => {
@@ -147,7 +150,7 @@ export function SelectNextDialog({
               <p className="fiori-empty-hint">
                 {searchTerm
                   ? "Nenhum objeto encontrado para esta busca"
-                  : "Utilize a busca para listar objetos disponíveis"}
+                  : "Nenhum outro objeto cadastrado para selecionar"}
               </p>
             </div>
           )}

@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { doc } from "firebase/firestore";
+import { doc } from "@/supabase/compat-db-shim";
 import { cn } from "@/lib/utils";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
+import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
 import {
     Tooltip,
     TooltipContent,
@@ -32,20 +32,22 @@ export const SidebarContent = React.memo(function SidebarContent({
     onNavItemClick,
     projectIdFromUrl,
     mode = "vertical",
+    hideSignOut = false,
 }: {
     onNavItemClick?: () => void;
     projectIdFromUrl: string | null;
     mode?: "vertical" | "horizontal";
+    hideSignOut?: boolean;
 }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
     const pathname = usePathname();
-    const db = useFirestore();
+    const db = useDb();
     const { user, isUserLoading } = useUser();
     const handleSignOut = useSignOut();
 
-    const userDocRef = useMemoFirebase(
+    const userDocRef = useMemoDb(
         () => (user && db && !isUserLoading ? doc(db, "users", user.uid) : null),
         [db, user, isUserLoading],
     );
@@ -68,7 +70,7 @@ export const SidebarContent = React.memo(function SidebarContent({
         return null;
     }, [projectIdFromUrl, persistedProjectId, userProfile]);
 
-    const projectDocRef = useMemoFirebase(() => {
+    const projectDocRef = useMemoDb(() => {
         if (!db || !effectiveProjectId) return null;
         return doc(db, "projects", effectiveProjectId);
     }, [db, effectiveProjectId]);
@@ -248,6 +250,7 @@ export const SidebarContent = React.memo(function SidebarContent({
                 isUserLoading={isUserLoading}
                 onNavItemClick={onNavItemClick}
                 onSignOut={handleSignOut}
+                hideSignOut={hideSignOut}
             />
         </div>
     );

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
-import { useFirestore } from "@/supabase/provider";
+import { collection, query, where, getDocs, limit, orderBy } from "@/supabase/compat-db-shim";
+import { useDb } from "@/supabase/provider";
 import {
   Dialog,
   DialogContent,
@@ -109,7 +109,7 @@ export function LogViewerDialog({
   empresa = "—",
 }: LogViewerDialogProps) {
   const mockLabel = mockName?.trim() || mockId || "—";
-  const firestore = useFirestore();
+  const db = useDb();
   const [logs, setLogs] = useState<MigrationLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [hitLimit, setHitLimit] = useState(false);
@@ -124,12 +124,12 @@ export function LogViewerDialog({
     setDetailSearch("");
     setSelectedErrorKey(null);
 
-    if (!firestore || !projectId || !mockId || !objectName) {
+    if (!db || !projectId || !mockId || !objectName) {
       setLoading(false);
       return;
     }
     const q = query(
-      collection(firestore, "migrationLogs"),
+      collection(db, "migrationLogs"),
       where("projectId", "==", projectId),
       where("mock", "==", mockId),
       where("object", "==", objectName),
@@ -148,11 +148,11 @@ export function LogViewerDialog({
         setHitLimit(snap.size >= FETCH_LIMIT);
       })
       .catch((err) => {
-        console.error("MIGRA: Erro ao buscar logs no Firestore:", err);
+        console.error("MIGRA: Erro ao buscar logs no CompatDb:", err);
         setLogs([]);
       })
       .finally(() => setLoading(false));
-  }, [open, firestore, projectId, mockId, objectName]);
+  }, [open, db, projectId, mockId, objectName]);
 
   const summaryMap = new Map<string, ErrorSummaryEntry>();
   for (const log of logs) {

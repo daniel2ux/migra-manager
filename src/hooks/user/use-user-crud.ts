@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { useFirestore } from "@/supabase";
+import { doc, updateDoc, serverTimestamp } from "@/supabase/compat-db-shim";
+import { useDb } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
 import type { UserProfile, UserFormData, CreateUserData, ResetPasswordResult } from "@/types/usuarios";
 
@@ -13,7 +13,7 @@ interface UseUserCrudProps {
 }
 
 export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
-  const db = useFirestore();
+  const db = useDb();
   const { toast } = useToast();
 
   const [isChangingRole, setIsChangingRole] = useState(false);
@@ -21,6 +21,7 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
   const [isDeletingUser, setIsDeletingUser] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
 
   // ── Toggle Block ──────────────────────────────────────────────────────
   const handleToggleBlock = async (targetUser: UserProfile) => {
@@ -80,22 +81,36 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
   };
 
   // ── Edit User ─────────────────────────────────────────────────────────
-  const handleSaveEdit = async (selectedUser: UserProfile | null, editFormData: Partial<UserFormData>) => {
-    if (!db || !selectedUser) return;
+  const handleSaveEdit = async (selectedUser: UserProfile | null, editFormData: Partial<UserFormData>): Promise<boolean> => {
+    if (!db || !selectedUser) return false;
 
     const isSelf = selectedUser.uid === user?.uid;
     const targetIsMaster = selectedUser.role === 'master' || selectedUser.isMaster;
-    if (targetIsMaster && !isMaster && !isSelf) return;
-    if (!isAdmin && !isSelf) return;
+    if (targetIsMaster && !isMaster && !isSelf) return false;
+    if (!isAdmin && !isSelf) return false;
+
+    const payload: Partial<UserFormData> & { updatedAt: ReturnType<typeof serverTimestamp> } = {
+      name: editFormData.name?.trim() || selectedUser.name,
+      phone: editFormData.phone?.trim() ?? '',
+      company: editFormData.company?.trim() ?? '',
+      position: editFormData.position?.trim() ?? '',
+      department: editFormData.department?.trim() ?? '',
+      manager: editFormData.manager?.trim() ?? '',
+      startDate: editFormData.startDate?.trim() ?? '',
+      endDate: editFormData.endDate?.trim() ?? '',
+      notes: editFormData.notes?.trim() ?? '',
+      updatedAt: serverTimestamp(),
+    };
 
     try {
-      await updateDoc(doc(db, "users", selectedUser.uid), {
-        ...editFormData,
-        updatedAt: serverTimestamp(),
-      });
+      await updateDoc(doc(db, "users", selectedUser.uid), payload);
       toast({ description: "Perfil técnico atualizado com sucesso." });
-    } catch {
-      toast({ variant: "destructive", description: "Erro ao salvar alterações." });
+      return true;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Erro ao salvar alterações.";
+      console.error("[handleSaveEdit]", e);
+      toast({ variant: "destructive", description: message });
+      return false;
     }
   };
 
@@ -113,7 +128,25 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      return { name: resetTarget.name, tempPassword: data.tempPassword };
+      const emailSent = data.emailSent === true;
+      if (emailSent) {
+        toast({
+          description: `Senha redefinida. E-mail enviado para ${resetTarget.email}.`,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          description: `Senha redefinida, mas o e-mail não foi enviado${data.emailError ? `: ${data.emailError}` : ' — configure SMTP em Configurações.'}`,
+        });
+      }
+      return {
+        name: resetTarget.name,
+        email: data.sentTo ?? resetTarget.email,
+        tempPassword: data.tempPassword,
+        emailSent,
+        emailError: data.emailError,
+        messageId: data.messageId,
+      };
     } catch (e) {
       toast({ variant: "destructive", description: e instanceof Error ? e.message : "Erro ao resetar senha." });
       return null;
@@ -160,8 +193,46 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
     return true;
   };
 
+  const handleResendCredentials = async (result: ResetPasswordResult | null): Promise<ResetPasswordResult | null> => {
+    if (!user || !result?.email || !isMaster) return null;
+
+    setIsResendingEmail(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/admin/resend-credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: result.name,
+          email: result.email,
+          tempPassword: result.tempPassword,
+          callerToken: token,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.emailError ?? data.error ?? 'Falha ao reenviar e-mail.');
+
+      toast({ description: `E-mail reenviado para ${data.sentTo ?? result.email}.` });
+      return {
+        ...result,
+        email: data.sentTo ?? result.email,
+        emailSent: true,
+        emailError: undefined,
+        messageId: data.messageId,
+      };
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        description: e instanceof Error ? e.message : 'Erro ao reenviar e-mail.',
+      });
+      return null;
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   // ── Create User ───────────────────────────────────────────────────────
-  const handleCreateUser = async (createFormData: CreateUserData): Promise<string | null> => {
+  const handleCreateUser = async (createFormData: CreateUserData): Promise<ResetPasswordResult | null> => {
     if (!user || !isMaster) return null;
 
     setIsCreatingUser(true);
@@ -174,6 +245,8 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
           name: createFormData.name,
           email: createFormData.email,
           role: createFormData.role,
+          company: createFormData.company,
+          position: createFormData.position,
           reason: createFormData.reason,
           callerToken: token,
         }),
@@ -181,8 +254,20 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      toast({ description: `Profissional ${createFormData.name} cadastrado com sucesso.` });
-      return data.tempPassword;
+      const emailSent = data.emailSent === true;
+      toast({
+        description: emailSent
+          ? `Profissional ${createFormData.name} cadastrado. E-mail de primeiro acesso enviado para ${createFormData.email}.`
+          : `Profissional ${createFormData.name} cadastrado. E-mail não enviado${data.emailError ? `: ${data.emailError}` : ' — configure SMTP em Configurações.'}`,
+        variant: emailSent ? 'default' : 'destructive',
+      });
+      return {
+        name: createFormData.name,
+        email: createFormData.email,
+        tempPassword: data.tempPassword,
+        emailSent,
+        emailError: data.emailError,
+      };
     } catch (e) {
       toast({ variant: "destructive", description: e instanceof Error ? e.message : "Erro ao cadastrar profissional." });
       return null;
@@ -224,10 +309,12 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
     handleResetPassword,
     handleDeleteUser,
     handleCopyPassword,
+    handleResendCredentials,
     handleCreateUser,
     handleSaveEmail,
     isChangingRole,
     isResetting,
+    isResendingEmail,
     isDeletingUser,
     isCreatingUser,
     isSavingEmail,

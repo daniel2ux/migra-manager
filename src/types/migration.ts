@@ -1,5 +1,5 @@
 
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "@/supabase/compat-db-shim";
 
 export interface MemberProfile {
   uid: string;
@@ -17,7 +17,7 @@ export interface Project {
   lockedByMaster?: boolean;
   lockedByUid?: string;
   lockedByName?: string;
-  /** Empresa-cliente (campo `company` no Firestore) */
+  /** Empresa-cliente (campo `company` no CompatDb) */
   company?: string;
   /** @deprecated Preferir `company` */
   empresa?: string;

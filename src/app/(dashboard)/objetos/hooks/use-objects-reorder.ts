@@ -2,15 +2,16 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
-import { doc, serverTimestamp, writeBatch, type Firestore } from 'firebase/firestore';
+import { doc, serverTimestamp, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
 import {
   parseSequence,
   formatSequence,
   isValidSequence,
   compareSequences,
   compareChargeSequenceGridOrder,
+  compareGestaoExecutionOrder,
 } from '@/lib/migration/sequence-utils';
-import { FIRESTORE_BATCH_SIZE } from '@/lib/constants';
+import { DB_BATCH_SIZE } from '@/lib/constants';
 import type { MasterObject } from '../components/object-card';
 import type { ProgressState } from '../components/progress-dialog';
 
@@ -19,29 +20,40 @@ export type CatalogSequenceStore =
   | { kind: 'master' }
   | { kind: 'migration'; projectId: string; mockId: string };
 
-export function sequenceDoc(
-  db: Firestore | null | undefined,
+function sequenceDoc(
+  db: CompatDb | null | undefined,
   store: CatalogSequenceStore,
   obj: MasterObject,
 ): ReturnType<typeof doc> | null {
   if (!db) return null;
   if (store.kind === 'migration') {
     const migId = obj._migrationDocId;
-    if (!migId) return null;
-    return doc(db, 'projects', store.projectId, 'mocks', store.mockId, 'migrationObjects', migId);
+    if (migId) {
+      return doc(db, 'projects', store.projectId, 'mocks', store.mockId, 'migrationObjects', migId);
+    }
+    // Objeto fora da mock: persiste no catálogo mestre
+    return doc(db, 'masterObjects', obj.id);
   }
   return doc(db, 'masterObjects', obj.id);
 }
 
 interface UseObjectsReorderDeps {
-  db: Firestore | null;
+  db: CompatDb | null;
   /** Mestres no escopo (filtrados por projeto/mock) com `_migrationDocId` quando há mock para sequência. */
   reorderUniverseObjects: MasterObject[] | null | undefined;
   toast: (opts: any) => void;
   sortedFilteredObjects: MasterObject[];
+  sortMode: 'EXECUTION' | 'ALPHABETICAL' | 'UPDATED';
   isAdmin: boolean;
   sequenceStore: CatalogSequenceStore;
+  refetchObjects?: () => void;
 }
+
+export type PerformReorderOptions = {
+  /** Lista exibida na grade — reordena por posição visual (01.00 = 1º card). */
+  orderedList?: MasterObject[];
+  onMoved?: (objectId: string) => void;
+};
 
 type ReorderInsert =
   | { mode: 'before'; anchorId: string }
@@ -76,24 +88,92 @@ function buildContiguousSequenceOrder(
   return reordered;
 }
 
+/** Reordena pela posição exibida na grade (01.00 = 1º card, 02.00 = 2º, …). */
+function buildContiguousSequenceOrderByListPosition(
+  list: MasterObject[],
+  moving: MasterObject,
+  targetOrder: string,
+): MasterObject[] {
+  const position = parseSequence(targetOrder).major;
+  if (position <= 0) return [...list];
+
+  const current = [...list];
+  const fromIdx = current.findIndex((o) => o.id === moving.id);
+  if (fromIdx === -1) {
+    const insertIdx = Math.max(0, Math.min(position - 1, current.length));
+    const next = [...current];
+    next.splice(insertIdx, 0, moving);
+    return next;
+  }
+
+  const [item] = current.splice(fromIdx, 1);
+  const insertIdx = Math.max(0, Math.min(position - 1, current.length));
+  current.splice(insertIdx, 0, item);
+  return current;
+}
+
+/** Aplica a nova ordem da grade visível e mantém demais objetos do universo ao final. */
+function mergeListPositionIntoUniverse(
+  universe: MasterObject[],
+  orderedList: MasterObject[],
+  moving: MasterObject,
+  targetOrder: string,
+): MasterObject[] {
+  const reorderedVisible = buildContiguousSequenceOrderByListPosition(orderedList, moving, targetOrder);
+  const visibleIds = new Set(reorderedVisible.map((o) => o.id));
+  const hidden = universe
+    .filter((o) => !visibleIds.has(o.id))
+    .sort((a, b) => compareGestaoExecutionOrder(a, b));
+  return [...reorderedVisible, ...hidden];
+}
+
+/** Insere o objeto movido imediatamente após o card âncora na lista exibida. */
+function insertAfterAnchorInList(
+  list: MasterObject[],
+  moving: MasterObject,
+  anchorId: string,
+): MasterObject[] {
+  const withoutMoving = list.filter((o) => o.id !== moving.id);
+  const anchorIdx = withoutMoving.findIndex((o) => o.id === anchorId);
+  const insertIdx = anchorIdx === -1 ? withoutMoving.length : anchorIdx + 1;
+  const reordered = [...withoutMoving];
+  reordered.splice(insertIdx, 0, moving);
+  return reordered;
+}
+
+/** Reposiciona na grade visível e preserva objetos fora da lista ao final do universo. */
+function buildReorderAfterAnchorInList(
+  universe: MasterObject[],
+  orderedList: MasterObject[],
+  moving: MasterObject,
+  anchorId: string,
+): MasterObject[] {
+  const reorderedVisible = insertAfterAnchorInList(orderedList, moving, anchorId);
+  const visibleIds = new Set(reorderedVisible.map((o) => o.id));
+  const hidden = universe
+    .filter((o) => !visibleIds.has(o.id))
+    .sort((a, b) => compareGestaoExecutionOrder(a, b));
+  return [...reorderedVisible, ...hidden];
+}
+
 async function commitContiguousSequenceRenumber(
-  db: Firestore,
+  db: CompatDb,
   sequenceStore: CatalogSequenceStore,
   reordered: MasterObject[],
   toast: (opts: { variant?: string; description: string }) => void,
   errorMessage: string,
+  opts?: { forceRenumber?: boolean },
 ): Promise<boolean> {
   const batch = writeBatch(db);
   let updateCount = 0;
+  const forceRenumber = opts?.forceRenumber ?? false;
 
   reordered.forEach((obj, idx) => {
     const newSeq = formatSequence(idx + 1, 0);
-    if (String(obj.chargeOrder) === newSeq) return;
+    if (!forceRenumber && String(obj.chargeOrder) === newSeq) return;
     const ref = sequenceDoc(db, sequenceStore, obj);
     if (!ref) {
-      if (sequenceStore.kind === 'migration') {
-        toast({ variant: 'destructive', description: 'OBJETO SEM VÍNCULO À MOCK PARA SALVAR SEQUÊNCIA.' });
-      }
+      console.error('[performReorder] documento não resolvido', obj.id, obj.name);
       return;
     }
     batch.update(ref as any, { chargeOrder: newSeq, updatedAt: serverTimestamp() });
@@ -104,8 +184,10 @@ async function commitContiguousSequenceRenumber(
   try {
     await batch.commit();
     return true;
-  } catch {
-    toast({ variant: 'destructive', description: errorMessage });
+  } catch (err) {
+    console.error('[performReorder] falha ao gravar sequência', err);
+    const detail = err instanceof Error ? err.message : errorMessage;
+    toast({ variant: 'destructive', description: detail || errorMessage });
     return false;
   }
 }
@@ -156,12 +238,12 @@ function useBatchRunner(db: any, toast: (opts: any) => void) {
     setProgressState({ open: true, title, current: 0, total, done: false, error: null });
     await new Promise(r => setTimeout(r, 50));
     try {
-      for (let i = 0; i < items.length; i += FIRESTORE_BATCH_SIZE) {
-        const chunk = items.slice(i, i + FIRESTORE_BATCH_SIZE);
+      for (let i = 0; i < items.length; i += DB_BATCH_SIZE) {
+        const chunk = items.slice(i, i + DB_BATCH_SIZE);
         const batch = writeBatch(db);
         chunk.forEach(({ ref, data }) => batch.set(ref, data, { merge: true }));
         await batch.commit();
-        flushSync(() => setProgressState(s => ({ ...s, current: Math.min(i + FIRESTORE_BATCH_SIZE, total) })));
+        flushSync(() => setProgressState(s => ({ ...s, current: Math.min(i + DB_BATCH_SIZE, total) })));
       }
       flushSync(() => setProgressState(s => ({ ...s, current: total, done: true })));
       toast({ description: `${title} — CONCLUÍDO.` });
@@ -229,8 +311,10 @@ export function useObjectsReorder({
   reorderUniverseObjects: objects,
   toast,
   sortedFilteredObjects,
+  sortMode: _sortMode,
   isAdmin,
   sequenceStore,
+  refetchObjects,
 }: UseObjectsReorderDeps) {
   const visual = useVisualDrag(sortedFilteredObjects);
   const batchRunner = useBatchRunner(db, toast);
@@ -300,49 +384,117 @@ export function useObjectsReorder({
   };
 
   // ── Perform reorder ────────────────────────────────────────────────────
-  const performReorder = async (movingObject: MasterObject, targetOrder: string, targetId?: string) => {
-    if (!objects?.length || !db) return;
-    const insert: ReorderInsert = targetId
-      ? { mode: 'before', anchorId: targetId }
-      : { mode: 'atOrder', targetOrder };
-    const reordered = buildContiguousSequenceOrder(objects, movingObject, insert);
-    await commitContiguousSequenceRenumber(
+  const performReorder = async (
+    movingObject: MasterObject,
+    targetOrder: string,
+    targetId?: string,
+    opts?: PerformReorderOptions,
+  ): Promise<boolean> => {
+    if (!objects?.length || !db) return false;
+    if (!isValidSequence(targetOrder)) {
+      toast({ variant: 'destructive', description: 'SEQUÊNCIA INVÁLIDA. USE O FORMATO XX.XX.' });
+      return false;
+    }
+
+    const useListPosition = Boolean(opts?.orderedList?.length && !targetId);
+    const reordered = useListPosition
+      ? mergeListPositionIntoUniverse(objects, opts!.orderedList!, movingObject, targetOrder)
+      : buildContiguousSequenceOrder(
+          objects,
+          movingObject,
+          targetId
+            ? { mode: 'before', anchorId: targetId }
+            : { mode: 'atOrder', targetOrder },
+        );
+
+    const ok = await commitContiguousSequenceRenumber(
       db,
       sequenceStore,
       reordered,
       toast,
       'ERRO AO REORDENAR OBJETOS NO BANCO.',
+      { forceRenumber: useListPosition },
     );
+    if (ok) {
+      refetchObjects?.();
+      opts?.onMoved?.(movingObject.id);
+    }
+    return ok;
   };
 
   // ── Select Next confirm ────────────────────────────────────────────────
   const handleSelectNextConfirm = async (selectedObj: MasterObject) => {
     if (!selectNext.selectNextTargetObject || !objects?.length || !db) return;
-    selectNext.setIsSelectNextOpen(false);
     const target = selectNext.selectNextTargetObject;
+
+    if (selectedObj.id === target.id) {
+      toast({ variant: 'destructive', description: 'UM OBJETO NÃO PODE SER POSICIONADO APÓS SI MESMO.' });
+      return;
+    }
+
+    const orderedList =
+      sortedFilteredObjects.length > 0
+        ? sortedFilteredObjects
+        : [...objects].sort((a, b) => compareGestaoExecutionOrder(a, b));
+
+    const targetIdx = orderedList.findIndex((o) => o.id === target.id);
+    const nextInList = targetIdx !== -1 ? orderedList[targetIdx + 1] : undefined;
+    if (nextInList?.id === selectedObj.id) {
+      selectNext.setIsSelectNextOpen(false);
+      selectNext.setSelectNextTargetObject(null);
+      toast({ description: `"${selectedObj.name}" JÁ É O PRÓXIMO CARD APÓS "${target.name}".` });
+      return;
+    }
+
+    const reordered = buildReorderAfterAnchorInList(
+      objects,
+      orderedList as MasterObject[],
+      selectedObj,
+      target.id,
+    );
+
+    selectNext.setIsSelectNextOpen(false);
     selectNext.setSelectNextTargetObject(null);
 
-    const selectedMajor = parseSequence(selectedObj.chargeOrder || '').major;
-    const targetMajor = parseSequence(target.chargeOrder || '').major;
-    if (selectedMajor > 0 && targetMajor > 0 && selectedMajor === targetMajor + 1) return;
-
-    const reordered = buildContiguousSequenceOrder(objects, selectedObj, {
-      mode: 'after',
-      anchorId: target.id,
-    });
-    await commitContiguousSequenceRenumber(
+    const ok = await commitContiguousSequenceRenumber(
       db,
       sequenceStore,
       reordered,
       toast,
       'ERRO AO REORDENAR OBJETOS.',
+      { forceRenumber: true },
     );
+    if (ok) {
+      refetchObjects?.();
+    }
   };
 
   // ── Parallel save ──────────────────────────────────────────────────────
   const handleSaveParallelSelect = async () => {
     if (!parallel.parallelSelectTarget || !objects?.length || !db) return;
     const target = parallel.parallelSelectTarget;
+
+    if (parallel.parallelSelectedIds.length === 0) {
+      const ref = sequenceDoc(db, sequenceStore, target);
+      if (!ref) {
+        toast({ variant: 'destructive', description: 'ERRO AO REMOVER PARALELISMO DO OBJETO.' });
+        return;
+      }
+      try {
+        await writeBatch(db)
+          .update(ref as any, { parallelOrder: '', isParallel: false, updatedAt: serverTimestamp() })
+          .commit();
+        refetchObjects?.();
+        toast({ description: 'PARALELISMO REMOVIDO.' });
+      } catch (err) {
+        console.error('[handleSaveParallelSelect] remove', err);
+        toast({ variant: 'destructive', description: 'ERRO AO REMOVER PARALELISMO.' });
+      }
+      parallel.setIsParallelSelectOpen(false);
+      parallel.setParallelSelectTarget(null);
+      return;
+    }
+
     const existingMajor = target.parallelOrder ? parseSequence(target.parallelOrder).major : 0;
     const parallelMajor = existingMajor > 0 ? existingMajor : (() => {
       const withParallel = objects.filter((o) => o.parallelOrder && isValidSequence(o.parallelOrder));
@@ -353,19 +505,26 @@ export function useObjectsReorder({
       .filter((o) => o.id !== target.id && o.parallelOrder && parseSequence(o.parallelOrder).major === parallelMajor)
       .map((o) => o.id);
     const newGroupIds = [target.id, ...parallel.parallelSelectedIds];
-    const newGroupObjects = newGroupIds.map((id) => objects.find((o) => o.id === id)).filter(Boolean) as MasterObject[];
+    const newGroupObjects = newGroupIds
+      .map((id) => objects.find((o) => o.id === id))
+      .filter(Boolean) as MasterObject[];
     const removedIds = prevMemberIds.filter((id) => !parallel.parallelSelectedIds.includes(id));
+
     const batch = writeBatch(db);
+    let updateCount = 0;
+
     newGroupObjects.forEach((obj, idx) => {
       const ref = sequenceDoc(db, sequenceStore, obj);
-      if (!ref) return;
+      if (!ref) {
+        console.error('[handleSaveParallelSelect] ref ausente', obj.id, obj.name);
+        return;
+      }
       batch.update(ref as any, {
-        chargeOrder: target.chargeOrder,
-        chargeGroup: target.chargeGroup || 'G',
         parallelOrder: formatSequence(parallelMajor, idx),
         isParallel: true,
         updatedAt: serverTimestamp(),
       });
+      updateCount++;
     });
     removedIds.forEach((id) => {
       const row = objects.find((o) => o.id === id);
@@ -373,22 +532,22 @@ export function useObjectsReorder({
       const ref = sequenceDoc(db, sequenceStore, row);
       if (!ref) return;
       batch.update(ref as any, { parallelOrder: '', isParallel: false, updatedAt: serverTimestamp() });
+      updateCount++;
     });
-    if (parallel.parallelSelectedIds.length === 0) {
-      const ref = sequenceDoc(db, sequenceStore, target);
-      if (ref) {
-        batch.update(ref as any, { parallelOrder: '', isParallel: false, updatedAt: serverTimestamp() });
-      }
+
+    if (updateCount === 0) {
+      toast({ variant: 'destructive', description: 'NENHUM OBJETO FOI ATUALIZADO. VERIFIQUE PERMISSÕES.' });
+      return;
     }
+
     try {
       await batch.commit();
+      refetchObjects?.();
       toast({
-        description:
-          parallel.parallelSelectedIds.length > 0
-            ? `PARALELISMO CONFIGURADO: ${newGroupIds.length} OBJETOS NO GRUPO ${String(parallelMajor).padStart(2, '0')}`
-            : 'PARALELISMO REMOVIDO.',
+        description: `PARALELISMO CONFIGURADO: ${newGroupObjects.length} OBJETO(S) NO GRUPO ${String(parallelMajor).padStart(2, '0')}`,
       });
-    } catch {
+    } catch (err) {
+      console.error('[handleSaveParallelSelect] commit', err);
       toast({ variant: 'destructive', description: 'ERRO AO CONFIGURAR PARALELISMO.' });
     }
     parallel.setIsParallelSelectOpen(false);

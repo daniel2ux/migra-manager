@@ -5,7 +5,7 @@ import type { DocumentReference } from '@/supabase/query-builder';
 import { subscribeDoc } from '@/supabase/query-builder';
 import { toCamelRow } from '@/supabase/field-map';
 import { errorEmitter } from '@/supabase/error-emitter';
-import { FirestorePermissionError } from '@/supabase/errors';
+import { SupabasePermissionError } from '@/supabase/errors';
 import { useSupabase } from '@/supabase/provider';
 import type { WithId } from './types';
 
@@ -50,7 +50,7 @@ export function useDoc<T = Record<string, unknown>>(
       },
       (err) => {
         if ((err as { code?: string }).code === '42501' || err.message.includes('policy')) {
-          const contextualError = new FirestorePermissionError({
+          const contextualError = new SupabasePermissionError({
             operation: 'get',
             path: memoizedDocRef.path,
           });
@@ -66,7 +66,8 @@ export function useDoc<T = Record<string, unknown>>(
     );
 
     return () => unsub();
-  }, [refPath, isUserLoading, memoizedDocRef]);
+    // refPath é estável; não depender de memoizedDocRef (nova referência a cada render quebra o hook)
+  }, [refPath, isUserLoading]);
 
   return { data, isLoading, error };
 }

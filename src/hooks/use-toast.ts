@@ -9,13 +9,19 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+/** Tempo visível do toast antes de fechar (ms). */
+export const TOAST_DURATION_MS = 5000
+/** Toasts de erro permanecem um pouco mais para leitura. */
+export const TOAST_DURATION_ERROR_MS = 8000
+/** Aguarda animação de saída antes de remover do DOM. */
+const TOAST_REMOVE_DELAY = 500
 
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  duration?: number
 }
 
 const _actionTypes = {
@@ -57,6 +63,25 @@ interface State {
 }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+const toastDismissTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
+const clearToastDismissTimer = (toastId: string) => {
+  const timer = toastDismissTimers.get(toastId)
+  if (timer) {
+    clearTimeout(timer)
+    toastDismissTimers.delete(toastId)
+  }
+}
+
+const scheduleToastDismiss = (toastId: string, duration: number, dismiss: () => void) => {
+  clearToastDismissTimer(toastId)
+  if (!Number.isFinite(duration) || duration <= 0) return
+  const timer = setTimeout(() => {
+    toastDismissTimers.delete(toastId)
+    dismiss()
+  }, duration)
+  toastDismissTimers.set(toastId, timer)
+}
 
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
@@ -96,9 +121,11 @@ export const reducer = (state: State, action: Action): State => {
       // ! Side effects ! - This could be extracted into a dismissToast() action,
       // but I'll keep it here for simplicity
       if (toastId) {
+        clearToastDismissTimer(toastId)
         addToRemoveQueue(toastId)
       } else {
         state.toasts.forEach((toast) => {
+          clearToastDismissTimer(toast.id)
           addToRemoveQueue(toast.id)
         })
       }
@@ -142,27 +169,37 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+function toast({ duration, variant, ...props }: Toast) {
   const id = genId()
+  const resolvedDuration =
+    duration ??
+    (variant === "destructive" ? TOAST_DURATION_ERROR_MS : TOAST_DURATION_MS)
 
   const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+  const dismiss = () => {
+    clearToastDismissTimer(id)
+    dispatch({ type: "DISMISS_TOAST", toastId: id })
+  }
 
   dispatch({
     type: "ADD_TOAST",
     toast: {
       ...props,
+      variant,
       id,
+      duration: resolvedDuration,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()
       },
     },
   })
+
+  scheduleToastDismiss(id, resolvedDuration, dismiss)
 
   return {
     id: id,

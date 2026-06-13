@@ -3,6 +3,7 @@
 import { MockCard, MockCardHandle } from './mock-card';
 import type { Mock, MigrationObject } from '@/types/migration';
 import { useRef, useImperativeHandle, forwardRef } from 'react';
+import { Package } from 'lucide-react';
 
 interface MockTableProps {
   mocks: Mock[];
@@ -16,6 +17,7 @@ interface MockTableProps {
   isTogglingLoad: string | null;
   isDeleting: string | null;
   objectsByMock?: Record<string, MigrationObject[]>;
+  catalogObjectCount?: number;
   onToggleLock: (mock: Mock) => void;
   onToggleLoadStatus: (mock: Mock) => void;
   onClone: (mock: Mock) => void;
@@ -33,7 +35,7 @@ export interface MockTableHandle {
 export const MockTable = forwardRef<MockTableHandle, MockTableProps>(
   ({
     mocks, selectedMockId, onSelect, isAdmin, isMaster, isProjectLocked = false, currentUserId: _currentUserId, projectId,
-    isTogglingLoad, isDeleting, objectsByMock, onToggleLock, onToggleLoadStatus,
+    isTogglingLoad, isDeleting, objectsByMock, catalogObjectCount = 0, onToggleLock, onToggleLoadStatus,
     onClone, onEdit, onView, onDelete: _onDelete, onContextMenu
   }, ref) => {
     const cardRefs = useRef<Map<string, MockCardHandle>>(new Map());
@@ -59,10 +61,14 @@ export const MockTable = forwardRef<MockTableHandle, MockTableProps>(
 
     if (mocks.length === 0) {
       return (
-        <div className="flex items-center justify-center h-32 opacity-30">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-            NENHUMA JANELA ENCONTRADA
-          </span>
+        <div className="flex flex-1 flex-col items-center justify-center px-4 md:px-8 py-16 text-center">
+          <Package className="mb-3 h-10 w-10 text-[var(--fiori-border)]" aria-hidden />
+          <p className="text-[0.8125rem] font-semibold text-[var(--fiori-label)]">
+            Nenhuma janela cadastrada
+          </p>
+          <p className="mt-1 max-w-sm text-[0.75rem] text-[var(--fiori-label)]">
+            Use o botão de adicionar no cabeçalho para criar a primeira mock deste projeto.
+          </p>
         </div>
       );
     }
@@ -83,6 +89,7 @@ export const MockTable = forwardRef<MockTableHandle, MockTableProps>(
             isTogglingLoad={isTogglingLoad}
             isDeleting={isDeleting}
             objects={objectsByMock?.[mock.id] || []}
+            catalogObjectCount={catalogObjectCount}
             onToggleLock={onToggleLock}
             onToggleLoadStatus={onToggleLoadStatus}
             onClone={onClone}

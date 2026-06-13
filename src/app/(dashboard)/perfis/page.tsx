@@ -6,15 +6,15 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Shield, ShieldAlert, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PerfisManager, PerfisManagerRef } from "@/components/configuracoes/perfis-manager";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
-import { doc } from "firebase/firestore";
+import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
+import { doc } from "@/supabase/compat-db-shim";
 
 export default function PerfisPage() {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const managerRef = useRef<PerfisManagerRef>(null);
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db ? doc(db, "users", user.uid) : null),
     [db, user]
   );

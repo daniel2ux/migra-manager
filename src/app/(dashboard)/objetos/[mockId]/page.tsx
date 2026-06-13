@@ -3,8 +3,8 @@
 import { Suspense, useEffect } from 'react';
 import {
   CheckCircle2,
-  Loader2,
-  Lock,
+    Loader2,
+    Lock,
   Zap,
 } from 'lucide-react';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
@@ -35,24 +35,24 @@ import type { MigrationObject } from './types';
 function ObjetosContent() {
   const page = useMockObjectsPage();
 
-  const {
-    isImporting,
+    const {
+        isImporting,
     importLogOpen,
     setImportLogOpen,
-    importProgress,
-    importFinished,
-    importCounts,
-    importLogs,
-    isDragging,
-    importFileInputRef,
-    navImportFileRef,
-    terminalEndRef,
-    handleImportFile,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
-    resetImportState,
-  } = useObjectImport({
+        importProgress,
+        importFinished,
+        importCounts,
+        importLogs,
+        isDragging,
+        importFileInputRef,
+        navImportFileRef,
+        terminalEndRef,
+        handleImportFile,
+        handleDragOver,
+        handleDragLeave,
+        handleDrop,
+        resetImportState,
+    } = useObjectImport({
     projectId: page.projectId ?? '',
     mockId: page.mockId ?? '',
     objects: page.objects ?? undefined,
@@ -60,42 +60,42 @@ function ObjetosContent() {
     userProfile: page.userProfile ?? undefined,
   });
 
-  const {
+    const {
     selectedObjectIds,
     setSelectedObjectIds,
-    handleToggleObjectSelection,
+        handleToggleObjectSelection,
   } = useObjectsRowSelection({ sortedObjects: page.sortedObjects });
 
-  const {
+    const {
     open,
     setOpen,
-    editingObject,
+        editingObject,
     formData,
     setFormData,
-    prevDurationInput,
-    selectedMasterIds,
+        prevDurationInput,
+        selectedMasterIds,
     searchMasterTerm,
     setSearchMasterTerm,
-    filteredMasterObjects,
+        filteredMasterObjects,
     quickOpen,
     setQuickOpen,
-    quickEditObject,
+        quickEditObject,
     quickFormData,
     setQuickFormData,
     commentDialogOpen,
     setCommentDialogOpen,
-    commentTargetObject,
+        commentTargetObject,
     handleOpenDialog,
     handleSave,
     handleSelectAll,
     handleToggleMasterSelection,
-    handleDurationInputChange,
+        handleDurationInputChange,
     handleOpenQuickDialog,
     handleSaveQuick,
     handleOpenCommentDialog,
     handleSaveQuickComment,
     handleDeleteQuickComment,
-  } = useObjectsFormActions({
+    } = useObjectsFormActions({
     db: page.db,
     user: page.user,
     projectId: page.projectId,
@@ -106,12 +106,12 @@ function ObjetosContent() {
     masterObjects: page.masterObjects,
     userProfile: page.userProfile,
     toast: page.toast,
-  });
+    });
 
-  const {
+    const {
     isGlobalResetOpen,
     setIsGlobalResetOpen,
-    isResetProgressOpen,
+        isResetProgressOpen,
     resetProgress,
     resetCount,
     objectToReset,
@@ -122,12 +122,12 @@ function ObjetosContent() {
     setIsBulkDeleteOpen,
     isBulkResetOpen,
     setIsBulkResetOpen,
-    handleToggleObjectCargaStatus,
+        handleToggleObjectCargaStatus,
     handleBulkDelete,
     handleBulkReset,
     handleGlobalReset,
     handleIndividualReset,
-  } = useObjectsResetActions({
+    } = useObjectsResetActions({
     db: page.db,
     projectId: page.projectId,
     mockId: page.mockId,
@@ -138,9 +138,9 @@ function ObjetosContent() {
     selectedObjectIds,
     setSelectedObjectIds,
     toast: page.toast,
-  });
+    });
 
-  const { isSyncing, handleExportCSV, handleSyncPreviousReferences } = useObjectsExportSync({
+    const { isSyncing, handleExportCSV, handleSyncPreviousReferences } = useObjectsExportSync({
     db: page.db,
     projectId: page.projectId,
     mockId: page.mockId,
@@ -152,16 +152,16 @@ function ObjetosContent() {
     toast: page.toast,
   });
 
-  useEffect(() => {
+    useEffect(() => {
     if (
       page.searchParams.get('add') === 'true' &&
       !page.isLoading &&
       !page.isMockLoading &&
       !page.isProfileLoading
     ) {
-      handleOpenDialog();
-      const url = new URL(window.location.href);
-      url.searchParams.delete('add');
+            handleOpenDialog();
+            const url = new URL(window.location.href);
+            url.searchParams.delete('add');
       page.router.replace(url.pathname + url.search);
     }
   }, [
@@ -174,14 +174,14 @@ function ObjetosContent() {
   ]);
 
   if (page.isMasked && !page.mockId) {
-    return (
-      <DashboardShell>
-        <div className="flex h-[400px] items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-        </div>
-      </DashboardShell>
-    );
-  }
+        return (
+            <DashboardShell>
+                <div className="flex h-[400px] items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                </div>
+            </DashboardShell>
+        );
+    }
 
   const statusBadge = (
     <span
@@ -223,28 +223,28 @@ function ObjetosContent() {
       ) : (
         <CheckCircle2 className="w-3 h-3" aria-hidden />
       )}
-    </span>
-  );
+            </span>
+        );
 
-  return (
-    <DashboardShell noPadding>
-      <div
-        className={cn(
+    return (
+        <DashboardShell noPadding>
+            <div
+                className={cn(
           'relative flex w-full flex-col bg-slate-50/30',
           page.showPerformanceTable
             ? 'h-[calc(100dvh-4rem)] min-h-0 overflow-hidden'
             : 'min-h-screen',
-        )}
-      >
-        <PageHeader
-          variant="fiori"
-          title="Objetos"
-          backHref="/mocks"
+                )}
+            >
+                <PageHeader
+                    variant="fiori"
+                    title="Objetos"
+                    backHref="/mocks"
           empresa={page.headerEmpresa}
           projectName={page.headerProjectName}
           mockName={page.headerMockName}
           badge={statusBadge}
-          actions={
+                    actions={
             <MockObjectsToolbar
               isAdmin={!!page.isAdmin}
               isAdminOrMaster={!!page.isAdminOrMaster}
@@ -282,50 +282,50 @@ function ObjetosContent() {
             page.showPerformanceTable && 'overflow-hidden',
           )}
         >
-          <MigrationObjectFormDialog
-            open={open}
-            onOpenChange={setOpen}
-            editingObject={editingObject}
-            formData={formData}
-            onFormChange={setFormData}
-            filteredMasterObjects={filteredMasterObjects}
-            selectedMasterIds={selectedMasterIds}
-            onSelectAll={handleSelectAll}
-            onToggleMaster={handleToggleMasterSelection}
-            searchMasterTerm={searchMasterTerm}
-            onSearchMasterChange={setSearchMasterTerm}
-            prevDurationInput={prevDurationInput}
-            onDurationInputChange={handleDurationInputChange}
-            onSave={handleSave}
+                    <MigrationObjectFormDialog
+                        open={open}
+                        onOpenChange={setOpen}
+                        editingObject={editingObject}
+                        formData={formData}
+                        onFormChange={setFormData}
+                        filteredMasterObjects={filteredMasterObjects}
+                        selectedMasterIds={selectedMasterIds}
+                        onSelectAll={handleSelectAll}
+                        onToggleMaster={handleToggleMasterSelection}
+                        searchMasterTerm={searchMasterTerm}
+                        onSearchMasterChange={setSearchMasterTerm}
+                        prevDurationInput={prevDurationInput}
+                        onDurationInputChange={handleDurationInputChange}
+                        onSave={handleSave}
             isAdmin={!!page.isAdmin}
             isMockLocked={!!page.isEffectiveLocked}
             empresa={page.headerEmpresa}
             projectName={page.headerProjectName}
             mockName={page.headerMockName}
-          />
+                    />
 
-          <QuickEditDialog
-            mode="mock"
-            open={quickOpen}
-            onOpenChange={setQuickOpen}
-            quickEditObject={quickEditObject}
-            quickFormData={quickFormData}
-            onFormChange={setQuickFormData}
-            onSave={handleSaveQuick}
+                    <QuickEditDialog
+                        mode="mock"
+                        open={quickOpen}
+                        onOpenChange={setQuickOpen}
+                        quickEditObject={quickEditObject}
+                        quickFormData={quickFormData}
+                        onFormChange={setQuickFormData}
+                        onSave={handleSaveQuick}
             empresa={page.headerEmpresa}
             projectName={page.headerProjectName}
             mockName={page.headerMockName}
           />
 
-          <CommentDialog
-            open={commentDialogOpen}
-            onOpenChange={setCommentDialogOpen}
-            commentTargetObject={commentTargetObject}
+                    <CommentDialog
+                        open={commentDialogOpen}
+                        onOpenChange={setCommentDialogOpen}
+                        commentTargetObject={commentTargetObject}
             commentsMap={page.commentsMap}
-            onSave={handleSaveQuickComment}
-            onDeleteComment={handleDeleteQuickComment}
-            footerMode="cancel-save"
-            submitShortcut="enter"
+                        onSave={handleSaveQuickComment}
+                        onDeleteComment={handleDeleteQuickComment}
+                        footerMode="cancel-save"
+                        submitShortcut="enter"
             isAdmin={!!page.isAdmin}
             currentUserId={page.user?.uid}
           />
@@ -335,37 +335,37 @@ function ObjetosContent() {
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
             </div>
           ) : (
-            <div
-              className={cn(
+                            <div
+                                className={cn(
                 'relative',
                 page.showPerformanceTable && 'flex flex-1 flex-col min-h-0 overflow-hidden',
-              )}
-            >
+                                )}
+                            >
               {!page.sortedObjects || page.sortedObjects.length === 0 ? (
-                <div className="text-center py-12 text-[10px] font-black uppercase tracking-widest text-slate-400 opacity-40">
-                  Nenhum objeto adicionado.
-                </div>
+                                    <div className="text-center py-12 text-[10px] font-black uppercase tracking-widest text-slate-400 opacity-40">
+                                        Nenhum objeto adicionado.
+                                    </div>
               ) : page.showPerformanceTable ? (
-                <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-                  <ObjectsPerformanceTable
-                    className="h-full w-full min-h-0 flex-1"
+                                    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+                                        <ObjectsPerformanceTable
+                                            className="h-full w-full min-h-0 flex-1"
                     objects={page.sortedObjects as MigrationObject[]}
                     renderDuration={renderMockObjectDuration}
-                  />
-                </div>
-              ) : (
-                <>
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
                   <MockObjectsSummary
                     objectCount={page.sortedObjects.length}
                     totals={page.totals}
                   />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 px-4 md:px-8 py-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 px-4 md:px-8 py-4">
                     {page.sortedObjects.map((obj, idx) => (
-                      <ObjectCard
-                        key={obj.id}
-                        obj={obj}
-                        idx={idx}
-                        isSelected={selectedObjectIds.includes(obj.id)}
+                                                <ObjectCard
+                                                    key={obj.id}
+                                                    obj={obj}
+                                                    idx={idx}
+                                                    isSelected={selectedObjectIds.includes(obj.id)}
                         isAdmin={!!page.isAdmin}
                         isAdminOrMaster={!!page.isAdminOrMaster}
                         isMockLocked={page.isEffectiveLocked}
@@ -376,79 +376,79 @@ function ObjetosContent() {
                         isMockCompleted={page.mockData?.status === 'CARGA_CONCLUIDA'}
                         masterObjects={page.masterObjects ?? []}
                         objComments={page.commentsMap[obj.id] ?? []}
-                        onSelect={handleToggleObjectSelection}
+                                                    onSelect={handleToggleObjectSelection}
                         onContextMenu={(e: React.MouseEvent, o: MigrationObject) =>
                           page.setCtxMenu({ x: e.clientX, y: e.clientY, obj: o })
                         }
-                        onOpenDialog={handleOpenDialog}
-                        onOpenCommentDialog={handleOpenCommentDialog}
-                        onOpenQuickDialog={handleOpenQuickDialog}
-                        onToggleCargaStatus={handleToggleObjectCargaStatus}
+                                                    onOpenDialog={handleOpenDialog}
+                                                    onOpenCommentDialog={handleOpenCommentDialog}
+                                                    onOpenQuickDialog={handleOpenQuickDialog}
+                                                    onToggleCargaStatus={handleToggleObjectCargaStatus}
                         onImportLogs={(id: string) => page.setLogImportSingleId(id)}
                         onViewLogs={page.openLogViewer}
-                        onResetObject={(obj: MigrationObject) => {
-                          setObjectToReset(obj);
-                          setIsIndividualResetOpen(true);
-                        }}
+                                                    onResetObject={(obj: MigrationObject) => {
+                                                        setObjectToReset(obj);
+                                                        setIsIndividualResetOpen(true);
+                                                    }}
                         renderDuration={renderMockObjectDuration}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
 
-              {selectedObjectIds.length > 0 && (
-                <BulkSelectionBar
-                  count={selectedObjectIds.length}
-                  onReset={() => setIsBulkResetOpen(true)}
-                  onDelete={() => setIsBulkDeleteOpen(true)}
-                  onCancel={() => setSelectedObjectIds([])}
-                />
-              )}
-            </div>
-          )}
+                                {selectedObjectIds.length > 0 && (
+                                    <BulkSelectionBar
+                                        count={selectedObjectIds.length}
+                                        onReset={() => setIsBulkResetOpen(true)}
+                                        onDelete={() => setIsBulkDeleteOpen(true)}
+                                        onCancel={() => setSelectedObjectIds([])}
+                                    />
+                                )}
+                            </div>
+                    )}
 
-          <ConfirmationDialogs
-            isGlobalResetOpen={isGlobalResetOpen}
-            onGlobalResetChange={setIsGlobalResetOpen}
-            onGlobalReset={handleGlobalReset}
-            isResetProgressOpen={isResetProgressOpen}
-            resetProgress={resetProgress}
-            resetCount={resetCount}
-            isIndividualResetOpen={isIndividualResetOpen}
-            onIndividualResetChange={setIsIndividualResetOpen}
-            objectToReset={objectToReset}
-            onClearObjectToReset={() => setObjectToReset(null)}
-            onIndividualReset={handleIndividualReset}
-            isBulkDeleteOpen={isBulkDeleteOpen}
-            onBulkDeleteChange={setIsBulkDeleteOpen}
-            selectedCount={selectedObjectIds.length}
-            onBulkDelete={handleBulkDelete}
-            isBulkResetOpen={isBulkResetOpen}
-            onBulkResetChange={setIsBulkResetOpen}
-            onBulkReset={handleBulkReset}
-          />
+                    <ConfirmationDialogs
+                        isGlobalResetOpen={isGlobalResetOpen}
+                        onGlobalResetChange={setIsGlobalResetOpen}
+                        onGlobalReset={handleGlobalReset}
+                        isResetProgressOpen={isResetProgressOpen}
+                        resetProgress={resetProgress}
+                        resetCount={resetCount}
+                        isIndividualResetOpen={isIndividualResetOpen}
+                        onIndividualResetChange={setIsIndividualResetOpen}
+                        objectToReset={objectToReset}
+                        onClearObjectToReset={() => setObjectToReset(null)}
+                        onIndividualReset={handleIndividualReset}
+                        isBulkDeleteOpen={isBulkDeleteOpen}
+                        onBulkDeleteChange={setIsBulkDeleteOpen}
+                        selectedCount={selectedObjectIds.length}
+                        onBulkDelete={handleBulkDelete}
+                        isBulkResetOpen={isBulkResetOpen}
+                        onBulkResetChange={setIsBulkResetOpen}
+                        onBulkReset={handleBulkReset}
+                    />
 
-          <CsvImportDialog
-            open={importLogOpen}
-            isImporting={isImporting}
-            importFinished={importFinished}
-            importProgress={importProgress}
-            importCounts={importCounts}
-            importLogs={importLogs}
-            isDragging={isDragging}
+                    <CsvImportDialog
+                        open={importLogOpen}
+                        isImporting={isImporting}
+                        importFinished={importFinished}
+                        importProgress={importProgress}
+                        importCounts={importCounts}
+                        importLogs={importLogs}
+                        isDragging={isDragging}
             importFileInputRef={importFileInputRef as React.RefObject<HTMLInputElement>}
             terminalEndRef={terminalEndRef as React.RefObject<HTMLDivElement>}
-            onOpenChange={setImportLogOpen}
-            onReset={resetImportState}
-            onImportFile={handleImportFile}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          />
+                        onOpenChange={setImportLogOpen}
+                        onReset={resetImportState}
+                        onImportFile={handleImportFile}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    />
 
           {page.isLogImportOpen && (
-            <LogImportDialog
+                        <LogImportDialog
               open={page.isLogImportOpen}
               onClose={() => page.setIsLogImportOpen(false)}
               mockId={page.mockId || ''}
@@ -456,12 +456,12 @@ function ObjetosContent() {
               allObjects={(page.objects ?? [])
                 .filter((o) => o && o.name)
                 .map((o) => ({ id: o.id, name: o.name }))}
-              selectedObjectIds={selectedObjectIds}
-            />
-          )}
+                            selectedObjectIds={selectedObjectIds}
+                        />
+                    )}
 
           {page.logImportSingleId && (
-            <LogImportDialog
+                        <LogImportDialog
               open={!!page.logImportSingleId}
               onClose={() => page.setLogImportSingleId(null)}
               mockId={page.mockId || ''}
@@ -474,7 +474,7 @@ function ObjetosContent() {
           )}
 
           {page.logViewerObject && (
-            <LogViewerDialog
+                        <LogViewerDialog
               open={!!page.logViewerObject}
               onClose={() => page.setLogViewerObject(null)}
               mockId={page.mockId || ''}
@@ -489,9 +489,9 @@ function ObjetosContent() {
             />
           )}
         </div>
-      </div>
+                </div>
 
-      <ObjectContextMenu
+            <ObjectContextMenu
         ctxMenu={page.ctxMenu}
         onClose={() => page.setCtxMenu(null)}
         isAdmin={!!page.isAdmin}
@@ -501,23 +501,23 @@ function ObjetosContent() {
           page.mockData?.status === 'CARGA_EM_ANDAMENTO' || page.mockData?.isRunning
         }
         isMockCompleted={page.mockData?.status === 'CARGA_CONCLUIDA'}
-        onOpenDialog={handleOpenDialog}
-        onOpenCommentDialog={handleOpenCommentDialog}
-        onToggleCargaStatus={handleToggleObjectCargaStatus}
-        onOpenQuickDialog={handleOpenQuickDialog}
+                onOpenDialog={handleOpenDialog}
+                onOpenCommentDialog={handleOpenCommentDialog}
+                onToggleCargaStatus={handleToggleObjectCargaStatus}
+                onOpenQuickDialog={handleOpenQuickDialog}
         onImportLogs={(id) => page.setLogImportSingleId(id)}
         onViewLogs={page.openLogViewer}
-        onResetObject={(obj) => {
-          setObjectToReset(obj);
-          setIsIndividualResetOpen(true);
-        }}
-      />
+                onResetObject={(obj) => {
+                    setObjectToReset(obj);
+                    setIsIndividualResetOpen(true);
+                }}
+            />
     </DashboardShell>
-  );
+    );
 }
 
 export default function ObjetosPage() {
-  return (
+    return (
     <Suspense
       fallback={
         <div className="flex items-center justify-center min-h-screen bg-slate-50">
@@ -525,7 +525,7 @@ export default function ObjetosPage() {
         </div>
       }
     >
-      <ObjetosContent />
-    </Suspense>
-  );
+            <ObjetosContent />
+        </Suspense>
+    );
 }

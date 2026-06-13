@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { aiDescriptionGenerator } from "@/ai/flows/ai-description-generator";
 import {
-    useFirestore, useUser, useCollection, useMemoFirebase,
+    useDb, useUser, useCollection, useMemoDb,
 } from "@/supabase";
 import {
     DndContext,
@@ -34,9 +34,10 @@ import {
 import {
     collection, doc, serverTimestamp, query, where, limit,
     collectionGroup, arrayRemove, getDocs, getDoc, writeBatch,
-    Firestore
-} from "firebase/firestore";
-import { idsForFirestoreIn } from "@/lib/constants";
+    setDoc, updateDoc,
+    CompatDb
+} from "@/supabase/compat-db-shim";
+import { idsForDbIn } from "@/lib/constants";
 import {
     setDocumentNonBlocking,
     updateDocumentNonBlocking,
@@ -53,15 +54,15 @@ import {
     ProjectLockDialog,
 } from "@/components/projetos";
 
-interface FirestoreTimestamp { seconds: number; nanoseconds: number; }
+interface DbTimestamp { seconds: number; nanoseconds: number; }
 
 interface Project {
     id: string;
     name: string;
     description: string;
     company: string;
-    createdAt?: FirestoreTimestamp | any;
-    updatedAt?: FirestoreTimestamp | any;
+    createdAt?: DbTimestamp | any;
+    updatedAt?: DbTimestamp | any;
     isLocked: boolean;
     ownerId: string;
     memberUids?: string[];
@@ -77,7 +78,7 @@ const PAGE_TOOLBAR_BTN =
 
 export default function ProjetosPageContent() {
     const { toast } = useToast();
-    const db = useFirestore();
+    const db = useDb();
     const { user } = useUser();
     const [searchTerm, setSearchTerm] = useState("");
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -111,14 +112,14 @@ export default function ProjetosPageContent() {
             const membersByProj: Record<string, any[]> = {};
             for (const projectId of userProjectIds.slice(0, 30)) {
                 try {
-                    const mocksSnap = await getDocs(collection(db as Firestore, "projects", projectId, "mocks"));
+                    const mocksSnap = await getDocs(collection(db as CompatDb, "projects", projectId, "mocks"));
                     mocksByProj[projectId] = mocksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    const projectSnap = await getDoc(doc(db as Firestore, "projects", projectId));
+                    const projectSnap = await getDoc(doc(db as CompatDb, "projects", projectId));
                     if (projectSnap.exists()) {
                         const pData = projectSnap.data() as { memberUids?: string[] } | undefined;
                         if (pData?.memberUids && pData.memberUids.length > 0) {
                             const memberSnaps = await Promise.all(
-                                pData.memberUids.map((uid: string) => getDoc(doc(db as Firestore, "users", uid)))
+                                pData.memberUids.map((uid: string) => getDoc(doc(db as CompatDb, "users", uid)))
                             );
                             membersByProj[projectId] = memberSnaps
                                 .filter((s) => s.exists())
@@ -134,11 +135,11 @@ export default function ProjetosPageContent() {
     }, [db, isAdmin, projects, userProjectIds]);
 
     // Admin mocks query — nunca usar `in` com array vazio (masters costumam ter projectIds: [])
-    const mocksQuery = useMemoFirebase(() => {
+    const mocksQuery = useMemoDb(() => {
         if (!db || !user || isProfileLoading || !userProfile || !isAdmin) return null;
-        const mocksRef = collectionGroup(db as Firestore, "mocks");
-        const membershipIds = idsForFirestoreIn(projects?.map((p) => p.id));
-        const profileIds = idsForFirestoreIn(userProjectIds);
+        const mocksRef = collectionGroup(db as CompatDb, "mocks");
+        const membershipIds = idsForDbIn(projects?.map((p) => p.id));
+        const profileIds = idsForDbIn(userProjectIds);
         const projectIds = membershipIds ?? profileIds;
         if (!projectIds) {
             return query(mocksRef, limit(500));
@@ -202,7 +203,7 @@ export default function ProjetosPageContent() {
             setOrderedProjectIds(newOrder);
 
             if (userProfile && db) {
-                const userRef = doc(db as Firestore, "users", user!.uid);
+                const userRef = doc(db as CompatDb, "users", user!.uid);
                 updateDocumentNonBlocking(userRef, { projectOrder: newOrder });
             }
         }
@@ -265,13 +266,16 @@ export default function ProjetosPageContent() {
         }));
     };
 
-    const handleSave = () => {
-        if (!isAdmin || !formData.name || !user) {
+    const handleSave = async () => {
+        const trimmedName = formData.name.trim();
+        if (!isAdmin || !trimmedName || !user || !db) {
             toast({ variant: "destructive", description: "Ação não permitida ou dados incompletos." });
             return;
         }
-        const projectId = editingProject?.id || doc(collection(db as Firestore, "projects")).id;
-        const projectRef = doc(db as Firestore, "projects", projectId);
+
+        const isEditing = !!editingProject;
+        const projectId = editingProject?.id ?? doc(collection(db as CompatDb, "projects")).id;
+        const projectRef = doc(db as CompatDb, "projects", projectId);
         const memberProfiles = allUsers
             ? formData.memberUids.map(uid => {
                 const u = allUsers.find((u: any) => u.uid === uid);
@@ -279,48 +283,77 @@ export default function ProjetosPageContent() {
             }).filter((p): p is NonNullable<typeof p> => p !== null)
             : undefined;
         const projectData = {
-            id: projectId, name: formData.name.toUpperCase(), company: formData.company.toUpperCase(),
-            description: formData.description, isLocked: formData.isLocked, memberUids: formData.memberUids,
+            id: projectId,
+            name: trimmedName.toUpperCase(),
+            company: formData.company.trim().toUpperCase(),
+            description: formData.description.trim(),
+            isLocked: formData.isLocked,
+            memberUids: formData.memberUids,
             ...(memberProfiles !== undefined ? { memberProfiles } : {}),
-            ownerId: user.uid, updatedAt: serverTimestamp(),
-            ...(editingProject ? {} : { createdAt: serverTimestamp() }),
+            ownerId: user.uid,
+            updatedAt: serverTimestamp(),
+            ...(!isEditing ? { createdAt: serverTimestamp() } : {}),
         };
-        setDocumentNonBlocking(projectRef, projectData, { merge: true });
-        if (allUsers) {
-            formData.memberUids.forEach(uid => {
-                const u = allUsers.find((userObj: any) => userObj.uid === uid);
-                if (u) {
+
+        try {
+            await setDoc(projectRef, projectData, { merge: true });
+
+            if (allUsers) {
+                const memberOps: Promise<void>[] = [];
+                for (const uid of formData.memberUids) {
+                    const u = allUsers.find((userObj: any) => userObj.uid === uid);
+                    if (!u) continue;
                     const currentProjectIds = u.projectIds || [];
                     if (!currentProjectIds.includes(projectId)) {
                         let newProjectIds: string[];
                         if (u.role === "user") {
                             currentProjectIds.forEach(oldPid => {
-                                if (oldPid !== projectId) updateDocumentNonBlocking(doc(db as Firestore, "projects", oldPid), { memberUids: arrayRemove(uid) });
+                                if (oldPid !== projectId) {
+                                    memberOps.push(
+                                        updateDoc(doc(db as CompatDb, "projects", oldPid), { memberUids: arrayRemove(uid) }),
+                                    );
+                                }
                             });
                             newProjectIds = [projectId];
-                        } else { newProjectIds = [...currentProjectIds, projectId]; }
-                        updateDocumentNonBlocking(doc(db as Firestore, "users", uid), { projectIds: newProjectIds });
+                        } else {
+                            newProjectIds = [...currentProjectIds, projectId];
+                        }
+                        memberOps.push(
+                            updateDoc(doc(db as CompatDb, "users", uid), { projectIds: newProjectIds }),
+                        );
                     }
                 }
-            });
-            if (editingProject) {
-                (editingProject.memberUids || []).filter(uid => !formData.memberUids.includes(uid)).forEach(uid => {
-                    updateDocumentNonBlocking(doc(db!, "users", uid), { projectIds: arrayRemove(projectId) });
-                });
+                if (isEditing) {
+                    for (const uid of (editingProject.memberUids || []).filter(uid => !formData.memberUids.includes(uid))) {
+                        memberOps.push(
+                            updateDoc(doc(db as CompatDb, "users", uid), { projectIds: arrayRemove(projectId) }),
+                        );
+                    }
+                }
+                await Promise.all(memberOps);
             }
+
+            if (!isEditing) {
+                updateActiveProject(projectId);
+                setOrderedProjectIds((prev) => (prev.includes(projectId) ? prev : [...prev, projectId]));
+            }
+
+            toast({ description: isEditing ? "Projeto atualizado com sucesso." : "Projeto cadastrado com sucesso." });
+            setOpen(false);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Erro ao salvar projeto.";
+            toast({ variant: "destructive", description: message });
         }
-        toast({ description: editingProject ? "Projeto atualizado com sucesso." : "Projeto cadastrado com sucesso." });
-        setOpen(false);
     };
 
     const handleDeleteProject = (project: Project) => {
         if (!isAdmin) return;
         if (project.memberUids && project.memberUids.length > 0) {
             project.memberUids.forEach(uid => {
-                updateDocumentNonBlocking(doc(db as Firestore, "users", uid), { projectIds: arrayRemove(project.id) });
+                updateDocumentNonBlocking(doc(db as CompatDb, "users", uid), { projectIds: arrayRemove(project.id) });
             });
         }
-        deleteDocumentNonBlocking(doc(db as Firestore, "projects", project.id));
+        deleteDocumentNonBlocking(doc(db as CompatDb, "projects", project.id));
         // toast({ description: "Projeto excluído permanentemente." });
         setProjectToDelete(null);
     };
@@ -329,17 +362,17 @@ export default function ProjetosPageContent() {
         if (!isAdmin) return;
         setIsResetting(true);
         try {
-            const mocksRef = collection(db as Firestore, "projects", project.id, "mocks");
+            const mocksRef = collection(db as CompatDb, "projects", project.id, "mocks");
             const mocksSnap = await getDocs(mocksRef);
-            let batch = writeBatch(db as Firestore); let opCount = 0;
+            let batch = writeBatch(db as CompatDb); let opCount = 0;
             const commitBatch = async () => {
-                if (opCount >= 450) { await batch.commit(); batch = writeBatch(db as Firestore); opCount = 0; }
+                if (opCount >= 450) { await batch.commit(); batch = writeBatch(db as CompatDb); opCount = 0; }
             };
             for (const mockDoc of mocksSnap.docs) {
-                const objectsRef = collection(db as Firestore, "projects", project.id, "mocks", mockDoc.id, "migrationObjects");
+                const objectsRef = collection(db as CompatDb, "projects", project.id, "mocks", mockDoc.id, "migrationObjects");
                 const objectsSnap = await getDocs(objectsRef);
                 for (const objectDoc of objectsSnap.docs) {
-                    const commentsRef = collection(db as Firestore, "projects", project.id, "mocks", mockDoc.id, "migrationObjects", objectDoc.id, "comments");
+                    const commentsRef = collection(db as CompatDb, "projects", project.id, "mocks", mockDoc.id, "migrationObjects", objectDoc.id, "comments");
                     const commentsSnap = await getDocs(commentsRef);
                     for (const commentDoc of commentsSnap.docs) { batch.delete(commentDoc.ref); opCount++; await commitBatch(); }
                     batch.delete(objectDoc.ref); opCount++; await commitBatch();
@@ -357,7 +390,7 @@ export default function ProjetosPageContent() {
             toast({ variant: "destructive", description: `Projeto bloqueado por ${project.lockedByName}. Contate-o para liberação.` });
             return;
         }
-        const projectRef = doc(db as Firestore, "projects", project.id);
+        const projectRef = doc(db as CompatDb, "projects", project.id);
         const unlocking = project.isLocked;
         setDocumentNonBlocking(projectRef, unlocking
             ? { isLocked: false, lockedByMaster: false, lockedByUid: "", lockedByName: "" }
@@ -380,7 +413,7 @@ export default function ProjetosPageContent() {
         try {
             const isExecuting = project.executionStatus === 'EM_EXECUCAO';
             const nextStatus = isExecuting ? 'ENCERRADO' : 'EM_EXECUCAO';
-            const projectRef = doc(db as Firestore, "projects", project.id);
+            const projectRef = doc(db as CompatDb, "projects", project.id);
             await updateDocumentNonBlocking(projectRef, {
                 executionStatus: nextStatus,
                 updatedAt: serverTimestamp()

@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { toCamelRow, toSnakeRow } from '@/supabase/field-map';
 
 let adminClient: SupabaseClient | null = null;
 
@@ -17,6 +18,30 @@ export function getSupabaseAdmin(): SupabaseClient {
   });
 
   return adminClient;
+}
+
+function toDbPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  return toSnakeRow(payload);
+}
+
+function toAuditLogInsert(payload: Record<string, unknown>) {
+  const {
+    action,
+    callerUid,
+    callerEmail,
+    timestamp,
+    ...details
+  } = payload;
+
+  return {
+    action: String(action ?? 'UNKNOWN'),
+    user_id: (callerUid as string) ?? null,
+    created_at: (timestamp as string) ?? new Date().toISOString(),
+    details: {
+      ...details,
+      ...(callerEmail ? { callerEmail } : {}),
+    },
+  };
 }
 
 function mapTable(name: string) {
@@ -93,7 +118,8 @@ export const adminDb = {
             }
             const { data, error } = await admin.from(table).select('*').eq('id', id).maybeSingle();
             if (error) throw error;
-            return { exists: Boolean(data), data: () => data, id };
+            const row = data ? toCamelRow(data as Record<string, unknown>) : null;
+            return { exists: Boolean(row), data: () => row, id };
           },
           async set(payload: Record<string, unknown>) {
             const admin = getSupabaseAdmin();
@@ -102,16 +128,23 @@ export const adminDb = {
               if (error) throw error;
               return;
             }
-            const { error } = await admin.from(table).upsert({ id, ...payload });
+            const row = toDbPayload(payload);
+            const { error } = await admin.from(table).upsert({ id, ...row });
             if (error) throw error;
           },
           async update(payload: Record<string, unknown>) {
             const admin = getSupabaseAdmin();
-            const { error } = await admin.from(table).update(payload).eq('id', id);
+            const row = toDbPayload(payload);
+            const { error } = await admin.from(table).update(row).eq('id', id);
             if (error) throw error;
           },
           async delete() {
             const admin = getSupabaseAdmin();
+            if (table === 'sessions') {
+              const { error } = await admin.from(table).delete().eq('user_id', id);
+              if (error) throw error;
+              return;
+            }
             const { error } = await admin.from(table).delete().eq('id', id);
             if (error) throw error;
           },
@@ -119,7 +152,8 @@ export const adminDb = {
       },
       async add(payload: Record<string, unknown>) {
         const admin = getSupabaseAdmin();
-        const { data, error } = await admin.from(table).insert(payload).select('id').single();
+        const row = table === 'audit_logs' ? toAuditLogInsert(payload) : toDbPayload(payload);
+        const { data, error } = await admin.from(table).insert(row).select('id').single();
         if (error) throw error;
         return { id: (data as { id: string }).id };
       },

@@ -1,38 +1,37 @@
 "use client";
 
-import { useState, useRef, useMemo, useEffect } from 'react';
-import { useMemoFirebase, useCollection, useFirestore, useUser, useDoc } from '@/supabase';
-import type { WithId } from '@/supabase/hooks/types';
-import { collection, doc, collectionGroup, query, where, getDocs, orderBy, writeBatch, serverTimestamp, type Firestore } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import { useMemoDb, useCollection, useDb, useUser, useDoc } from '@/supabase';
+import { collection, doc, collectionGroup, query, where, getDocs, orderBy, serverTimestamp, updateDoc, type CompatDb } from '@/supabase/compat-db-shim';
+import type { User } from '@/supabase/auth-shim';
 import type { MigrationObject, UserProfile } from '@/types/migration';
 import { useToast } from '@/hooks/use-toast';
 import { useObjectForm } from '@/hooks/use-object-form';
-import { setDocumentNonBlocking } from '@/supabase/mutations';
 import { useEditLock } from '@/hooks/use-edit-lock';
 import {
   parseSequence,
   formatSequence,
   isValidSequence,
-  compareSequences,
   compareGestaoExecutionOrder,
+  buildListPositionChargeOrderMap,
 } from '@/lib/migration/sequence-utils';
 import { buildPrecedenceMap } from '@/lib/migration/dependency-utils';
 import type { MasterObject } from '../components/object-card';
 import type { ActivityGroup } from '@/types/activity-group';
+import type { ChargeGroup } from '@/types/charge-group';
+import {
+  buildConfiguredChargeGroupByObjectId,
+  getConfiguredChargeGroupForObject,
+} from '@/lib/migration/charge-group-sync';
 import { useSearchParams } from 'next/navigation';
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
-import { SUPERADMIN_UID, idsForFirestoreIn } from '@/lib/constants';
+import { SUPERADMIN_UID, idsForDbIn } from '@/lib/constants';
 import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
-import {
-  resolveMasterObject,
-  isActiveCatalogMaster,
-} from '@/lib/dashboard/object-filters';
+import { computeSuggestedNextChargeOrder } from '@/lib/migration/master-catalog-charge-reflow';
 import { buildGestaoRowsFromMockMigrations } from '@/lib/migration/gestao-sequence';
 import { useObjectsMockSync } from './use-objects-mock-sync';
 import { useObjectsImport } from './use-objects-import';
 import {
-  sequenceDoc,
   useObjectsReorder,
   type CatalogSequenceStore,
 } from './use-objects-reorder';
@@ -52,22 +51,25 @@ function _defaultExtractChargeOrderDisplay(chargeOrder: string | number | undefi
 
 // ── Sub-hook: User profile & auth ─────────────────────────────────────────
 
-function useObjectsAuth(db: Firestore | null) {
+function useObjectsAuth(db: CompatDb | null) {
   const { user } = useUser();
-  const currentUserRef = useMemoFirebase(() => user ? doc(db!, 'users', user.uid) : null, [db, user]);
+  const currentUserRef = useMemoDb(() => user ? doc(db!, 'users', user.uid) : null, [db, user]);
   const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(currentUserRef);
-  const isAdmin = !isProfileLoading && (
-    (currentUserProfile?.role || '').toLowerCase() === 'admin' ||
-    (currentUserProfile?.role || '').toLowerCase() === 'master' ||
-    currentUserProfile?.isMaster === true || user?.uid === SUPERADMIN_UID
+  const role = (currentUserProfile?.role || '').toLowerCase();
+  const isAdminOrMaster = !isProfileLoading && (
+    role === 'admin' ||
+    role === 'master' ||
+    currentUserProfile?.isMaster === true ||
+    user?.uid === SUPERADMIN_UID
   );
-  return { user, currentUserProfile, isProfileLoading, isAdmin };
+  const isAdmin = isAdminOrMaster;
+  return { user, currentUserProfile, isProfileLoading, isAdmin, isAdminOrMaster };
 }
 
-// ── Sub-hook: Firebase queries ────────────────────────────────────────────
+// ── Sub-hook: queries Supabase ────────────────────────────────────────────
 
 function useObjectsQueries(
-  db: Firestore | null,
+  db: CompatDb | null,
   user: User | null,
   isAdmin: boolean,
   isProfileLoading: boolean,
@@ -75,13 +77,13 @@ function useObjectsQueries(
   /** Projeto atual na URL/contexto (`null`/`all` → não restringir por igualdade aqui). */
   scopedProjectId: string | null,
 ) {
-  const objectsQuery = useMemoFirebase(() => {
+  const objectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading) return null;
     return collection(db, 'masterObjects');
   }, [db, user, isProfileLoading]);
-  const { data: objects, isLoading } = useCollection<MasterObject>(objectsQuery);
+  const { data: objects, isLoading, refetch: refetchObjects } = useCollection<MasterObject>(objectsQuery);
 
-  const projectsQuery = useMemoFirebase(() => {
+  const projectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading || !hasUserProfile) return null;
     const ref = collection(db, 'projects');
     if (isAdmin) return ref;
@@ -100,7 +102,7 @@ function useObjectsQueries(
       ? scopedProjectId
       : null;
 
-  const migrationObjectsQuery = useMemoFirebase(() => {
+  const migrationObjectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading || !hasUserProfile) return null;
     const ref = collectionGroup(db, 'migrationObjects');
     if (isAdmin) return ref;
@@ -108,14 +110,14 @@ function useObjectsQueries(
     if (scoped) {
       return query(ref, where('projectId', '==', scoped));
     }
-    const projectIds = idsForFirestoreIn(accessibleProjectIds);
+    const projectIds = idsForDbIn(accessibleProjectIds);
     if (!projectIds) return null;
     return query(ref, where('projectId', 'in', projectIds));
   }, [db, user, isAdmin, isProfileLoading, hasUserProfile, scoped, accessibleProjectIds]);
   const { data: allMigrationObjects, isLoading: isMigrationObjectsLoading } =
     useCollection<MigrationObject>(migrationObjectsQuery);
 
-  return { objects, isLoading, allProjects, allMigrationObjects, isMigrationObjectsLoading };
+  return { objects, isLoading, refetchObjects, allProjects, allMigrationObjects, isMigrationObjectsLoading };
 }
 
 /** Nomes normalizados que aparecem em mais de um documento em `masterObjects` (catálogo). */
@@ -147,13 +149,15 @@ function filterMastersByProjectMockUsage(
   });
 }
 
-/** Sobrepõe `chargeOrder`/`chargeGroup`/`parallelOrder` vindos dos `migrationObjects` quando o escopo vem só do projeto. */
+/** Sobrepõe campos vindos dos `migrationObjects` quando o escopo vem só do projeto. */
 function mergeMockSequencesOntoScopedMasters(
   mastersInScope: MasterObject[],
   migrations: MigrationObject[] | null | undefined,
   applyMerge: boolean,
+  opts?: { overlayChargeSequence?: boolean },
 ): MasterObject[] {
   if (!applyMerge || !migrations?.length) return mastersInScope;
+  const overlayChargeSequence = opts?.overlayChargeSequence ?? true;
   const byMasterId = new Map<string, MigrationObject>();
   for (const m of migrations) {
     if (m.masterObjectId) byMasterId.set(m.masterObjectId, m);
@@ -163,10 +167,14 @@ function mergeMockSequencesOntoScopedMasters(
     if (!mig) return { ...mast };
     return {
       ...mast,
-      chargeGroup: mig.chargeGroup ?? mast.chargeGroup,
-      chargeOrder: mig.chargeOrder ?? mast.chargeOrder,
-      parallelOrder: mig.parallelOrder ?? mast.parallelOrder,
-      isParallel: mig.isParallel ?? mast.isParallel,
+      ...(overlayChargeSequence
+        ? {
+            chargeGroup: mig.chargeGroup ?? mast.chargeGroup,
+            chargeOrder: mig.chargeOrder ?? mast.chargeOrder,
+            parallelOrder: mig.parallelOrder ?? mast.parallelOrder,
+            isParallel: mig.isParallel ?? mast.isParallel,
+          }
+        : {}),
       dependencyIds: mig.dependencyIds ?? mast.dependencyIds,
       _migrationDocId: mig.id,
     };
@@ -178,12 +186,14 @@ function filterMastersByDisplayFilters(
   searchTerm: string,
   statusFilter: string,
   activityGroupFilter: string,
+  configuredChargeGroupById: ReadonlyMap<string, string>,
 ): MasterObject[] {
   return rows.filter((obj) => {
+    const configuredGroup = getConfiguredChargeGroupForObject(obj.id, configuredChargeGroupById);
     const matchesSearch =
       obj.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (obj.description ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      Boolean(obj.chargeGroup && obj.chargeGroup.toLowerCase().includes(searchTerm.toLowerCase()));
+      Boolean(configuredGroup && configuredGroup.toLowerCase().includes(searchTerm.toLowerCase()));
     if (!matchesSearch) return false;
     if (statusFilter !== 'ALL' && obj.status !== statusFilter) return false;
     if (activityGroupFilter !== 'ALL' && !(obj.activityGroupIds ?? []).includes(activityGroupFilter))
@@ -237,7 +247,7 @@ function useDialogEffects(anyDialogOpen: boolean, selectedCardId: string | null,
 
 export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: UseObjectsPageDeps = {}) {
   const extractChargeOrderDisplay = customExtract || _defaultExtractChargeOrderDisplay;
-  const db = useFirestore();
+  const db = useDb();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const { projectId: activeProjectId } = useActiveProjectId();
@@ -250,17 +260,16 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
   const depSearch2Ref = useRef<HTMLInputElement>(null);
   const depSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const depTriggerRef = useRef<HTMLElement | null>(null);
-  const mainSearchRef = useRef<HTMLInputElement>(null);
-  const mainSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortMode, setSortMode] = useState<'EXECUTION' | 'ALPHABETICAL' | 'UPDATED'>('EXECUTION');
+  const [sortMode] = useState<'EXECUTION' | 'ALPHABETICAL' | 'UPDATED'>('EXECUTION');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ATIVO' | 'INATIVO' | 'LEGACY'>('ALL');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('CARDS');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [activityGroups, setActivityGroups] = useState<ActivityGroup[]>([]);
+  const [chargeGroups, setChargeGroups] = useState<ChargeGroup[]>([]);
   const [activityGroupFilter, setActivityGroupFilter] = useState<string>('ALL');
 
   // Dialog state
@@ -271,8 +280,6 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
   const [isPrecedenceOpen, setIsPrecedenceOpen] = useState(false);
   const [precedenceObject, setPrecedenceObject] = useState<MasterObject | null>(null);
   const [precedenceMode, setPrecedenceMode] = useState<'card' | 'global'>('global');
-  const [successorDialogObject, setSuccessorDialogObject] = useState<WithId<MasterObject> | null>(null);
-  const [successorSearch, setSuccessorSearch] = useState('');
 
   // Forms
   const { formData: quickFormData, setFormData: setQuickFormData } = useObjectForm();
@@ -318,7 +325,7 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
 
   const mockSync = useObjectsMockSync(db, selectedProjectId);
 
-  const migrationsInMockQuery = useMemoFirebase(() => {
+  const migrationsInMockQuery = useMemoDb(() => {
     if (!db || !selectedProjectId || !mockSync.selectedMockId) return null;
     return collection(db, 'projects', selectedProjectId, 'mocks', mockSync.selectedMockId, 'migrationObjects');
   }, [db, selectedProjectId, mockSync.selectedMockId]);
@@ -330,8 +337,8 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
   const catalogScopeFiltered = useMemo(() => {
     const masters = queries.objects;
     if (!masters?.length) return [];
-    // Catálogo mestre: admin vê todos os cadastros (não só os já usados no projeto)
-    if (auth.isAdmin && !mockSync.selectedMockId) return masters;
+    // Catálogo mestre: admin sempre vê todos os cadastros nesta página
+    if (auth.isAdmin) return masters;
     return filterMastersByProjectMockUsage(
       masters,
       selectedProjectId,
@@ -351,8 +358,20 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
     [queries.objects, selectedProjectId, mockSync.selectedMockId, usageMap],
   );
 
-  /** Com mock selecionada: mesma base do dashboard (docs em `migrationObjects` + resolveMasterObject + ATIVO). Sem mock: catálogo filtrado por uso no projeto. */
+  /** Com mock selecionada: mescla sequência da mock quando existir; admin sempre enxerga o catálogo completo. */
   const sequenceContextRows = useMemo(() => {
+    const allMasters = queries.objects ?? [];
+
+    if (auth.isAdmin) {
+      if (!mockScopedSequences) return allMasters;
+      return mergeMockSequencesOntoScopedMasters(
+        allMasters,
+        migrationsInSelectedMock ?? undefined,
+        Boolean(migrationsInSelectedMock?.length),
+        { overlayChargeSequence: false },
+      );
+    }
+
     if (mockScopedSequences) {
       if (migrationsInSelectedMock === null || !queries.objects) return [];
       const fromMock = buildGestaoRowsFromMockMigrations(
@@ -360,27 +379,31 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
         queries.objects,
       );
       if (fromMock.length > 0) return fromMock;
-      // Mock sem objetos migrados ainda: admin mantém catálogo; membro vê só o usado no projeto
-      if (auth.isAdmin) return queries.objects;
       return projectUsageFiltered;
     }
+
     return mergeMockSequencesOntoScopedMasters(
       catalogScopeFiltered,
       migrationsInSelectedMock ?? undefined,
       false,
     );
   }, [
+    auth.isAdmin,
     mockScopedSequences,
     migrationsInSelectedMock,
     queries.objects,
     catalogScopeFiltered,
     projectUsageFiltered,
-    auth.isAdmin,
   ]);
 
   const precedenceMap = useMemo(
     () => buildPrecedenceMap((queries.objects || []) as MasterObject[]),
     [queries.objects],
+  );
+
+  const configuredChargeGroupById = useMemo(
+    () => buildConfiguredChargeGroupByObjectId(chargeGroups),
+    [chargeGroups],
   );
 
   const sortedFilteredObjects = useMemo(() => {
@@ -389,9 +412,10 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
       searchTerm,
       statusFilter,
       activityGroupFilter,
+      configuredChargeGroupById,
     );
     return sortMastersGestao(filtered, sortMode);
-  }, [sequenceContextRows, searchTerm, sortMode, statusFilter, activityGroupFilter]);
+  }, [sequenceContextRows, searchTerm, sortMode, statusFilter, activityGroupFilter, configuredChargeGroupById]);
 
   const duplicateMasterNameKeys = useMemo(
     () => computeDuplicateMasterNameKeys(queries.objects ?? undefined),
@@ -404,11 +428,13 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
   }, [selectedProjectId, queries.allProjects]);
 
   const sequenceStore = useMemo((): CatalogSequenceStore => {
+    // Admin na gestão do catálogo mestre: sequência persiste em master_objects
+    if (auth.isAdmin) return { kind: 'master' };
     if (mockScopedSequences && selectedProjectId && mockSync.selectedMockId) {
       return { kind: 'migration', projectId: selectedProjectId, mockId: mockSync.selectedMockId };
     }
     return { kind: 'master' };
-  }, [mockScopedSequences, selectedProjectId, mockSync.selectedMockId]);
+  }, [auth.isAdmin, mockScopedSequences, selectedProjectId, mockSync.selectedMockId]);
 
   // Sub-hooks
   const importHook = useObjectsImport({
@@ -419,15 +445,40 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
     reorderUniverseObjects: sequenceContextRows,
     toast,
     sortedFilteredObjects,
+    sortMode,
     isAdmin: auth.isAdmin,
     sequenceStore,
+    refetchObjects: queries.refetchObjects,
   });
+
+  const displayChargeOrderById = useMemo(() => {
+    const sequenceByListPosition = sortMode === 'EXECUTION' || reorder.isVisualReorderMode;
+    if (!sequenceByListPosition) return undefined;
+    const list =
+      reorder.isVisualReorderMode && reorder.visualOrder.length > 0
+        ? reorder.visualOrder
+        : sortedFilteredObjects;
+    return buildListPositionChargeOrderMap(list);
+  }, [sortMode, reorder.isVisualReorderMode, reorder.visualOrder, sortedFilteredObjects]);
+
+  const refetchChargeGroups = useCallback(async () => {
+    if (!db) return;
+    const snap = await getDocs(query(collection(db, 'chargeGroups'), orderBy('name')));
+    setChargeGroups(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ChargeGroup, 'id'>) })));
+  }, [db]);
+
   const crud = useObjectsCRUD({
-    db, user: auth.user, objects: queries.objects, isAdmin: auth.isAdmin,
+    db, user: auth.user, objects: queries.objects, sequenceContextRows, isAdmin: auth.isAdmin,
+    isAdminOrMaster: auth.isAdminOrMaster,
     isMockLocked: mockSync.isMockLocked, acquireLock, releaseLock, toast,
     quickFormData, setQuickFormData, editFormData, setEditFormData,
     usageMap, extractChargeOrderDisplay, performReorder: reorder.performReorder,
     editingObject, setEditingObject,
+    refetchObjects: queries.refetchObjects,
+    refetchChargeGroups,
+    chargeGroups,
+    displayChargeOrderById,
+    reorderDisplayList: sortedFilteredObjects,
   });
 
   // Derived flags
@@ -443,112 +494,90 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
     if (!db) return;
     getDocs(query(collection(db, 'activityGroups'), orderBy('name')))
       .then(snap => setActivityGroups(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityGroup, 'id'>) }))));
-  }, [db]);
+    void refetchChargeGroups();
+  }, [db, refetchChargeGroups]);
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleClearFilters = () => {
-    if (mainSearchRef.current) mainSearchRef.current.value = '';
-    if (mainSearchTimerRef.current) clearTimeout(mainSearchTimerRef.current);
     setSearchTerm(''); setStatusFilter('ALL'); setActivityGroupFilter('ALL');
   };
 
   const handleOpenDependencies = (obj: MasterObject) => {
     depTriggerRef.current = document.activeElement as HTMLElement;
-    setDependencyTargetObject(obj); setIsDependenciesOpen(true);
+    const fresh = (queries.objects ?? []).find((o) => o.id === obj.id) ?? obj;
+    setDependencyTargetObject({
+      ...fresh,
+      dependencyIds: [...(fresh.dependencyIds ?? [])],
+    });
+    setIsDependenciesOpen(true);
   };
 
-  const handleToggleDependency = (objectId: string) => {
+  const handleToggleDependency = async (objectId: string) => {
     if (!dependencyTargetObject || !db) return;
-    const current = dependencyTargetObject.dependencyIds || [];
+    const targetId = dependencyTargetObject.id;
+    const current = dependencyTargetObject.dependencyIds ?? [];
     const isRemoving = current.includes(objectId);
-    const updated = isRemoving ? current.filter(id => id !== objectId) : [...current, objectId];
-    setDependencyTargetObject({ ...dependencyTargetObject, dependencyIds: updated });
-    setDocumentNonBlocking(doc(db, 'masterObjects', dependencyTargetObject.id), { dependencyIds: updated }, { merge: true });
-    toast({ description: isRemoving ? 'DEPENDÊNCIA REMOVIDA.' : 'DEPENDÊNCIA ADICIONADA.' });
+    const updated = isRemoving ? current.filter((id) => id !== objectId) : [...current, objectId];
+
+    setDependencyTargetObject((prev) =>
+      prev?.id === targetId ? { ...prev, dependencyIds: updated } : prev,
+    );
+
+    try {
+      await updateDoc(doc(db, 'masterObjects', targetId), {
+        dependencyIds: updated,
+        updatedAt: serverTimestamp(),
+      });
+      queries.refetchObjects?.();
+    } catch (err) {
+      console.error('[handleToggleDependency]', err);
+      setDependencyTargetObject((prev) =>
+        prev?.id === targetId ? { ...prev, dependencyIds: current } : prev,
+      );
+      const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
+      toast({ variant: 'destructive', description: `ERRO AO SALVAR PRECEDÊNCIA: ${msg}` });
+    }
   };
 
   const handleOpenPrecedence = (obj: MasterObject | null, mode: 'card' | 'global' = 'global') => {
     setPrecedenceObject(obj); setPrecedenceMode(mode); setIsPrecedenceOpen(true);
   };
 
-  const handleSetSuccessor = async (currentObj: WithId<MasterObject>, nextObj: WithId<MasterObject>) => {
-    const universe = sequenceContextRows;
-    if (!universe.length || !db) return;
-    if (nextObj.id === currentObj.id) { toast({ variant: 'destructive', description: 'UM OBJETO NÃO PODE SER SUCESSOR DE SI MESMO.' }); return; }
-    try {
-      const sorted = [...universe].sort((a, b) => compareSequences(a.chargeOrder, b.chargeOrder));
-      const currentIdx = sorted.findIndex(o => o.id === currentObj.id);
-      const nextIdx = sorted.findIndex(o => o.id === nextObj.id);
-      if (nextIdx === currentIdx + 1) { toast({ description: `"${nextObj.name}" JÁ É O PRÓXIMO CARD APÓS "${currentObj.name}".` }); return; }
-      const reordered = sorted.filter(o => o.id !== nextObj.id);
-      const insertAfterIdx = reordered.findIndex(o => o.id === currentObj.id);
-      reordered.splice(insertAfterIdx + 1, 0, nextObj);
-      const batch = writeBatch(db);
-      let updates = 0;
-      const rowsToWrite = reordered.map((obj, i) => ({
-        obj,
-        newOrder: formatSequence(i + 1, 0),
-        ref: sequenceDoc(db, sequenceStore, obj),
-      }));
-      if (rowsToWrite.some(({ ref }) => !ref)) {
-        toast({ variant: 'destructive', description: 'Não há documento de sequência para um dos objetos (mock sem vínculo).' });
-        return;
-      }
-      rowsToWrite.forEach(({ obj, newOrder, ref }) => {
-        if (String(obj.chargeOrder) !== newOrder) {
-          batch.update(ref!, { chargeOrder: newOrder, updatedAt: serverTimestamp() });
-          updates++;
-        }
-      });
-      if (updates > 0) {
-        await batch.commit();
-      }
-    } catch { toast({ variant: 'destructive', description: 'Erro ao reposicionar card. Tente novamente.' }); }
-    finally { setSuccessorDialogObject(null); setSuccessorSearch(''); }
+  const suggestNextOrder = (currentGroup: string): string => {
+    const rows =
+      sequenceContextRows.length > 0
+        ? sequenceContextRows
+        : (queries.objects ?? []);
+    const { nextSeq } = computeSuggestedNextChargeOrder(rows, currentGroup);
+    setEditFormData((prev) => ({ ...prev, chargeOrder: nextSeq }));
+    return nextSeq;
   };
 
-  const suggestNextOrder = (currentGroup: string, type: 'quick' | 'edit') => {
-    const rows = sequenceContextRows;
-    if (!rows.length) return;
-    const groupObjects = rows.filter(obj => obj.chargeGroup && currentGroup && obj.chargeGroup.toUpperCase() === currentGroup.toUpperCase());
-    const targetList = groupObjects.length > 0 ? groupObjects : rows;
-    const maxMajor = targetList.reduce((max, obj) => Math.max(max, parseSequence(obj.chargeOrder).major), 0);
-    const nextSeq = formatSequence(maxMajor + 1, 0);
-    if (type === 'quick') setQuickFormData((prev) => ({ ...prev, chargeOrder: nextSeq }));
-    else { if (crud.chargeOrderEditRef.current) crud.chargeOrderEditRef.current.value = nextSeq; setEditFormData((prev) => ({ ...prev, chargeOrder: nextSeq })); }
-    toast({ description: `PRÓXIMA SEQUÊNCIA GERADA: ${nextSeq}${groupObjects.length > 0 ? ` (GRUPO: ${currentGroup})` : ' (GLOBAL)'}` });
-  };
-
-  const suggestNextParallelOrder = (currentGroup: string, type: 'quick' | 'edit') => {
-    const rows = sequenceContextRows;
-    if (!rows.length) return;
+  const suggestNextParallelOrder = (_currentGroup: string): string => {
+    const rows = sequenceContextRows.length > 0 ? sequenceContextRows : (queries.objects ?? []);
     const withParallel = rows.filter(o => o.parallelOrder && isValidSequence(o.parallelOrder));
     if (!withParallel.length) {
       const first = '01.00';
-      if (type === 'quick') setQuickFormData((prev: any) => ({ ...prev, parallelOrder: first }));
-      else setEditFormData((prev: any) => ({ ...prev, parallelOrder: first }));
-      toast({ description: `PRÓXIMA ORDEM PARALELA SUGERIDA: ${first}` }); return;
+      setEditFormData((prev) => ({ ...prev, parallelOrder: first }));
+      return first;
     }
-    const currentPO = type === 'quick' ? quickFormData.parallelOrder : editFormData.parallelOrder;
+    const currentPO = editFormData.parallelOrder;
     const currentMajor = currentPO ? parseSequence(currentPO).major : null;
     const sameGroupObjs = currentMajor ? withParallel.filter(o => parseSequence(o.parallelOrder).major === currentMajor) : [];
     if (sameGroupObjs.length > 0) {
       const maxMinor = sameGroupObjs.reduce((max, o) => Math.max(max, parseSequence(o.parallelOrder).minor), 0);
       const nextSeq = formatSequence(currentMajor!, maxMinor + 1);
-      if (type === 'quick') setQuickFormData((prev: any) => ({ ...prev, parallelOrder: nextSeq }));
-      else setEditFormData((prev: any) => ({ ...prev, parallelOrder: nextSeq }));
-      toast({ description: `PRÓXIMA ORDEM PARALELA SUGERIDA: ${nextSeq} (GRUPO ${String(currentMajor).padStart(2, '0')})` });
-    } else {
-      const maxMajor = withParallel.reduce((max, o) => Math.max(max, parseSequence(o.parallelOrder).major), 0);
-      const nextSeq = formatSequence(maxMajor + 1, 0);
-      if (type === 'quick') setQuickFormData((prev: any) => ({ ...prev, parallelOrder: nextSeq }));
-      else setEditFormData((prev: any) => ({ ...prev, parallelOrder: nextSeq }));
-      toast({ description: `PRÓXIMA ORDEM PARALELA SUGERIDA: ${nextSeq} (NOVO GRUPO)` });
+      setEditFormData((prev) => ({ ...prev, parallelOrder: nextSeq }));
+      return nextSeq;
     }
+    const maxMajor = withParallel.reduce((max, o) => Math.max(max, parseSequence(o.parallelOrder).major), 0);
+    const nextSeq = formatSequence(maxMajor + 1, 0);
+    setEditFormData((prev) => ({ ...prev, parallelOrder: nextSeq }));
+    return nextSeq;
   };
 
   return {
-    fileInputRef, terminalEndRef, depSearch1Ref, depSearch2Ref, depSearchTimerRef, depTriggerRef, mainSearchRef, mainSearchTimerRef,
+    fileInputRef, terminalEndRef, depSearch1Ref, depSearch2Ref, depSearchTimerRef, depTriggerRef,
     ...crud, ...reorder,
     objects: queries.objects,
     isLoading:
@@ -557,21 +586,22 @@ export function useObjectsPage({ extractChargeOrderDisplay: customExtract }: Use
       auth.isProfileLoading ||
       (mockScopedSequences && migrationsInMockLoading),
     isAdmin: auth.isAdmin,
+    isAdminOrMaster: auth.isAdminOrMaster,
     isLockedByOther,
     lockedByName,
     usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject,
-    searchTerm, setSearchTerm, sortMode, setSortMode, statusFilter, setStatusFilter,
+    displayChargeOrderById,
+    searchTerm, setSearchTerm, sortMode, statusFilter, setStatusFilter,
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode, selectedCardId, setSelectedCardId,
-    activityGroups, activityGroupFilter, setActivityGroupFilter, hasActiveFilters,
+    activityGroups, activityGroupFilter, setActivityGroupFilter, chargeGroups, configuredChargeGroupById, hasActiveFilters,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,
-    dependencyFilterType, setDependencyFilterType, dependencyTargetObject, setDependencyTargetObject,
+    dependencyFilterType, setDependencyFilterType, dependencyTargetObject,
     isPrecedenceOpen, setIsPrecedenceOpen, precedenceObject, setPrecedenceObject, precedenceMode,
-    successorDialogObject, setSuccessorDialogObject, successorSearch, setSuccessorSearch,
-    editingObject, setEditingObject,
+    editingObject,
     quickFormData, setQuickFormData, editFormData, setEditFormData,
     ...mockSync, ...importHook,
     handleClearFilters, handleOpenDependencies, handleToggleDependency,
-    handleOpenPrecedence, handleSetSuccessor, suggestNextOrder, suggestNextParallelOrder,
-    anyDialogOpen, releaseLock,
+    handleOpenPrecedence, suggestNextOrder, suggestNextParallelOrder,
+    releaseLock,
   };
 }

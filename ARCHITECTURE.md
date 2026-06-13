@@ -28,7 +28,7 @@ O **Migra** é uma aplicação **SaaS Multi-tenant** (isolamento por projeto) fo
 | **Linguagem** | TypeScript 5 (strict mode) | ^5 |
 | **UI Runtime** | React | ^19.2.1 |
 | **Backend** | Supabase (Auth + Postgres + Storage) | ^2.x |
-| **Compat layer** | `firebase/*` shims → `src/supabase/` | — |
+| **Compat layer** | `@/supabase/*-shim` (API estilo documento) → Postgres | — |
 | **IA** | Genkit (Google Gemini Pro/Flash) | ^1.16.1 |
 | **Estilização** | Tailwind CSS + ShadCN UI | ^3.4.1 / v4 |
 | **Visualização** | Recharts + @xyflow/react | ^2.15.1 / ^12.10.1 |
@@ -161,11 +161,11 @@ src/
 │   ├── useAuthedFetch.ts             # Fetch autenticado
 │   ├── useMobile.tsx                 # Detecção mobile
 │   └── useToast.ts                   # Sistema de toasts
-├── supabase/                         # Camada Supabase + shims Firestore-compat
+├── supabase/                         # Camada Supabase + shims compat (API documento)
 │   ├── client.ts / admin.ts          # Browser + service role
-│   ├── provider.tsx                  # Auth, hooks useFirestore/useUser
+│   ├── provider.tsx                  # Auth, hooks useDb/useMemoDb/useUser
 │   ├── query-builder.ts              # doc/collection/query → Postgres
-│   ├── firestore-shim.ts             # Alias `firebase/firestore` (tsconfig paths)
+│   ├── compat-db-shim.ts             # Shim `@/supabase/compat-db-shim`
 │   ├── hooks/                        # use-collection, use-doc
 │   └── mutations.ts                  # Writes non-blocking
 ├── lib/                              # Utilitários (14 arquivos)
@@ -204,9 +204,9 @@ src/
 
 ### Tabelas Postgres (schema `public`)
 
-Mapeamento Firestore legado → tabela Supabase (via `src/supabase/path-mapper.ts`):
+Mapeamento de caminhos legados → tabela Supabase (via `src/supabase/path-mapper.ts`):
 
-| Caminho Firestore (app) | Tabela Postgres | Relacionamentos |
+| Caminho no app (legado) | Tabela Postgres | Relacionamentos |
 |-------------------------|-----------------|-----------------|
 | `users/{uid}` | `profiles` | FK → `auth.users` |
 | `projects/{id}` | `projects` | `member_uids[]`, `project_members` |

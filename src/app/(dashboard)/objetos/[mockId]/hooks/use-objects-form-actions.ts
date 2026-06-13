@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { doc, serverTimestamp, collection, type Firestore } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
+import { doc, serverTimestamp, collection, type CompatDb } from '@/supabase/compat-db-shim';
+import type { User } from '@/supabase/auth-shim';
 import {
   setDocumentNonBlocking,
   addDocumentNonBlocking,
@@ -66,7 +66,7 @@ const EMPTY_FORM: FormData = {
 };
 
 interface UseObjectsFormActionsDeps {
-  db: Firestore | null;
+  db: CompatDb | null;
   user: User | null;
   projectId: string | null;
   mockId: string | null;
@@ -80,7 +80,7 @@ interface UseObjectsFormActionsDeps {
 
 /**
  * Gerencia os dialogs de criação/edição completa, edição rápida e comentário
- * de objetos de migração — incluindo formData, validação e escrita no Firestore.
+ * de objetos de migração — incluindo formData, validação e escrita no CompatDb.
  */
 export function useObjectsFormActions({
   db, user, projectId, mockId, isAdmin, isEffectiveLocked,

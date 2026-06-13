@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -11,9 +11,9 @@ import {
   serverTimestamp,
   orderBy,
   query,
-} from "firebase/firestore";
-import { useFirestore, useUser } from "@/supabase/provider";
-import { useRouter, useSearchParams } from "next/navigation";
+} from "@/supabase/compat-db-shim";
+import { useDb, useUser } from "@/supabase/provider";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -31,109 +31,163 @@ import {
 } from "@/components/ui/tooltip";
 import type { ActivityGroup } from "@/types/activity-group";
 import type { MasterObject } from "@/types/master-object";
-import { CARD_TOOLBAR_BTN } from "./constants";
+import { CARD_TOOLBAR_BTN, suggestedCreateGroupColor, nextAvailableDisplayOrder, reindexActivityGroupDisplayOrders } from "./constants";
 import { GroupDialog } from "./group-dialog";
 import { ObjectAssignDialog } from "./object-assign-dialog";
 import { DeleteConfirmDialog } from "./delete-confirm-dialog";
+import { ActivityGroupOrderCell } from "./order-cell";
+import {
+  reconcileActivityGroupsObjectIds,
+  resolveActivityGroupMemberIds,
+} from "@/lib/migration/activity-group-sync";
 
 export function ActivityGroupsManager({
   empresa,
   projectName,
+  searchTerm = "",
 }: {
   empresa?: string;
   projectName?: string;
+  searchTerm?: string;
 } = {}) {
-  const firestore = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [groups, setGroups] = useState<ActivityGroup[]>([]);
   const [allObjects, setAllObjects] = useState<MasterObject[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  function applyDisplayOrders(nextGroups: ActivityGroup[]) {
+    setGroups((prev) => {
+      const orderById = new Map(nextGroups.map((g) => [g.id, g.displayOrder]));
+      return prev.map((g) => {
+        const order = orderById.get(g.id);
+        return order === undefined ? g : { ...g, displayOrder: order };
+      });
+    });
+  }
 
   const [groupDialog, setGroupDialog] = useState<{ open: boolean; initial?: ActivityGroup | null }>({ open: false });
   const [assignDialog, setAssignDialog] = useState<{ open: boolean; group?: ActivityGroup }>({ open: false });
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; group?: ActivityGroup | null }>({ open: false });
+  const [orderSavingId, setOrderSavingId] = useState<string | null>(null);
+  const pendingAssignGroupIdRef = useRef<string | null>(null);
 
-  // Sincronizar estado do diálogo com a URL para suportar o botão "Voltar" do browser
+  const createColorSuggestion = useMemo(
+    () => suggestedCreateGroupColor(groups),
+    [groups],
+  );
+
+  const createOrderSuggestion = useMemo(
+    () => nextAvailableDisplayOrder(groups),
+    [groups],
+  );
+
+  // Deep link / voltar do browser: sincroniza URL → diálogo (sem fechar no clique local)
   useEffect(() => {
     const groupId = searchParams.get("assignGroupId");
-    if (groupId && groups.length > 0) {
-      const group = groups.find(g => g.id === groupId);
-      if (group && (!assignDialog.open || assignDialog.group?.id !== groupId)) {
-        setAssignDialog({ open: true, group });
-      }
-    } else if (!groupId && assignDialog.open) {
-      setAssignDialog({ open: false });
+    if (!groupId) {
+      if (pendingAssignGroupIdRef.current) return;
+      setAssignDialog((prev) => (prev.open ? { open: false, group: undefined } : prev));
+      return;
     }
-  }, [searchParams, groups, assignDialog.open, assignDialog.group?.id]);
+    pendingAssignGroupIdRef.current = null;
+    if (groups.length === 0) return;
+    const group = groups.find((g) => g.id === groupId);
+    if (!group) return;
+    setAssignDialog((prev) =>
+      prev.open && prev.group?.id === group.id ? prev : { open: true, group },
+    );
+  }, [searchParams, groups]);
 
   function openAssignDialog(group: ActivityGroup) {
+    pendingAssignGroupIdRef.current = group.id;
+    setAssignDialog({ open: true, group });
     const params = new URLSearchParams(searchParams.toString());
     params.set("assignGroupId", group.id);
-    router.push(`?${params.toString()}`, { scroll: false });
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
   function closeAssignDialog() {
-    if (searchParams.has("assignGroupId")) {
-      router.back();
-    } else {
-      setAssignDialog({ open: false });
-    }
+    pendingAssignGroupIdRef.current = null;
+    setAssignDialog({ open: false, group: undefined });
+    if (!searchParams.has("assignGroupId")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("assignGroupId");
+    router.replace(params.size ? `${pathname}?${params.toString()}` : pathname, { scroll: false });
   }
 
   // ── Load ────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- load quando firestore fica disponível (load não memoizado)
-  }, [firestore]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load quando db fica disponível (load não memoizado)
+  }, [db]);
 
-  async function load() {
-    if (!firestore) return;
-    setLoading(true);
+  async function load(): Promise<ActivityGroup[]> {
+    if (!db) return [];
     try {
       const [groupsSnap, objectsSnap] = await Promise.all([
-        getDocs(query(collection(firestore, "activityGroups"), orderBy("name"))),
-        getDocs(collection(firestore, "masterObjects")),
+        getDocs(query(collection(db, "activityGroups"), orderBy("name"))),
+        getDocs(collection(db, "masterObjects")),
       ]);
-      setGroups(groupsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ActivityGroup, "id">) })));
-      setAllObjects(objectsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MasterObject, "id">) })));
+      const loadedGroups = groupsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ActivityGroup, "id">) }));
+      const loadedObjects = objectsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MasterObject, "id">) }));
+      const reconciledGroups = await reconcileActivityGroupsObjectIds(db, loadedGroups, loadedObjects);
+      setGroups(reconciledGroups);
+      setAllObjects(loadedObjects);
+      return reconciledGroups;
     } finally {
-      setLoading(false);
+      setIsInitialLoad(false);
     }
   }
 
   async function handleSaveGroup(data: Omit<ActivityGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">) {
-    if (!firestore) return;
+    if (!db) return;
     if (groupDialog.initial) {
-      await updateDoc(doc(firestore, "activityGroups", groupDialog.initial.id), {
+      const groupId = groupDialog.initial.id;
+      await updateDoc(doc(db, "activityGroups", groupId), {
         ...data,
         updatedAt: serverTimestamp(),
       });
-    } else {
-      await addDoc(collection(firestore, "activityGroups"), {
-        ...data,
-        objectIds: [],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        createdBy: user?.uid ?? "",
-      });
+      setGroups((prev) =>
+        prev.map((g) => (g.id === groupId ? { ...g, ...data } : g)),
+      );
+      return;
     }
-    await load();
+
+    const createdRef = await addDoc(collection(db, "activityGroups"), {
+      ...data,
+      objectIds: [],
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      createdBy: user?.uid ?? "",
+    });
+    const newGroup: ActivityGroup = {
+      id: createdRef.id,
+      ...data,
+      objectIds: [],
+      createdBy: user?.uid ?? "",
+    };
+    const nextGroups = [...groups, newGroup];
+    setGroups(nextGroups);
+    setGroupDialog({ open: true, initial: null });
+    return nextAvailableDisplayOrder(nextGroups);
   }
 
   async function handleAssignObjects(objectIds: string[]) {
-    if (!firestore || !assignDialog.group) return;
+    if (!db || !assignDialog.group) return;
     const groupId = assignDialog.group.id;
-    const prev = new Set(assignDialog.group.objectIds ?? []);
+    const prev = new Set(resolveActivityGroupMemberIds(assignDialog.group, allObjects));
     const next = new Set(objectIds);
 
-    const batch = writeBatch(firestore);
+    const batch = writeBatch(db);
 
     // Update group
-    batch.update(doc(firestore, "activityGroups", groupId), {
+    batch.update(doc(db, "activityGroups", groupId), {
       objectIds,
       updatedAt: serverTimestamp(),
     });
@@ -145,8 +199,9 @@ export function ActivityGroupsManager({
         if (!obj) continue;
         const current = obj.activityGroupIds ?? [];
         if (!current.includes(groupId)) {
-          batch.update(doc(firestore, "masterObjects", id), {
+          batch.update(doc(db, "masterObjects", id), {
             activityGroupIds: [...current, groupId],
+            updatedAt: serverTimestamp(),
           });
         }
       }
@@ -158,33 +213,135 @@ export function ActivityGroupsManager({
         const obj = allObjects.find((o) => o.id === id);
         if (!obj) continue;
         const current = obj.activityGroupIds ?? [];
-        batch.update(doc(firestore, "masterObjects", id), {
+        batch.update(doc(db, "masterObjects", id), {
           activityGroupIds: current.filter((g) => g !== groupId),
+          updatedAt: serverTimestamp(),
         });
       }
     }
 
     await batch.commit();
-    await load();
+
+    setGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, objectIds } : g)),
+    );
+    setAllObjects((prev) =>
+      prev.map((obj) => {
+        const ids = obj.activityGroupIds ?? [];
+        const shouldHave = next.has(obj.id);
+        const has = ids.includes(groupId);
+        if (shouldHave === has) return obj;
+        return {
+          ...obj,
+          activityGroupIds: shouldHave
+            ? [...ids, groupId]
+            : ids.filter((id) => id !== groupId),
+        };
+      }),
+    );
+    setAssignDialog((prev) =>
+      prev.group?.id === groupId
+        ? { ...prev, group: { ...prev.group, objectIds } }
+        : prev,
+    );
   }
 
   async function handleDeleteGroup() {
-    if (!firestore || !deleteDialog.group) return;
+    if (!db || !deleteDialog.group) return;
     const group = deleteDialog.group;
-    const batch = writeBatch(firestore);
+    const groupId = group.id;
+    const batch = writeBatch(db);
 
-    // Remove groupId from all associated objects
-    for (const objId of group.objectIds ?? []) {
+    const memberIds = resolveActivityGroupMemberIds(group, allObjects);
+    for (const objId of memberIds) {
       const obj = allObjects.find((o) => o.id === objId);
       if (!obj) continue;
-      batch.update(doc(firestore, "masterObjects", objId), {
-        activityGroupIds: (obj.activityGroupIds ?? []).filter((g) => g !== group.id),
+      batch.update(doc(db, "masterObjects", objId), {
+        activityGroupIds: (obj.activityGroupIds ?? []).filter((g) => g !== groupId),
+        updatedAt: serverTimestamp(),
       });
     }
 
-    batch.delete(doc(firestore, "activityGroups", group.id));
+    batch.delete(doc(db, "activityGroups", groupId));
+
+    const remaining = groups.filter((g) => g.id !== groupId);
+    const reindexed = reindexActivityGroupDisplayOrders(remaining);
+    for (const g of reindexed) {
+      const previous = remaining.find((row) => row.id === g.id);
+      if ((previous?.displayOrder ?? 0) === g.displayOrder) continue;
+      batch.update(doc(db, "activityGroups", g.id), {
+        displayOrder: g.displayOrder,
+        updatedAt: serverTimestamp(),
+      });
+    }
+
     await batch.commit();
-    await load();
+
+    setGroups(reindexed);
+    setAllObjects((prev) =>
+      prev.map((obj) => {
+        const ids = obj.activityGroupIds ?? [];
+        if (!ids.includes(groupId)) return obj;
+        return { ...obj, activityGroupIds: ids.filter((id) => id !== groupId) };
+      }),
+    );
+  }
+
+  async function handleUpdateDisplayOrder(groupId: string, displayOrder: number) {
+    if (!db) return;
+    const fromIdx = sortedGroups.findIndex((g) => g.id === groupId);
+    if (fromIdx < 0) return;
+
+    const reordered = [...sortedGroups];
+    const [moved] = reordered.splice(fromIdx, 1);
+    const toIdx = Math.min(Math.max(displayOrder - 1, 0), reordered.length);
+    reordered.splice(toIdx, 0, moved);
+    const withOrders = reindexActivityGroupDisplayOrders(reordered);
+
+    setOrderSavingId(groupId);
+    try {
+      const batch = writeBatch(db);
+      for (const g of withOrders) {
+        const previous = groups.find((row) => row.id === g.id);
+        if ((previous?.displayOrder ?? 0) === g.displayOrder) continue;
+        batch.update(doc(db, "activityGroups", g.id), {
+          displayOrder: g.displayOrder,
+          updatedAt: serverTimestamp(),
+        });
+      }
+      await batch.commit();
+      applyDisplayOrders(withOrders);
+    } finally {
+      setOrderSavingId(null);
+    }
+  }
+
+  async function handleSwapDisplayOrder(group: ActivityGroup, direction: "up" | "down") {
+    if (!db) return;
+    const idx = sortedGroups.findIndex((g) => g.id === group.id);
+    const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (idx < 0 || neighborIdx < 0 || neighborIdx >= sortedGroups.length) return;
+
+    const reordered = [...sortedGroups];
+    [reordered[idx], reordered[neighborIdx]] = [reordered[neighborIdx], reordered[idx]];
+    const withOrders = reindexActivityGroupDisplayOrders(reordered);
+
+    setOrderSavingId(group.id);
+    try {
+      const batch = writeBatch(db);
+      for (const g of withOrders) {
+        const previous = groups.find((row) => row.id === g.id);
+        if ((previous?.displayOrder ?? 0) === g.displayOrder) continue;
+        batch.update(doc(db, "activityGroups", g.id), {
+          displayOrder: g.displayOrder,
+          updatedAt: serverTimestamp(),
+        });
+      }
+      await batch.commit();
+      applyDisplayOrders(withOrders);
+    } finally {
+      setOrderSavingId(null);
+    }
   }
 
   // Listener para evento do botão externo
@@ -204,6 +361,18 @@ export function ActivityGroupsManager({
     [groups]
   );
 
+  const filteredGroups = useMemo(() => {
+    const query = searchTerm.trim().toUpperCase();
+    if (!query) return sortedGroups;
+    return sortedGroups.filter(
+      (g) =>
+        g.name.toUpperCase().includes(query) ||
+        (g.description ?? "").toUpperCase().includes(query),
+    );
+  }, [sortedGroups, searchTerm]);
+
+  const hasSearch = searchTerm.trim().length > 0;
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -215,9 +384,12 @@ export function ActivityGroupsManager({
               <div className="fiori-activity-groups-panel-title">
                 <span className="fiori-activity-groups-panel-title-text">Grupos cadastrados</span>
               </div>
-              {!loading && (
+              {!isInitialLoad && (
                 <span className="fiori-activity-groups-panel-count">
-                  {sortedGroups.length} {sortedGroups.length === 1 ? "grupo" : "grupos"}
+                  {filteredGroups.length} {filteredGroups.length === 1 ? "grupo" : "grupos"}
+                  {hasSearch && sortedGroups.length !== filteredGroups.length
+                    ? ` de ${sortedGroups.length}`
+                    : ""}
                 </span>
               )}
             </div>
@@ -240,21 +412,22 @@ export function ActivityGroupsManager({
 
           <TooltipProvider delayDuration={0}>
             <div role="rowgroup">
-                  {loading ? (
+                  {isInitialLoad ? (
                     <div className="fiori-activity-groups-empty" role="row">
                       <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-[var(--fiori-brand)]" aria-hidden />
                       Carregando grupos…
                     </div>
-                  ) : sortedGroups.length === 0 ? (
+                  ) : filteredGroups.length === 0 ? (
                     <div className="fiori-activity-groups-empty" role="row">
                       <div className="fiori-activity-groups-empty-icon">
                         <Layers className="h-6 w-6" aria-hidden />
                       </div>
-                      Nenhum grupo cadastrado
+                      {hasSearch ? "Nenhum grupo encontrado para a busca" : "Nenhum grupo cadastrado"}
                     </div>
                   ) : (
-                    sortedGroups.map((g) => {
-                      const objectCount = (g.objectIds ?? []).length;
+                    filteredGroups.map((g) => {
+                      const objectCount = resolveActivityGroupMemberIds(g, allObjects).length;
+                      const fullIndex = sortedGroups.findIndex((row) => row.id === g.id);
                       return (
                         <div
                           key={g.id}
@@ -287,17 +460,29 @@ export function ActivityGroupsManager({
                             <span className="fiori-activity-groups-metric-value">{objectCount}</span>
                           </div>
                           <div className="fiori-activity-groups-list-cell fiori-activity-groups-list-cell--numeric" role="cell">
-                            <span className="fiori-activity-groups-order">{g.displayOrder}</span>
+                            <ActivityGroupOrderCell
+                              order={g.displayOrder ?? fullIndex + 1}
+                              canMoveUp={fullIndex > 0}
+                              canMoveDown={fullIndex < sortedGroups.length - 1}
+                              saving={orderSavingId === g.id}
+                              onMoveUp={() => handleSwapDisplayOrder(g, "up")}
+                              onMoveDown={() => handleSwapDisplayOrder(g, "down")}
+                              onCommit={(displayOrder) => handleUpdateDisplayOrder(g.id, displayOrder)}
+                            />
                           </div>
                           <div className="fiori-activity-groups-list-cell fiori-activity-groups-list-cell--actions" role="cell">
                             <div className="fiori-card-toolbar">
                               <Tooltip delayDuration={0}>
                                 <TooltipTrigger asChild>
                                   <Button
+                                    type="button"
                                     variant="ghost"
                                     size="icon"
                                     className={CARD_TOOLBAR_BTN}
-                                    onClick={() => openAssignDialog(g)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openAssignDialog(g);
+                                    }}
                                     aria-label={`Gerenciar objetos do grupo ${g.name}`}
                                   >
                                     <Hash className="h-3 w-3" aria-hidden />
@@ -353,9 +538,11 @@ export function ActivityGroupsManager({
       {/* Dialogs */}
       <GroupDialog
         open={groupDialog.open}
-        onClose={() => setGroupDialog({ open: false })}
+        onClose={() => setGroupDialog({ open: false, initial: null })}
         onSave={handleSaveGroup}
         initial={groupDialog.initial}
+        suggestedCreateColor={createColorSuggestion}
+        suggestedCreateOrder={createOrderSuggestion}
       />
       {assignDialog.group && (
         <ObjectAssignDialog

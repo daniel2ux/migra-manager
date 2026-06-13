@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { collection, doc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, serverTimestamp } from "@/supabase/compat-db-shim";
 import {
     addDocumentNonBlocking,
     deleteDocumentNonBlocking,
@@ -51,7 +51,7 @@ function DashboardContent() {
     const { projectId: activeProjectId } = useActiveProjectId();
     const bootstrapProjectId = activeProjectId ?? "all";
 
-    // 2. Queries (Firebase) — escopo do projeto ativo quando já definido
+    // 2. Queries Supabase — escopo do projeto ativo quando já definido
     const queries = useDashboardQueries(bootstrapProjectId, "all");
 
     // 3. Navegação e Seleção (Refinado)
@@ -520,8 +520,6 @@ function DashboardContent() {
                                             commentsCount={commentsMapByObjectName[obj.name]?.length || 0}
                                             commentsMapByObjectName={commentsMapByObjectName}
                                             allObjects={activeQueries.masterObjects || []}
-                                            migrationObjects={activeQueries.objects ?? undefined}
-                                            filterMockId={nav.selectedMockId}
                                             objectsByName={masterObjectsByName}
                                             parallelByGroup={parallelByGroup}
                                         />
@@ -529,10 +527,16 @@ function DashboardContent() {
                                         })()
                                     ))
                                 ) : (
-                                    <div className="col-span-full flex flex-col items-center justify-center py-32 text-center bg-white border border-dashed border-slate-200">
-                                        <Target className="w-10 h-10 text-slate-200 mb-6" />
-                                        <h3 className="text-xl font-bold uppercase tracking-tight text-slate-500">Sem Objetos Encontrados</h3>
-                                        <p className="text-sm text-slate-400 mt-2">Nenhum registro corresponde aos filtros aplicados.</p>
+                                    <div className="col-span-full fiori-page-empty">
+                                        <div className="fiori-page-empty__icon">
+                                            <Target className="h-5 w-5" aria-hidden />
+                                        </div>
+                                        <div className="fiori-page-empty__body">
+                                            <h3 className="fiori-page-empty__title">Sem objetos encontrados</h3>
+                                            <p className="fiori-page-empty__desc">
+                                                Nenhum registro corresponde aos filtros aplicados.
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
                             </div>

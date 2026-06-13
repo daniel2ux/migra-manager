@@ -4,7 +4,7 @@ import { Fragment } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MigrationLog } from "@/types/migration";
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "@/supabase/compat-db-shim";
 
 function fmtTs(ts: Timestamp | null | undefined): string {
   if (!ts?.toDate) return "—";

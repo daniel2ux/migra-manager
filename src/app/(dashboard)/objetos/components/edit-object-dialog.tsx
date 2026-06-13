@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,22 @@ import { Database, Box, Hash, Split, CheckCircle2, Network, Info, Layers, PlusCi
 import { cn } from "@/lib/utils";
 import { isValidSequence } from "@/lib/migration/sequence-utils";
 import { EditLockAlert } from "@/components/ui/edit-lock-alert";
+import { FioriIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
+
+const STATUS_DOT_CLASS: Record<string, string> = {
+  ATIVO: "fiori-select-status-dot--success",
+  INATIVO: "fiori-select-status-dot--neutral",
+};
+
+const STATUS_ITEM_CLASS: Record<string, string> = {
+  ATIVO: "fiori-select-item--status-success",
+  INATIVO: "fiori-select-item--status-neutral",
+};
+
+const STATUS_OPTIONS = [
+  { value: "ATIVO", label: "Ativo" },
+  { value: "INATIVO", label: "Inativo" },
+] as const;
 
 interface EditFormData {
   name: string;
@@ -53,23 +69,36 @@ interface EditObjectDialogProps {
   onOpenChange: (open: boolean) => void;
   editingObject: { id: string } | null;
   editFormData: EditFormData;
-  onFormChange: (data: EditFormData) => void;
   isAdmin: boolean;
   isLockedByOther: boolean;
   lockedByName: string | null;
   activityGroups: ActivityGroup[];
-  onSave: () => void;
-  onSuggestOrder: (group: string, mode: string) => void;
-  onSuggestParallelOrder: (group: string, mode: string) => void;
+  onSave: (patch?: Partial<EditFormData>) => void;
+  onSuggestParallelOrder: (group: string) => string;
   onReleaseLock: (path: string) => void;
   isMockLocked?: boolean;
-  chargeOrderEditRef?: React.RefObject<HTMLInputElement | null>;
-  chargeOrderEditTimerRef?: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
-  extDepEditRef?: React.RefObject<HTMLTextAreaElement | null>;
-  extDepEditTimerRef?: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
+  /** Grupo de carga conforme cadastro em `charge_groups` (vazio se não configurado). */
+  displayChargeGroup?: string;
   /** Mensagem de erro ao salvar (validação ou conflito de nome). */
   saveError?: string | null;
   onClearSaveError?: () => void;
+}
+
+function parseExternalDependencies(text: string): string[] {
+  return text
+    .toUpperCase()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+}
+
+function buildNormalizedPatch(draft: EditFormData): Partial<EditFormData> {
+  return {
+    parallelOrder: draft.parallelOrder,
+    status: draft.status,
+    description: draft.description.toUpperCase(),
+    activityGroupIds: draft.activityGroupIds,
+  };
 }
 
 export function EditObjectDialog({
@@ -77,32 +106,55 @@ export function EditObjectDialog({
   onOpenChange,
   editingObject,
   editFormData,
-  onFormChange,
   isAdmin,
   isLockedByOther,
   lockedByName,
   activityGroups,
   onSave,
-  onSuggestOrder,
   onSuggestParallelOrder,
   onReleaseLock,
   isMockLocked = false,
-  chargeOrderEditRef,
-  chargeOrderEditTimerRef,
-  extDepEditRef,
-  extDepEditTimerRef,
+  displayChargeGroup = "",
   saveError,
   onClearSaveError,
 }: EditObjectDialogProps) {
+  const [formDraft, setFormDraft] = useState<EditFormData>(editFormData);
+  const [externalDepsDraft, setExternalDepsDraft] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setFormDraft(editFormData);
+    setExternalDepsDraft((editFormData.externalDependencies ?? []).join("\n"));
+  // Sincroniza só ao abrir/trocar objeto — não a cada keystroke no pai.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingObject?.id]);
+
   useEffect(() => {
     onClearSaveError?.();
-  }, [editFormData, onClearSaveError]);
+  }, [formDraft, externalDepsDraft, onClearSaveError]);
+
+  const patchForm = useCallback(
+    (patch: Partial<EditFormData>) => setFormDraft((prev) => ({ ...prev, ...patch })),
+    [],
+  );
+
+  const handleSaveClick = () => {
+    const externalDependencies = parseExternalDependencies(externalDepsDraft);
+    const patch = {
+      ...buildNormalizedPatch(formDraft),
+      externalDependencies,
+    };
+    onSave(patch);
+  };
 
   const dialogTitle = isMockLocked
     ? "Visualizar objeto"
     : isAdmin
       ? "Editar objeto"
       : "Visualizar objeto mestre";
+
+  const fieldsLocked = !isAdmin || isMockLocked;
+  const chargeGroupLabel = displayChargeGroup || "";
 
   return (
     <Dialog
@@ -135,10 +187,11 @@ export function EditObjectDialog({
                     Nome do objeto
                   </label>
                   <Input
-                    value={editFormData.name}
-                    onChange={(e) => onFormChange({ ...editFormData, name: e.target.value.toUpperCase() })}
-                    className="fiori-input uppercase readable-disabled shadow-none"
-                    disabled={!isAdmin || isMockLocked}
+                    value={formDraft.name}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly
+                    className="fiori-input uppercase shadow-none readable-disabled"
                   />
                 </div>
 
@@ -148,49 +201,28 @@ export function EditObjectDialog({
                     Grupo carga
                   </label>
                   <Input
-                    value={editFormData.chargeGroup}
-                    onChange={(e) => onFormChange({ ...editFormData, chargeGroup: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
-                    className="fiori-input uppercase readable-disabled shadow-none"
-                    disabled={!isAdmin || isMockLocked}
+                    value={chargeGroupLabel}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly
+                    placeholder="—"
+                    className="fiori-input uppercase shadow-none readable-disabled"
                   />
                 </div>
 
                 <div className="sm:col-span-4 space-y-1.5">
-                  <div className="flex justify-between items-center gap-2">
-                    <label className="fiori-field-label">
-                      <Hash className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />
-                      Ordem carga
-                    </label>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => onSuggestOrder(editFormData.chargeGroup, 'edit')}
-                        className="fiori-icon-btn"
-                        title="Sugerir próxima sequência"
-                      >
-                        <PlusCircle className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <label className="fiori-field-label">
+                    <Hash className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />
+                    Ordem carga
+                  </label>
                   <Input
                     type="text"
-                    placeholder="01.00"
-                    maxLength={5}
-                    key={editFormData.name}
-                    ref={chargeOrderEditRef}
-                    defaultValue={editFormData.chargeOrder}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
-                      const fmt = digits.length > 2 ? digits.slice(0, 2) + '.' + digits.slice(2) : digits;
-                      e.target.value = fmt;
-                      if (chargeOrderEditTimerRef?.current) clearTimeout(chargeOrderEditTimerRef.current);
-                      if (chargeOrderEditTimerRef) chargeOrderEditTimerRef.current = setTimeout(() => onFormChange({ ...editFormData, chargeOrder: fmt }), 200);
-                    }}
-                    className={cn(
-                      "fiori-input readable-disabled shadow-none",
-                      editFormData.chargeOrder && !isValidSequence(editFormData.chargeOrder) && "fiori-invalid"
-                    )}
-                    disabled={!isAdmin || isMockLocked}
+                    key={editingObject?.id}
+                    value={formDraft.chargeOrder}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly
+                    className="fiori-input shadow-none readable-disabled"
                   />
                 </div>
 
@@ -201,31 +233,37 @@ export function EditObjectDialog({
                       Ordem paralelismo
                     </label>
                     {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => onSuggestParallelOrder(editFormData.chargeGroup, 'edit')}
+                      <FioriIconButtonHint
+                        hint="Sugerir próxima ordem paralela"
+                        onClick={() =>
+                          patchForm({
+                            parallelOrder: onSuggestParallelOrder(
+                              chargeGroupLabel || formDraft.chargeGroup,
+                            ),
+                          })
+                        }
                         className="fiori-icon-btn"
-                        title="Sugerir próxima ordem paralela"
                       >
                         <PlusCircle className="w-4 h-4" />
-                      </button>
+                      </FioriIconButtonHint>
                     )}
                   </div>
                   <Input
                     type="text"
                     placeholder="01.00"
                     maxLength={5}
-                    value={editFormData.parallelOrder}
+                    value={formDraft.parallelOrder}
                     onChange={(e) => {
                       const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
                       const fmt = digits.length > 2 ? digits.slice(0, 2) + '.' + digits.slice(2) : digits;
-                      onFormChange({ ...editFormData, parallelOrder: fmt });
+                      patchForm({ parallelOrder: fmt });
                     }}
                     className={cn(
-                      "fiori-input readable-disabled shadow-none",
-                      editFormData.parallelOrder && !isValidSequence(editFormData.parallelOrder) && "fiori-invalid"
+                      "fiori-input shadow-none",
+                      formDraft.parallelOrder && !isValidSequence(formDraft.parallelOrder) && "fiori-invalid",
+                      fieldsLocked && "readable-disabled",
                     )}
-                    disabled={!isAdmin || isMockLocked}
+                    disabled={fieldsLocked}
                   />
                   <p className="fiori-field-hint pl-0.5">
                     Primeiros 2 dígitos = grupo paralelo. Ex.: 01.00, 01.01 e 01.02 executam no mesmo grupo.
@@ -238,20 +276,38 @@ export function EditObjectDialog({
                     Status
                   </label>
                   <Select
-                    value={editFormData.status}
-                    onValueChange={(value) => onFormChange({ ...editFormData, status: value })}
-                    disabled={!isAdmin || isMockLocked}
+                    value={formDraft.status || "ATIVO"}
+                    onValueChange={(value) => patchForm({ status: value })}
+                    disabled={fieldsLocked}
                   >
-                    <SelectTrigger className="fiori-select-trigger readable-disabled">
+                    <SelectTrigger
+                      className={cn(
+                        "fiori-select-trigger fiori-select-trigger--status shadow-none",
+                        fieldsLocked && "readable-disabled",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "fiori-select-status-dot",
+                          STATUS_DOT_CLASS[formDraft.status || "ATIVO"],
+                        )}
+                        aria-hidden
+                      />
                       <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
-                    <SelectContent className="fiori-select-content">
-                      <SelectItem value="ATIVO" className="fiori-select-item">
-                        Ativo
-                      </SelectItem>
-                      <SelectItem value="INATIVO" className="fiori-select-item">
-                        Inativo
-                      </SelectItem>
+                    <SelectContent className="fiori-select-content fiori-select-content--status">
+                      {STATUS_OPTIONS.map((option) => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className={cn(
+                            "fiori-select-item fiori-select-item--status",
+                            STATUS_ITEM_CLASS[option.value],
+                          )}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -264,7 +320,7 @@ export function EditObjectDialog({
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {activityGroups.map((g) => {
-                        const isSelected = editFormData.activityGroupIds.includes(g.id);
+                        const isSelected = formDraft.activityGroupIds.includes(g.id);
                         return (
                           <Tooltip key={g.id}>
                             <TooltipTrigger asChild>
@@ -273,20 +329,20 @@ export function EditObjectDialog({
                                 disabled={!isAdmin || isMockLocked}
                                 onClick={() => {
                                   const ids = isSelected
-                                    ? editFormData.activityGroupIds.filter(id => id !== g.id)
-                                    : [...editFormData.activityGroupIds, g.id];
-                                  onFormChange({ ...editFormData, activityGroupIds: ids });
+                                    ? formDraft.activityGroupIds.filter(id => id !== g.id)
+                                    : [...formDraft.activityGroupIds, g.id];
+                                  patchForm({ activityGroupIds: ids });
                                 }}
                                 className={cn(
                                   "fiori-chip",
-                                  isSelected && "fiori-chip-selected"
+                                  isSelected && "fiori-chip--outline fiori-chip-selected",
                                 )}
-                                style={isSelected ? { backgroundColor: g.color, borderColor: g.color } : {}}
+                                style={isSelected ? { borderColor: g.color, color: g.color } : undefined}
                               >
                                 {g.name}
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" align="start" className="text-xs leading-relaxed p-2 max-w-xs">
+                            <TooltipContent side="top" align="start" variant="fiori" className="max-w-xs">
                               <p className="font-semibold">{g.name}</p>
                               {g.description && <p className="text-[var(--fiori-label)] mt-0.5">{g.description}</p>}
                             </TooltipContent>
@@ -303,10 +359,13 @@ export function EditObjectDialog({
                     Descrição técnica
                   </label>
                   <Textarea
-                    className="fiori-textarea uppercase readable-disabled shadow-none min-h-[100px]"
-                    value={editFormData.description}
-                    onChange={(e) => onFormChange({ ...editFormData, description: e.target.value.toUpperCase() })}
-                    disabled={!isAdmin || isMockLocked}
+                    className={cn(
+                      "fiori-textarea uppercase shadow-none min-h-[100px] resize-none",
+                      fieldsLocked && "readable-disabled",
+                    )}
+                    value={formDraft.description}
+                    onChange={(e) => patchForm({ description: e.target.value })}
+                    disabled={fieldsLocked}
                   />
                 </div>
 
@@ -317,19 +376,13 @@ export function EditObjectDialog({
                   </label>
                   <Textarea
                     placeholder="Um objeto por linha. Ex.: OBJETO_SAP_01"
-                    className="fiori-textarea uppercase readable-disabled shadow-none min-h-[80px]"
-                    key={editFormData.name}
-                    ref={extDepEditRef}
-                    defaultValue={editFormData.externalDependencies?.join('\n') || ''}
-                    onChange={(e) => {
-                      const val = e.target.value.toUpperCase();
-                      e.target.value = val;
-                      if (extDepEditTimerRef?.current) clearTimeout(extDepEditTimerRef.current);
-                      if (extDepEditTimerRef) extDepEditTimerRef.current = setTimeout(() => {
-                        onFormChange({ ...editFormData, externalDependencies: val.split('\n').filter(s => s.trim() !== '') });
-                      }, 300);
-                    }}
-                    disabled={!isAdmin || isMockLocked}
+                    className={cn(
+                      "fiori-textarea uppercase shadow-none min-h-[80px] resize-none",
+                      fieldsLocked && "readable-disabled",
+                    )}
+                    value={externalDepsDraft}
+                    onChange={(e) => setExternalDepsDraft(e.target.value)}
+                    disabled={fieldsLocked}
                   />
                   <p className="fiori-field-hint pl-0.5">
                     Informe objetos externos que devem ser executados antes deste. Um por linha.
@@ -350,7 +403,7 @@ export function EditObjectDialog({
               <Button
                 disabled={isMockLocked}
                 className="fiori-btn-emphasized w-full sm:w-auto shadow-none"
-                onClick={onSave}
+                onClick={handleSaveClick}
               >
                 Salvar alterações
               </Button>

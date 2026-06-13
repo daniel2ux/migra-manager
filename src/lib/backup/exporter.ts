@@ -10,6 +10,7 @@ const TABLE_PATH_MAP: Record<string, string> = {
   comments: 'comments',
   master_objects: 'masterObjects',
   activity_groups: 'activityGroups',
+  charge_groups: 'chargeGroups',
   email_contacts: 'emailContacts',
   email_groups: 'emailGroups',
   access_profiles: 'accessProfiles',

@@ -1,4 +1,4 @@
-import { getDocs, query, collection, where, limit } from "firebase/firestore";
+import { getDocs, query, collection, where, limit } from "@/supabase/compat-db-shim";
 import type { ErrorEmailRow } from "@/components/email/email-compose-dialog";
 import type { ErrorItemRow } from "@/lib/export/error-excel-sheets";
 import { formatImportedAtField } from "@/lib/export/error-excel-sheets";

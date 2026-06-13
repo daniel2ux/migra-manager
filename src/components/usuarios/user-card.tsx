@@ -43,6 +43,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
+import { formatBrazilianDate } from "@/lib/migration/datetime-br";
+import { formatBrazilianPhone } from "@/lib/formatters";
 import type { UserProfile } from "@/types/usuarios";
 import { ROLE_LABELS } from "@/types/usuarios";
 
@@ -136,7 +138,7 @@ export function UserCard({
   const cardContent = (
     <div
       className={cn(
-        "fiori-project-card p-3 flex flex-col gap-2.5 transition-all group cursor-pointer relative overflow-hidden select-none",
+        "fiori-project-card fiori-user-card p-3 flex flex-col gap-2.5 transition-all group cursor-pointer relative overflow-hidden select-none",
         "outline-hidden focus-visible:ring-2 focus-visible:ring-[#0070f2] focus-visible:ring-offset-2",
         blocked && "opacity-80",
       )}
@@ -448,7 +450,8 @@ function UserInfoTooltip({ user }: { user: UserProfile }) {
           <Info className="w-3.5 h-3.5" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="right" variant="fiori" className="w-72 p-4">
+      <TooltipContent side="right" variant="fiori-panel" className="w-72">
+        <div className="fiori-tooltip-panel-body p-4">
         <div className="space-y-3">
           <div className="border-b border-[var(--fiori-border-light)] pb-2">
             <h4 className="text-[0.8125rem] font-semibold text-[var(--fiori-text)]">
@@ -458,7 +461,7 @@ function UserInfoTooltip({ user }: { user: UserProfile }) {
           </div>
           <div className="grid grid-cols-2 gap-y-2 gap-x-3">
             {user.phone && (
-              <InfoItem icon={<Phone className="w-2.5 h-2.5" />} label="Contato" value={user.phone} />
+              <InfoItem icon={<Phone className="w-2.5 h-2.5" />} label="Contato" value={formatBrazilianPhone(user.phone)} />
             )}
             {user.company && (
               <InfoItem icon={<Building2 className="w-2.5 h-2.5" />} label="Empresa" value={user.company} />
@@ -474,6 +477,7 @@ function UserInfoTooltip({ user }: { user: UserProfile }) {
             <DateItem label="Início" value={user.startDate} />
             <DateItem label="Término" value={user.endDate} />
           </div>
+        </div>
         </div>
       </TooltipContent>
     </Tooltip>
@@ -500,12 +504,13 @@ function InfoItem({
 }
 
 function DateItem({ label, value }: { label: string; value: string | undefined }) {
+  const display = value ? formatBrazilianDate(value) : "—";
   return (
     <div className="space-y-0.5">
       <p className="flex items-center gap-1 text-[0.625rem] font-semibold text-[var(--fiori-label)]">
         <Calendar className="w-2.5 h-2.5" aria-hidden /> {label}
       </p>
-      <p className="text-[0.75rem] font-semibold text-[var(--fiori-text)]">{value || "—"}</p>
+      <p className="text-[0.75rem] font-semibold text-[var(--fiori-text)]">{display}</p>
     </div>
   );
 }

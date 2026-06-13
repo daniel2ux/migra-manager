@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Search, X, Check, ArrowLeft } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ActivityGroup } from "@/types/activity-group";
 import type { MasterObject } from "@/types/master-object";
 
@@ -38,11 +44,15 @@ export function ObjectAssignDialog({
 
   useEffect(() => {
     if (open) {
-      setSelected(new Set(group.objectIds ?? []));
+      const ids = new Set<string>(group.objectIds ?? []);
+      for (const obj of allObjects) {
+        if ((obj.activityGroupIds ?? []).includes(group.id)) ids.add(obj.id);
+      }
+      setSelected(ids);
       setSearch("");
       setTimeout(() => searchRef.current?.focus(), 50);
     }
-  }, [open, group]);
+  }, [open, group, allObjects]);
 
   const filtered = useMemo(
     () =>
@@ -64,6 +74,10 @@ export function ObjectAssignDialog({
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  }
+
+  function clearSelection() {
+    setSelected(new Set());
   }
 
   async function handleSave() {
@@ -169,10 +183,29 @@ export function ObjectAssignDialog({
         </DialogHeader>
 
         <div className="fiori-report-scroll flex-1 min-h-0">
+          <TooltipProvider delayDuration={0}>
           <table className="fiori-report-table">
             <thead>
               <tr>
-                <th className="fiori-report-table-col-check" />
+                <th className="fiori-report-table-col-check">
+                  {selected.size > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="fiori-report-clear-selection-btn"
+                          onClick={clearSelection}
+                          aria-label="Limpar seleção"
+                        >
+                          <X className="h-3 w-3" aria-hidden />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" variant="fiori">
+                        Limpar seleção
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </th>
                 <th>Nome do objeto</th>
                 <th>Tipo técnico</th>
                 <th>Descrição</th>
@@ -218,6 +251,7 @@ export function ObjectAssignDialog({
               )}
             </tbody>
           </table>
+          </TooltipProvider>
         </div>
 
         <DialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end sm:space-x-0">

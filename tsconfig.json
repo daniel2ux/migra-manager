@@ -25,15 +25,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "firebase/firestore": [
-        "./src/supabase/firestore-shim.ts"
-      ],
-      "firebase/auth": [
-        "./src/supabase/auth-shim.ts"
-      ],
-      "firebase/storage": [
-        "./src/supabase/storage-shim.ts"
       ]
     }
   },

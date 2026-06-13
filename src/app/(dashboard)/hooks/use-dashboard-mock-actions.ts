@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp } from '@/supabase/compat-db-shim';
 import { setDocumentNonBlocking } from '@/supabase/mutations';
 import type { AggregatedObject, Mock } from '@/types/migration';
 

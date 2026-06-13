@@ -1,21 +1,28 @@
 "use client";
 
 import { useMemo } from "react";
-import { doc, collection } from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
+import { doc, collection } from "@/supabase/compat-db-shim";
+import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { UserProfile } from "@/types/usuarios";
 import { dedupeDirectoryUsers, type UserDirectoryDoc } from "@/lib/user-directory";
 
 export function useUsersData(searchTerm: string) {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
-  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(user && db ? doc(db, "users", user.uid) : null);
+  const userId = user?.uid ?? null;
 
-  const usersQuery = useMemoFirebase(() => {
-    if (!db || !user || isProfileLoading || !currentUserProfile) return null;
+  const profileDocRef = useMemoDb(
+    () => (db && userId ? doc(db, "users", userId) : null),
+    [db, userId],
+  );
+  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(profileDocRef);
+
+  const profileReady = !isProfileLoading && !!currentUserProfile;
+  const usersQuery = useMemoDb(() => {
+    if (!db || !userId || !profileReady) return null;
     return collection(db, "users");
-  }, [db, user, isProfileLoading, currentUserProfile]);
-  const { data: allUsers, isLoading: isUsersLoading } = useCollection<UserProfile>(usersQuery);
+  }, [db, userId, profileReady]);
+  const { data: allUsers, isLoading: isUsersLoading, refetch: refreshUsers } = useCollection<UserProfile>(usersQuery);
 
   const directoryUsers = useMemo(
     () => dedupeDirectoryUsers(allUsers as UserDirectoryDoc[] | null, user?.uid),
@@ -32,7 +39,7 @@ export function useUsersData(searchTerm: string) {
   const isMaster = currentUserProfile?.role?.toLowerCase() === "master" || currentUserProfile?.isMaster === true;
   const isAdmin = isMaster || currentUserProfile?.role?.toLowerCase() === "admin";
 
-  return { currentUserProfile, isProfileLoading, allUsers, isUsersLoading, filteredUsers, isMaster, isAdmin };
+  return { currentUserProfile, isProfileLoading, allUsers, isUsersLoading, filteredUsers, isMaster, isAdmin, refreshUsers };
 }
 
 export function useUserPermissions(selectedUser: UserProfile | null, currentUserId: string | undefined, isMaster: boolean, isAdmin: boolean) {

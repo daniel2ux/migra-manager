@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { Loader2, UserPlus, Search, Users, X } from "lucide-react";
-import { useFirestore, useStorage, useUser, useDoc, useMemoFirebase } from "@/supabase";
-import { doc } from "firebase/firestore";
+import { useDb, useStorage, useUser, useDoc, useMemoDb } from "@/supabase";
+import { doc } from "@/supabase/compat-db-shim";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
@@ -33,14 +33,14 @@ const PAGE_TOOLBAR_BTN =
   "fiori-toolbar-btn !rounded-[0.375rem] !size-8 min-h-0 min-w-0";
 
 export default function UsuariosPage() {
-  const db = useFirestore();
+  const db = useDb();
   const storage = useStorage();
   const { user } = useUser();
   const { toast } = useToast();
   const { projectId } = useActiveProjectId();
   const areServicesAvailable = !!db && !!storage;
 
-  const projectRef = useMemoFirebase(
+  const projectRef = useMemoDb(
     () => (db && projectId ? doc(db, "projects", projectId) : null),
     [db, projectId],
   );
@@ -83,6 +83,7 @@ export default function UsuariosPage() {
     filteredUsers,
     isMaster,
     isAdmin,
+    refreshUsers,
   } = useUsersData(searchTerm);
 
   const { canEditSelectedUser } = useUserPermissions(
@@ -158,8 +159,8 @@ export default function UsuariosPage() {
   };
 
   const handleSaveEdit = async () => {
-    await actions.handleSaveEdit(selectedUser, editFormData);
-    setIsEditDialogOpen(false);
+    const success = await actions.handleSaveEdit(selectedUser, editFormData);
+    if (success) setIsEditDialogOpen(false);
   };
 
   const handleOpenRoleDialog = (targetUser: UserProfile) => {
@@ -203,14 +204,16 @@ export default function UsuariosPage() {
     if (success) {
       setIsDeleteConfirmOpen(false);
       setDeleteTarget(null);
+      refreshUsers();
     }
   };
 
   const handleCreateUser = async (data: CreateUserData): Promise<boolean> => {
-    const tempPassword = await actions.handleCreateUser(data);
-    if (tempPassword) {
+    const result = await actions.handleCreateUser(data);
+    if (result) {
       setIsCreateDialogOpen(false);
-      setResetResult({ name: data.name, tempPassword });
+      setResetResult(result);
+      refreshUsers();
       return true;
     }
     return false;
@@ -222,6 +225,11 @@ export default function UsuariosPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleResendCredentials = async () => {
+    const updated = await actions.handleResendCredentials(resetResult);
+    if (updated) setResetResult(updated);
   };
 
   const handleSaveEmail = async (targetUid: string) => {
@@ -433,7 +441,9 @@ export default function UsuariosPage() {
           onOpenChange={(open) => { if (!open) setResetResult(null); }}
           result={resetResult}
           onCopy={handleCopyPassword}
+          onResend={handleResendCredentials}
           copied={copied}
+          isResending={actions.isResendingEmail}
         />
 
         <EmailSignaturesDialog

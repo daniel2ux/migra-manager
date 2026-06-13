@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -20,7 +21,7 @@ interface ProjectFormDialogProps {
     editingProject: any | null;
     formData: { name: string; company: string; description: string; isLocked: boolean; memberUids: string[] };
     onFormChange: (data: any) => void;
-    onSave: () => void;
+    onSave: () => void | Promise<void>;
     filteredUsers: any[];
     userSearchTerm: string;
     onUserSearchChange: (term: string) => void;
@@ -45,6 +46,7 @@ export function ProjectFormDialog({
     isGenerating,
     isAdmin,
 }: ProjectFormDialogProps) {
+    const [saving, setSaving] = useState(false);
     const isProjectLocked = editingProject?.isLocked ?? false;
 
     const getTitle = () => {
@@ -55,6 +57,18 @@ export function ProjectFormDialog({
     };
 
     const readonly = !isAdmin || isProjectLocked;
+    const canSave = formData.name.trim().length > 0
+        && !(isProjectLocked && formData.isLocked === editingProject?.isLocked);
+
+    async function handleSaveClick() {
+        if (!canSave || saving) return;
+        setSaving(true);
+        try {
+            await onSave();
+        } finally {
+            setSaving(false);
+        }
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -179,7 +193,7 @@ export function ProjectFormDialog({
                                                 disabled={readonly}
                                                 className={cn(
                                                     "fiori-chip",
-                                                    isMember && "fiori-chip-selected",
+                                                    isMember && "fiori-chip--outline",
                                                     readonly && "cursor-not-allowed opacity-60"
                                                 )}
                                             >
@@ -204,7 +218,7 @@ export function ProjectFormDialog({
                                             key={uid}
                                             type="button"
                                             onClick={() => onToggleMember(uid)}
-                                            className="fiori-chip fiori-chip-selected gap-1"
+                                            className="fiori-chip fiori-chip--outline gap-1"
                                         >
                                             {user.name}
                                             <X className="w-3 h-3 opacity-80" />
@@ -237,7 +251,7 @@ export function ProjectFormDialog({
                     )}
                 </div>
 
-                <DialogFooter className="fiori-dialog-footer shrink-0">
+                <DialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end sm:space-x-0">
                     <button
                         type="button"
                         onClick={() => onOpenChange(false)}
@@ -248,11 +262,15 @@ export function ProjectFormDialog({
                     {!readonly && (
                         <button
                             type="button"
-                            onClick={onSave}
-                            disabled={!formData.name || (isProjectLocked && formData.isLocked === editingProject?.isLocked)}
+                            onClick={handleSaveClick}
+                            disabled={!canSave || saving}
                             className="fiori-btn-emphasized"
                         >
-                            {editingProject ? "Salvar" : "Criar projeto"}
+                            {saving
+                                ? "Salvando…"
+                                : editingProject
+                                  ? "Salvar alterações"
+                                  : "Criar projeto"}
                         </button>
                     )}
                 </DialogFooter>

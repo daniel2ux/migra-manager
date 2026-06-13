@@ -1,4 +1,4 @@
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "@/supabase/compat-db-shim";
 
 export interface MasterObject {
     id: string;

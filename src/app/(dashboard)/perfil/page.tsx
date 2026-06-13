@@ -6,20 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
-import { doc, updateDoc, arrayUnion, arrayRemove, Firestore } from "firebase/firestore";
+import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
+import { doc, updateDoc, arrayUnion, arrayRemove, type CompatDb } from "@/supabase/compat-db-shim";
 import type { EmailSignature } from "@/types/migration";
 import { User, Save, Loader2, CheckCircle2, Mail, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/layout/page-header";
 
 export default function PerfilPage() {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const { toast } = useToast();
 
-  const userDocRef = useMemoFirebase(
-    () => (user && db ? doc(db as Firestore, "users", user.uid) : null),
+  const userDocRef = useMemoDb(
+    () => (user && db ? doc(db as CompatDb, "users", user.uid) : null),
     [db, user]
   );
   const { data: userProfile } = useDoc<any>(userDocRef);
@@ -42,7 +42,7 @@ export default function PerfilPage() {
     setIsSavingMigrador(true);
     setSavedMigrador(false);
     try {
-      await updateDoc(doc(db as Firestore, "users", user.uid), {
+      await updateDoc(doc(db as CompatDb, "users", user.uid), {
         migradorName: migradorInput.trim().toUpperCase(),
       });
       setSavedMigrador(true);
@@ -71,7 +71,7 @@ export default function PerfilPage() {
     setIsSavingFrom(true);
     setSavedFrom(false);
     try {
-      await updateDoc(doc(db as Firestore, "users", user.uid), { fromEmail: fromEmailInput.trim() });
+      await updateDoc(doc(db as CompatDb, "users", user.uid), { fromEmail: fromEmailInput.trim() });
       setSavedFrom(true);
       // toast({ description: "E-mail de origem salvo." });
       setTimeout(() => setSavedFrom(false), 3000);
@@ -100,7 +100,7 @@ export default function PerfilPage() {
       if (newSigImageUrl.trim()) {
         sig.imageUrl = newSigImageUrl.trim();
       }
-      await updateDoc(doc(db as Firestore, "users", user.uid), { emailSignatures: arrayUnion(sig) });
+      await updateDoc(doc(db as CompatDb, "users", user.uid), { emailSignatures: arrayUnion(sig) });
       setNewSigName("");
       setNewSigContent("");
       setNewSigImageUrl("");
@@ -115,7 +115,7 @@ export default function PerfilPage() {
   const handleDeleteSignature = async (sig: EmailSignature) => {
     if (!user) return;
     try {
-      await updateDoc(doc(db as Firestore, "users", user.uid), { emailSignatures: arrayRemove(sig) });
+      await updateDoc(doc(db as CompatDb, "users", user.uid), { emailSignatures: arrayRemove(sig) });
       // toast({ description: "Assinatura removida." });
     } catch {
       toast({ variant: "destructive", description: "Erro ao remover assinatura." });

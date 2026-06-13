@@ -47,6 +47,7 @@ export function ResetObjectDialog({
         >
             <AlertDialogContent
                 variant="fiori"
+                open={open}
                 {...dashboardAlertDialogContentProps}
             >
                 <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">

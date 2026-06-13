@@ -19,6 +19,7 @@ const SEGMENT_TABLE: Record<string, string> = {
   comments: 'comments',
   masterObjects: 'master_objects',
   activityGroups: 'activity_groups',
+  chargeGroups: 'charge_groups',
   emailContacts: 'email_contacts',
   emailGroups: 'email_groups',
   accessProfiles: 'access_profiles',
@@ -31,7 +32,7 @@ const SEGMENT_TABLE: Record<string, string> = {
   catalogo: 'catalogo',
 };
 
-export function parseFirestorePath(path: string): TableTarget {
+export function parseCompatDbPath(path: string): TableTarget {
   const parts = path.split('/').filter(Boolean);
   const filters: PathFilter[] = [];
 
@@ -54,34 +55,34 @@ export function parseFirestorePath(path: string): TableTarget {
     return { table, id: parts[1], filters };
   }
 
-  if (root === 'projects' && parts.length >= 4) {
+  if (root === 'projects' && parts.length >= 3 && parts[2] === 'mocks') {
     const projectId = parts[1];
     filters.push({ column: 'project_id', op: 'eq', value: projectId });
 
-    if (parts[2] === 'mocks') {
-      if (parts.length === 3) {
-        return { table: 'mocks', filters };
+    if (parts.length === 3) {
+      return { table: 'mocks', filters };
+    }
+
+    const mockId = parts[3];
+    if (parts.length === 4) {
+      return { table: 'mocks', id: mockId, filters };
+    }
+
+    if (parts[4] === 'migrationObjects') {
+      filters.push({ column: 'mock_id', op: 'eq', value: mockId });
+      if (parts.length === 5) {
+        return { table: 'migration_objects', filters };
       }
-      const mockId = parts[3];
-      if (parts.length === 4) {
-        return { table: 'mocks', id: mockId, filters };
+      const objectId = parts[5];
+      if (parts.length === 6) {
+        return { table: 'migration_objects', id: objectId, filters };
       }
-      if (parts[4] === 'migrationObjects') {
-        filters.push({ column: 'mock_id', op: 'eq', value: mockId });
-        if (parts.length === 5) {
-          return { table: 'migration_objects', filters };
+      if (parts[6] === 'comments') {
+        filters.push({ column: 'object_id', op: 'eq', value: objectId });
+        if (parts.length === 7) {
+          return { table: 'comments', filters };
         }
-        const objectId = parts[5];
-        if (parts.length === 6) {
-          return { table: 'migration_objects', id: objectId, filters };
-        }
-        if (parts[6] === 'comments') {
-          filters.push({ column: 'object_id', op: 'eq', value: objectId });
-          if (parts.length === 7) {
-            return { table: 'comments', filters };
-          }
-          return { table: 'comments', id: parts[7], filters };
-        }
+        return { table: 'comments', id: parts[7], filters };
       }
     }
   }
@@ -94,5 +95,5 @@ export function parseFirestorePath(path: string): TableTarget {
 }
 
 export function collectionPathToTarget(segments: string[]): TableTarget {
-  return parseFirestorePath(segments.join('/'));
+  return parseCompatDbPath(segments.join('/'));
 }

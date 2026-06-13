@@ -15,16 +15,16 @@ export * from './auth-compat';
 export * from './storage-compat';
 export { getSupabaseAdmin, adminAuth, adminDb } from './admin';
 export { getAdminStorageBucket } from './admin-storage';
-export { firebaseConfig, isFirebaseEnvComplete } from './config';
+export * from './config';
 export { SupabaseClientProvider } from './client-provider';
 export { createSupabaseBrowserClient } from './client';
 
-export function initializeFirebase() {
+export function initializeSupabase() {
   const client = createSupabaseBrowserClient();
   return {
-    firebaseApp: client,
+    client,
     auth: client.auth,
-    firestore: client,
+    db: client,
     storage: client,
   };
 }

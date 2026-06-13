@@ -44,14 +44,12 @@ import { ConsolidatedTooltip } from "@/components/dashboard/consolidated-tooltip
 import {
     normalizeSeqForDisplay,
 } from "@/lib/migration/sequence-utils";
-import type { MigrationObject } from "@/types/migration";
+import type { AggregatedObject } from "@/types/migration";
 import { getDashboardCardDomId } from "@/lib/dashboard/card-key";
 import {
     beginDashboardDialogScroll,
     endDashboardDialogScroll,
 } from "@/lib/dashboard/scroll-preservation";
-
-import type { AggregatedObject } from "@/types/migration";
 
 type CardPopoverPanel = "precedence" | "external" | "parallel" | "consolidated";
 
@@ -95,9 +93,6 @@ interface DashboardCardProps {
     handleOpenReport?: (obj: AggregatedObject) => void;
     handleOpenPrecedence?: (obj: AggregatedObject) => void;
     allObjects?: any[];
-    migrationObjects?: MigrationObject[];
-    /** Mock escolhida no filtro do dashboard (`all` = todas). */
-    filterMockId?: string;
     objectsByName?: Map<string, any>;
     parallelByGroup?: Map<number, any[]>;
     onToggleLoad?: () => void;
@@ -132,8 +127,6 @@ export const DashboardCard = memo(({
     handleOpenReport,
     handleOpenPrecedence,
     allObjects = [],
-    migrationObjects,
-    filterMockId = "all",
     objectsByName,
     parallelByGroup,
     mocksByIdMap,

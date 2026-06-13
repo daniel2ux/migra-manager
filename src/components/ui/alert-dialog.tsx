@@ -42,18 +42,34 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName
 
 type AlertDialogContentProps = React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> & {
   overlayClassName?: string
+  /** Radix omite Overlay quando modal={false}; exige `open` para backdrop manual. */
+  manualBackdrop?: boolean
+  open?: boolean
   variant?: "default" | "fiori"
 }
 
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   AlertDialogContentProps
->(({ className, overlayClassName, variant = "default", ...props }, ref) => {
+>(({ className, overlayClassName, manualBackdrop, open, variant = "default", ...props }, ref) => {
   const instantOpen = isFioriFormAlert(className, variant)
 
   return (
   <AlertDialogPortal>
-    <AlertDialogOverlay motion={!instantOpen} className={overlayClassName} />
+    {manualBackdrop && open ? (
+      <div
+        aria-hidden="true"
+        className={cn(
+          "fixed inset-0 z-[240] fiori-dialog-overlay fiori-dashboard-dialog-overlay",
+          !instantOpen && "animate-in fade-in-0 duration-200",
+          overlayClassName,
+        )}
+      />
+    ) : (
+      !manualBackdrop && (
+        <AlertDialogOverlay motion={!instantOpen} className={overlayClassName} />
+      )
+    )}
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(

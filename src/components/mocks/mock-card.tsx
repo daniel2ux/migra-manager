@@ -16,6 +16,7 @@ import { renderDuration } from '@/lib/formatters';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { useSelection } from '@/context/selection-context';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 import { calculateMockTotalDuration, isMockLocked, isMockCargaInProgress, isMockConcluida } from '@/lib/mock-utils';
 
 const CARD_TOOLBAR_BTN =
@@ -40,6 +41,7 @@ interface MockCardProps {
   onDelete: (mock: Mock) => void;
   onContextMenu: (e: React.MouseEvent, mock: Mock) => void;
   objects?: MigrationObject[];
+  catalogObjectCount?: number;
 }
 
 export interface MockCardHandle {
@@ -89,11 +91,12 @@ function getStatusMeta(mock: Mock): StatusMeta {
 export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentUserId' | 'onDelete'>>(
   ({
     mock, isSelected, onSelect, isAdmin, isMaster: _isMaster, isProjectLocked = false, projectId,
-    isTogglingLoad, objects = [], onToggleLock, onToggleLoadStatus, onClone, onEdit, onView, onContextMenu
+    isTogglingLoad, objects = [], catalogObjectCount = 0, onToggleLock, onToggleLoadStatus, onClone, onEdit, onView, onContextMenu
   }, ref) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const { setSelection } = useSelection();
     const router = useRouter();
+    const { toast } = useToast();
 
     useImperativeHandle(ref, () => ({
       focus: () => cardRef.current?.focus(),
@@ -105,7 +108,17 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
       e.preventDefault();
       onSelect(mock.id);
       setSelection(projectId, mock.id);
-      router.push('/objetos/gestao');
+
+      if (catalogObjectCount === 0) {
+        toast({
+          description:
+            "Nenhum objeto cadastrado na gestão de objetos. Cadastre objetos de migração no catálogo antes de gerenciar a janela.",
+        });
+        router.push("/objetos");
+        return;
+      }
+
+      router.push("/objetos/gestao");
     };
 
     const isLocked = isMockLocked(mock) || isProjectLocked;
@@ -128,8 +141,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
         onContextMenu={(e) => onContextMenu(e, mock)}
         onClick={() => onSelect(mock.id)}
         className={cn(
-          "fiori-project-card fiori-project-card--neutral-hover group relative border border-slate-200 hover:border-slate-400 transition-all duration-300 hover:scale-[1.03] hover:z-10 overflow-hidden bg-white p-3 flex flex-col gap-2.5 select-none cursor-pointer",
-          "outline-hidden focus-visible:ring-2 focus-visible:ring-[#0070f2] focus-visible:ring-offset-2",
+          "fiori-project-card fiori-project-card--neutral-hover group relative overflow-hidden p-3 flex flex-col gap-2.5 select-none cursor-pointer",
           isSelected && "fiori-project-card--active"
         )}
       >

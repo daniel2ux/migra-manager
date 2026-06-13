@@ -1,12 +1,20 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
-import { Layers, Loader2, Plus, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Layers, Loader2, Plus, Search, ShieldAlert, X } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { ActivityGroupsManager } from "@/components/configuracoes/activity-groups-manager";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
-import { doc } from "firebase/firestore";
+import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
+import { doc } from "@/supabase/compat-db-shim";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { getProjectCompanyName } from "@/lib/migration/project-company";
 import type { Project } from "@/types/migration";
@@ -14,12 +22,17 @@ import type { Project } from "@/types/migration";
 const PAGE_TOOLBAR_BTN =
   "fiori-toolbar-btn fiori-toolbar-btn--labeled !rounded-[0.375rem] !h-8 min-h-0 !w-auto !px-2.5";
 
+const PAGE_TOOLBAR_ICON_BTN =
+  "fiori-toolbar-btn !rounded-[0.375rem] !size-8 min-h-0 min-w-0";
+
 export default function GruposAtividadePage() {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const { projectId } = useActiveProjectId();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db ? doc(db, "users", user.uid) : null),
     [db, user],
   );
@@ -28,7 +41,7 @@ export default function GruposAtividadePage() {
     role?: string;
   }>(userDocRef);
 
-  const projectRef = useMemoFirebase(
+  const projectRef = useMemoDb(
     () => (db && projectId ? doc(db, "projects", projectId) : null),
     [db, projectId],
   );
@@ -92,10 +105,67 @@ export default function GruposAtividadePage() {
           empresa={getProjectCompanyName(projectData) ?? undefined}
           projectName={projectData?.name}
           backHref="/"
+          context={searchTerm ? (
+            <>
+              <span className="fiori-page-context-dot animate-pulse" />
+              <span>Busca ativa</span>
+            </>
+          ) : null}
           actions={
-            <div className="fiori-toolbar">
-              <ActivityGroupsManagerTrigger />
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <div className="fiori-toolbar">
+                <div className={cn("fiori-toolbar-search", isSearchOpen && "fiori-toolbar-search--open")}>
+                  <div className="fiori-search-shell">
+                    <Search className="fiori-search-icon" aria-hidden />
+                    <input
+                      type="search"
+                      autoFocus={isSearchOpen}
+                      placeholder="Pesquisar grupos..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setIsSearchOpen(false);
+                      }}
+                      className="fiori-search-input"
+                      aria-label="Pesquisar grupos de atividade"
+                    />
+                    {searchTerm && (
+                      <button
+                        type="button"
+                        className="fiori-search-clear"
+                        onClick={() => setSearchTerm("")}
+                        aria-label="Limpar busca"
+                      >
+                        <X className="w-3.5 h-3.5" aria-hidden />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsSearchOpen(!isSearchOpen)}
+                      className={cn(
+                        PAGE_TOOLBAR_ICON_BTN,
+                        (isSearchOpen || searchTerm) && "fiori-toolbar-btn-active",
+                      )}
+                      aria-label={isSearchOpen ? "Fechar busca" : "Pesquisar grupos"}
+                    >
+                      <Search className="w-4 h-4" aria-hidden />
+                      {searchTerm && !isSearchOpen && <span className="fiori-toolbar-dot" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" variant="fiori">
+                    {isSearchOpen ? "Fechar busca" : "Pesquisar grupos"}
+                  </TooltipContent>
+                </Tooltip>
+
+                <ActivityGroupsManagerTrigger />
+              </div>
+            </TooltipProvider>
           }
         />
 
@@ -110,6 +180,7 @@ export default function GruposAtividadePage() {
             <ActivityGroupsManager
               empresa={getProjectCompanyName(projectData) ?? undefined}
               projectName={projectData?.name}
+              searchTerm={searchTerm}
             />
           </Suspense>
         </div>

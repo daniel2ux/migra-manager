@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { doc, updateDoc, serverTimestamp } from "@/supabase/compat-db-shim";
+import { ref, uploadBytes, getDownloadURL } from "@/supabase/storage-shim";
 import { useToast } from "@/hooks/use-toast";
 import { createFileUploadError } from "@/lib/file-utils";
 

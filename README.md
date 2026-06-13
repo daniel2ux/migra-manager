@@ -44,7 +44,7 @@ Ver [`.env.example`](.env.example).
 
 Este projeto vive em **`daniel2ux/migra-manager`** (stack Supabase, v3.x).
 
-O repositório legado Firebase (`daniel2ux/migra`) está arquivado.
+O repositório legado (`daniel2ux/migra`) está arquivado.
 
 ## Scripts
 

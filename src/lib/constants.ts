@@ -2,14 +2,14 @@
 // Constantes globais do sistema
 // ═══════════════════════════════════════════════════════════
 
-// Firebase batch operations
-export const FIRESTORE_BATCH_SIZE = 400;
-export const FIRESTORE_BATCH_SAFE_LIMIT = 30; // "in" query limit
+// Operações em lote no banco
+export const DB_BATCH_SIZE = 400;
+export const DB_IN_QUERY_LIMIT = 30; // limite de cláusula "in"
 
-/** IDs válidos para `where(campo, 'in', ids)` — Firestore exige array não vazio (máx. 30). */
-export function idsForFirestoreIn(
+/** IDs válidos para `where(campo, 'in', ids)` — exige array não vazio (máx. 30). */
+export function idsForDbIn(
   ids: readonly string[] | undefined | null,
-  max = FIRESTORE_BATCH_SAFE_LIMIT,
+  max = DB_IN_QUERY_LIMIT,
 ): string[] | null {
   if (!ids?.length) return null;
   const sliced = [...ids].slice(0, max);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { collection, doc, serverTimestamp, setDoc, type Firestore } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
+import { collection, doc, serverTimestamp, setDoc, type CompatDb } from '@/supabase/compat-db-shim';
+import type { User } from '@/supabase/auth-shim';
 import { addDocumentNonBlocking } from '@/supabase/mutations';
 import { useEditLock } from '@/hooks/use-edit-lock';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,7 @@ interface LogViewerTarget {
 }
 
 interface UseDashboardQuickEditDeps {
-  db: Firestore | null; 
+  db: CompatDb | null; 
   user: User | null; 
   isAdmin: boolean | undefined; 
   userProfile: UserProfile | null;
@@ -41,7 +41,7 @@ function useHistoryBack(_key: string, _isOpen: boolean, _onClose: () => void) {
 // ── Sub-hook: Quick edit dialog ───────────────────────────────────────────
 
 function useQuickEditDialog(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   user: User | null, 
   isAdmin: boolean | undefined, 
   userProfile: UserProfile | null
@@ -153,7 +153,7 @@ function useQuickEditDialog(
 // ── Sub-hook: Comment dialog ──────────────────────────────────────────────
 
 function useCommentDialog(
-  db: Firestore | null, 
+  db: CompatDb | null, 
   user: User | null, 
   userProfile: UserProfile | null
 ) {

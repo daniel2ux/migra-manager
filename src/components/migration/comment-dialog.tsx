@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { formatCommentDate } from "@/lib/formatters";
 import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 
-/** Ordenação decrescente: Firestore Timestamp, Date, ms ou ISO. */
+/** Ordenação decrescente: CompatDb Timestamp, Date, ms ou ISO. */
 function commentCreatedAtMs(createdAt: unknown): number {
     if (createdAt == null) return 0;
     if (typeof createdAt === "number" && !Number.isNaN(createdAt)) return createdAt;

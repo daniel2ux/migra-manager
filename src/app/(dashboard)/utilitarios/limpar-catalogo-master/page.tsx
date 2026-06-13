@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { PageHeader } from '@/components/layout/page-header';
-import { useAuth, useFirestore, useDoc, useMemoFirebase } from '@/supabase';
-import { doc } from 'firebase/firestore';
+import { useUser, useDb, useDoc, useMemoDb } from '@/supabase';
+import { doc } from '@/supabase/compat-db-shim';
 import { AccessDeniedScreen } from '@/components/usuarios';
 import { useToast } from '@/hooks/use-toast';
 import { useUsersData } from '@/hooks/use-users-data';
@@ -31,15 +31,15 @@ type ExecuteResult = {
 };
 
 export default function LimparCatalogoMasterPage() {
-  const auth = useAuth();
-  const db = useFirestore();
+  const { user } = useUser();
+  const db = useDb();
   const router = useRouter();
   const isRouterReady = useRouterReady();
   const { projectId } = useActiveProjectId();
   const { isMaster, isProfileLoading } = useUsersData('');
   const { toast } = useToast();
 
-  const projectRef = useMemoFirebase(
+  const projectRef = useMemoDb(
     () => (db && projectId ? doc(db, 'projects', projectId) : null),
     [db, projectId],
   );
@@ -57,10 +57,10 @@ export default function LimparCatalogoMasterPage() {
   const [lastResult, setLastResult] = useState<ExecuteResult | null>(null);
 
   const getToken = useCallback(async (): Promise<string> => {
-    const token = await auth?.currentUser?.getIdToken(true);
+    const token = await user?.getIdToken(true);
     if (!token) throw new Error('Sessão expirada. Faça login novamente.');
     return token;
-  }, [auth]);
+  }, [user]);
 
   const callApi = useCallback(
     async (dryRun: boolean) => {

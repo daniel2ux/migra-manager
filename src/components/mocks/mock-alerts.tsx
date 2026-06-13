@@ -81,7 +81,7 @@ export function MockAlerts({
     <>
       {/* Finalize Carga Alert */}
       <AlertDialog open={isCargaConfirmOpen} onOpenChange={setIsCargaConfirmOpen} {...dashboardDialogRootProps}>
-        <AlertDialogContent variant="fiori" {...dashboardAlertDialogContentProps}>
+        <AlertDialogContent variant="fiori" open={isCargaConfirmOpen} {...dashboardAlertDialogContentProps}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon shrink-0">
@@ -117,7 +117,7 @@ export function MockAlerts({
 
       {/* Restart Ciclo Alert */}
       <AlertDialog open={isRestartConfirmOpen} onOpenChange={setIsRestartConfirmOpen} {...dashboardDialogRootProps}>
-        <AlertDialogContent variant="fiori" {...dashboardAlertDialogContentProps}>
+        <AlertDialogContent variant="fiori" open={isRestartConfirmOpen} {...dashboardAlertDialogContentProps}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">
@@ -157,7 +157,7 @@ export function MockAlerts({
 
       {/* Bulk Delete Alert */}
       <AlertDialog open={isBulkDeleteConfirmOpen} onOpenChange={setIsBulkDeleteConfirmOpen} {...dashboardDialogRootProps}>
-        <AlertDialogContent variant="fiori" {...dashboardAlertDialogContentProps}>
+        <AlertDialogContent variant="fiori" open={isBulkDeleteConfirmOpen} {...dashboardAlertDialogContentProps}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">
@@ -207,7 +207,7 @@ export function MockAlerts({
         onOpenChange={(open) => !isBulkReseting && setIsBulkRestartConfirmOpen(open)}
         {...dashboardDialogRootProps}
       >
-        <AlertDialogContent variant="fiori" {...dashboardAlertDialogContentProps}>
+        <AlertDialogContent variant="fiori" open={isBulkRestartConfirmOpen} {...dashboardAlertDialogContentProps}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">

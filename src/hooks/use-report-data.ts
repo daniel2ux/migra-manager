@@ -8,10 +8,10 @@ import {
   query,
   where,
   doc,
-} from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
+} from "@/supabase/compat-db-shim";
+import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 
-import { idsForFirestoreIn, SUPERADMIN_UID } from "@/lib/constants";
+import { idsForDbIn, SUPERADMIN_UID } from "@/lib/constants";
 
 interface UseReportFiltersReturn {
   selectedProjectId: string;
@@ -34,10 +34,10 @@ interface UseUserProfileReturn {
 }
 
 export function useUserProfile(): UseUserProfileReturn {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db ? doc(db, "users", user.uid) : null),
     [db, user],
   );
@@ -59,10 +59,10 @@ interface UseProjectsReturn {
 }
 
 export function useProjects(isAdmin: boolean, isLoadingProfile: boolean): UseProjectsReturn {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
-  const projectsQuery = useMemoFirebase(() => {
+  const projectsQuery = useMemoDb(() => {
     if (!db || !user || isLoadingProfile) return null;
     return isAdmin
       ? collection(db, "projects")
@@ -90,11 +90,11 @@ export function useRunningMock(
   selectedProjectId: string,
   selectedMockId: string,
 ): UseRunningMockReturn {
-  const db = useFirestore();
+  const db = useDb();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const projectMocksQuery = useMemoFirebase(() => {
+  const projectMocksQuery = useMemoDb(() => {
     if (!db || selectedProjectId === "all") return null;
     return collection(db, "projects", selectedProjectId, "mocks");
   }, [db, selectedProjectId]);
@@ -127,9 +127,9 @@ export function useMockData(
   selectedProjectId: string,
   selectedMockId: string,
 ): UseMockDataReturn {
-  const db = useFirestore();
+  const db = useDb();
 
-  const mockDocRef = useMemoFirebase(() => {
+  const mockDocRef = useMemoDb(() => {
     if (!db || selectedProjectId === "all" || selectedMockId === "all")
       return null;
     return doc(db, "projects", selectedProjectId, "mocks", selectedMockId);
@@ -145,9 +145,9 @@ interface UseCatalogueReturn {
 }
 
 export function useCatalogue(): UseCatalogueReturn {
-  const db = useFirestore();
+  const db = useDb();
 
-  const catalogueQuery = useMemoFirebase(() => {
+  const catalogueQuery = useMemoDb(() => {
     if (!db) return null;
     return collection(db, "catalogo");
   }, [db]);
@@ -170,9 +170,9 @@ export function useMigrationObjects(
   isProfileLoading: boolean,
   isProjectsLoading: boolean,
 ): UseMigrationObjectsReturn {
-  const db = useFirestore();
+  const db = useDb();
 
-  const objectsQuery = useMemoFirebase(() => {
+  const objectsQuery = useMemoDb(() => {
     if (!db || isProfileLoading || isProjectsLoading) return null;
 
     if (selectedProjectId !== "all" && selectedMockId !== "all") {
@@ -190,7 +190,7 @@ export function useMigrationObjects(
     if (selectedProjectId !== "all") {
       constraints.push(where("projectId", "==", selectedProjectId));
     } else if (!isAdmin) {
-      const projectIds = idsForFirestoreIn(accessibleProjectIds);
+      const projectIds = idsForDbIn(accessibleProjectIds);
       if (!projectIds) return null;
       constraints.push(where("projectId", "in", projectIds));
     }

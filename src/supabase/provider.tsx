@@ -93,14 +93,13 @@ export function useSupabase(): SupabaseContextState {
   return ctx;
 }
 
-export const useFirebase = useSupabase;
-
+/** Retorna o GoTrueClient real — não usar spread (perde métodos do prototype). */
 export function useAuth() {
-  const { auth, user } = useSupabase();
-  return { ...auth, currentUser: user } as typeof auth & { currentUser: CompatUser | null };
+  const { auth } = useSupabase();
+  return auth;
 }
 
-export function useFirestore(): SupabaseDb | null {
+export function useDb(): SupabaseDb | null {
   return useSupabase().db;
 }
 
@@ -108,7 +107,7 @@ export function useStorage(): SupabaseClient | null {
   return useSupabase().storage;
 }
 
-export function useFirebaseApp() {
+export function useSupabaseClient() {
   return useSupabase().client;
 }
 
@@ -117,12 +116,12 @@ export function useUser(): UserHookResult {
   return { user, isUserLoading, userError };
 }
 
-type MemoFirebase<T> = T & { __memo?: boolean };
+type MemoDbRef<T> = T & { __memo?: boolean };
 
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | MemoFirebase<T> {
+export function useMemoDb<T>(factory: () => T, deps: DependencyList): T | MemoDbRef<T> {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoized = useMemo(factory, deps);
   if (typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
+  (memoized as MemoDbRef<T>).__memo = true;
   return memoized;
 }

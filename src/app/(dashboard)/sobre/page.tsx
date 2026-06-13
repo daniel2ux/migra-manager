@@ -279,7 +279,7 @@ export default function SobrePage() {
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Segurança e Governança</h3>
               </div>
               <p className="text-sm text-slate-500 leading-relaxed font-medium">
-                Controle de acesso baseado em papéis (RBAC) com regras rigorosas no Firebase Firestore. Cada consultor acessa apenas os projetos autorizados — com isolamento total entre clientes e auditorias simultâneas.
+                Controle de acesso baseado em papéis (RBAC) com regras rigorosas no Supabase (PostgreSQL + RLS). Cada consultor acessa apenas os projetos autorizados — com isolamento total entre clientes e auditorias simultâneas.
               </p>
             </div>
           </section>

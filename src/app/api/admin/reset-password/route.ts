@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/supabase/admin';
 import { verifyCallerRole } from '@/lib/admin-auth';
-import { randomInt } from 'node:crypto';
 import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
-
-function generateTempPassword(): string {
-  // Chars without ambiguous characters (0/O, 1/I/l)
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars[randomInt(0, chars.length)];
-  }
-  return result;
-}
-
+import { generateTempPassword } from '@/lib/security/temp-password';
+import { sendPasswordResetEmail } from '@/lib/email/send-welcome-user';
+import { resolveAppLoginUrl } from '@/lib/email/welcome-user';
+import { getSmtpConfig } from '@/lib/email/smtp';
+import { normalizeRecipientEmail } from '@/lib/email/reply-to';
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
@@ -51,20 +44,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Usuário não encontrado.' }, { status: 404 });
     }
 
-    const email = targetData.email as string;
-    if (!email) {
+    const profileEmail = normalizeRecipientEmail(String(targetData.email ?? ''));
+    if (!profileEmail) {
       return NextResponse.json({ error: 'Usuário sem e-mail cadastrado.' }, { status: 400 });
     }
 
     let authUser;
     try {
-      authUser = await adminAuth.getUserByEmail(email);
+      authUser = await adminAuth.getUserByEmail(profileEmail);
     } catch {
       return NextResponse.json(
-        { error: `Usuário ${email} não encontrado no Firebase Auth.` },
+        { error: `Usuário ${profileEmail} não encontrado na autenticação.` },
         { status: 404 }
       );
     }
+
+    const email = normalizeRecipientEmail(authUser.email || profileEmail);
 
     const tempPassword = generateTempPassword();
 
@@ -82,8 +77,34 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
+    let emailSent = false;
+    let emailError: string | undefined;
+    let messageId: string | undefined;
+    const smtp = await getSmtpConfig();
+    try {
+      const mailResult = await sendPasswordResetEmail(
+        {
+          name: (targetData.name as string) || email,
+          email,
+          tempPassword,
+          loginUrl: resolveAppLoginUrl(req),
+        },
+        {
+          fromName: 'Migra Manager',
+          replyTo: caller.email ?? undefined,
+          bcc: smtp?.user,
+        },
+      );
+      emailSent = true;
+      messageId = mailResult.messageId;
+      console.info('[reset-password] e-mail enviado:', { to: email, messageId });
+    } catch (mailErr: unknown) {
+      emailError = mailErr instanceof Error ? mailErr.message : 'Falha ao enviar e-mail.';
+      console.warn('[reset-password] e-mail não enviado:', emailError);
+    }
+
     return NextResponse.json(
-      { success: true, tempPassword },
+      { success: true, tempPassword, emailSent, emailError, messageId, sentTo: email },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch {

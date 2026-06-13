@@ -1,19 +1,68 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Plus, Database, Box, Hash, Split, CheckCircle2,
-  Network, AlertCircle, Sparkles, Loader2, PlusCircle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Database,
+  Network,
+  Link2,
+  AlertCircle,
+  Plus,
+  Layers,
+  FileText,
+  Hash,
+  Split,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isValidSequence } from "@/lib/migration/sequence-utils";
+import { computeNextChargeOrderAfterLastCard, computeChargeGroupFromLastCard } from "@/lib/migration/master-catalog-charge-reflow";
+import { expandParallelPeerIds } from "@/lib/migration/parallel-group-utils";
+import { DependencyMapperDialog } from "./dependency-mapper-dialog";
+import { ParallelSelectDialog } from "./parallel-select-dialog";
+import type { MasterObject } from "./object-card";
+
+const QUICK_CREATE_DRAFT_ID = "__quick-create-draft__";
+
+const STATUS_LABELS: Record<string, string> = {
+  ATIVO: "Ativo",
+  INATIVO: "Inativo",
+};
+
+const STATUS_DOT_CLASS: Record<string, string> = {
+  ATIVO: "fiori-select-status-dot--success",
+  INATIVO: "fiori-select-status-dot--neutral",
+};
+
+const STATUS_ITEM_CLASS: Record<string, string> = {
+  ATIVO: "fiori-select-item--status-success",
+  INATIVO: "fiori-select-item--status-neutral",
+};
+
+const STATUS_OPTIONS = [
+  { value: "ATIVO", label: STATUS_LABELS.ATIVO },
+  { value: "INATIVO", label: STATUS_LABELS.INATIVO },
+] as const;
 
 interface QuickFormData {
   name: string;
@@ -22,204 +71,472 @@ interface QuickFormData {
   parallelOrder: string;
   status: string;
   description: string;
+  dependencyIds?: string[];
   externalDependencies?: string[];
+  activityGroupIds?: string[];
+  parallelPeerIds?: string[];
+}
+
+interface ActivityGroup {
+  id: string;
+  name: string;
+  color: string;
+  description?: string;
 }
 
 interface QuickCreateObjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   quickFormData: QuickFormData;
+  activityGroups: ActivityGroup[];
   /** Merge no estado do formulário (ex.: objeto mestre usa mais campos além de QuickFormData). */
   onFormChange: (patch: Partial<QuickFormData>) => void;
-  isGenerating: boolean;
-  onSave: (e?: React.FormEvent, keepOpen?: boolean) => void;
-  onAiGenerate: () => void;
-  onSuggestOrder: (group: string, mode: string) => void;
-  onSuggestParallelOrder: (group: string, mode: string) => void;
+  onSave: (e?: React.FormEvent, keepOpen?: boolean, patch?: Partial<QuickFormData>) => void;
+  catalogObjects: MasterObject[];
   nameInputRef?: React.RefObject<HTMLInputElement | null>;
+}
+
+function parseExternalDependencies(text: string): string[] {
+  return text
+    .toUpperCase()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
 }
 
 export function QuickCreateObjectDialog({
   open,
   onOpenChange,
   quickFormData,
+  activityGroups,
   onFormChange,
-  isGenerating,
   onSave,
-  onAiGenerate,
-  onSuggestOrder,
-  onSuggestParallelOrder,
+  catalogObjects,
   nameInputRef,
 }: QuickCreateObjectDialogProps) {
+  const [externalDepsDraft, setExternalDepsDraft] = useState("");
+  const [nameDraft, setNameDraft] = useState("");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [isDepsOpen, setIsDepsOpen] = useState(false);
+  const [isParallelOpen, setIsParallelOpen] = useState(false);
+  const [parallelSelectDraft, setParallelSelectDraft] = useState<string[]>([]);
+  const [parallelSearchTerm, setParallelSearchTerm] = useState("");
+  const [depSearchTerm, setDepSearchTerm] = useState("");
+  const [depFilterType, setDepFilterType] = useState("TODOS");
+
+  const dependencyIds = quickFormData.dependencyIds ?? [];
+  const normalizedName = nameDraft.trim().toUpperCase();
+  const selfInCatalog = normalizedName
+    ? catalogObjects.find((o) => o.name === normalizedName)
+    : undefined;
+
+  const draftTarget: MasterObject = {
+    id: selfInCatalog?.id ?? QUICK_CREATE_DRAFT_ID,
+    name: normalizedName || "Novo objeto",
+    dependencyIds,
+  };
+
+  const parallelPeerIds = useMemo(
+    () =>
+      expandParallelPeerIds(
+        catalogObjects,
+        quickFormData.parallelPeerIds ?? [],
+        draftTarget.id,
+      ),
+    [catalogObjects, quickFormData.parallelPeerIds, draftTarget.id],
+  );
+
+  const linkedDepObjects = dependencyIds
+    .map((id) => catalogObjects.find((o) => o.id === id))
+    .filter(Boolean) as MasterObject[];
+
+  const linkedParallelObjects = parallelPeerIds
+    .map((id) => catalogObjects.find((o) => o.id === id))
+    .filter(Boolean) as MasterObject[];
+
+  const suggestedChargeOrder = useMemo(
+    () => computeNextChargeOrderAfterLastCard(catalogObjects),
+    [catalogObjects],
+  );
+
+  const suggestedChargeGroup = useMemo(
+    () => computeChargeGroupFromLastCard(catalogObjects),
+    [catalogObjects],
+  );
+
+  const handleToggleDraftDependency = (objectId: string) => {
+    if (objectId === draftTarget.id) return;
+    const current = quickFormData.dependencyIds ?? [];
+    const updated = current.includes(objectId)
+      ? current.filter((id) => id !== objectId)
+      : [...current, objectId];
+    onFormChange({ dependencyIds: updated });
+  };
+
+  const handleToggleParallelPeer = (objectId: string) => {
+    if (objectId === draftTarget.id) return;
+    setParallelSelectDraft((current) => {
+      if (current.includes(objectId)) {
+        return current.filter((id) => id !== objectId);
+      }
+      return expandParallelPeerIds(
+        catalogObjects,
+        [...current, objectId],
+        draftTarget.id,
+      );
+    });
+  };
+
+  const handleSaveParallelSelection = () => {
+    const expanded = expandParallelPeerIds(
+      catalogObjects,
+      parallelSelectDraft,
+      draftTarget.id,
+    );
+    onFormChange({ parallelPeerIds: expanded });
+    setIsParallelOpen(false);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    setNameDraft(quickFormData.name ?? "");
+    setDescriptionDraft(quickFormData.description ?? "");
+    setExternalDepsDraft((quickFormData.externalDependencies ?? []).join("\n"));
+  // Sincroniza só ao abrir o diálogo — drafts locais evitam re-render da página.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const buildTextPatch = useCallback(
+    () => ({
+      name: nameDraft.trim().toUpperCase(),
+      chargeGroup: suggestedChargeGroup,
+      description: descriptionDraft.toUpperCase(),
+    }),
+    [nameDraft, suggestedChargeGroup, descriptionDraft],
+  );
+
+  const flushExternalDependencies = useCallback(() => {
+    onFormChange({ externalDependencies: parseExternalDependencies(externalDepsDraft) });
+  }, [externalDepsDraft, onFormChange]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    const externalDependencies = parseExternalDependencies(externalDepsDraft);
+    const textPatch = buildTextPatch();
+    const patch = { ...textPatch, externalDependencies, dependencyIds, parallelPeerIds };
+    onFormChange(patch);
+    onSave(e, false, patch);
+  };
+
+  const handleSaveAndContinue = () => {
+    const externalDependencies = parseExternalDependencies(externalDepsDraft);
+    const textPatch = buildTextPatch();
+    const patch = { ...textPatch, externalDependencies, dependencyIds, parallelPeerIds };
+    onFormChange(patch);
+    onSave(undefined, true, patch);
+  };
+
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-[500px] h-[min(92vh,820px)] max-h-[92vh] min-h-0 flex flex-col p-0 rounded-none border-none shadow-2xl overflow-hidden bg-white">
-        <DialogHeader className="p-5 pb-2 shrink-0 border-b border-slate-50 bg-white/30">
-          <DialogTitle className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-900 flex items-center gap-2">
-            <Plus className="w-3.5 h-3.5" /> NOVO CADASTRO DE OBJETO MESTRE
-          </DialogTitle>
+      <TooltipProvider delayDuration={200}>
+      <DialogContent
+        variant="fiori"
+        className="fiori-dialog fiori-dialog--form fiori-dialog--mock-form fiori-dialog--object-master-form flex h-[min(92vh,620px)] w-[calc(100vw-1rem)] max-w-[500px] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
+      >
+        <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
+          <DialogDescription className="sr-only">
+            Formulário de cadastro de objeto mestre.
+          </DialogDescription>
+          <div className="fiori-dialog-header-row">
+            <div className="fiori-dialog-icon shrink-0">
+              <Plus className="h-4 w-4" />
+            </div>
+            <DialogTitle className="fiori-dialog-title">Novo cadastro de objeto mestre</DialogTitle>
+          </div>
         </DialogHeader>
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y">
-          <form onSubmit={(e) => onSave(e)} id="quick-create-form">
-            <div className="space-y-4 px-6 py-6">
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-                <div className="sm:col-span-4 space-y-1">
-                  <div className="flex items-center h-5 ml-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <Database className="w-2.5 h-2.5 text-SkyBlue-500" /> NOME DO OBJETO
-                    </label>
-                  </div>
-                  <input
+        <div className="fiori-dialog-body">
+          <form onSubmit={handleSubmit} id="quick-create-form">
+            <section className="fiori-form-section">
+              <h3 className="fiori-section-title">
+                <Database className="h-3.5 w-3.5" />
+                Identificação
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-x-3 gap-y-2">
+                <div className="sm:col-span-12 space-y-1">
+                  <label className="fiori-field-label">Nome do objeto</label>
+                  <Input
                     type="text"
                     ref={nameInputRef}
-                    placeholder="EX: PARCEIRO"
-                    value={quickFormData.name}
-                    onChange={(e) => onFormChange({ name: e.target.value.toUpperCase() })}
-                    className="flex h-8 w-full bg-transparent border border-slate-300 px-3 py-1 text-[10px] focus:ring-2 focus:ring-SkyBlue-500/40 focus:border-transparent outline-hidden font-normal text-center transition-all rounded-none cursor-text relative z-[1]"
+                    placeholder="Ex.: PARCEIRO"
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value.toUpperCase())}
+                    className="fiori-input uppercase shadow-none"
                   />
                 </div>
                 <div className="sm:col-span-4 space-y-1">
-                  <div className="flex items-center h-5 ml-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <Box className="w-2.5 h-2.5 text-SkyBlue-500" /> GRUPO CARGA
-                    </label>
-                  </div>
-                  <input
+                  <label className="fiori-field-label">Grupo carga</label>
+                  <Input
                     type="text"
-                    placeholder="G1"
-                    value={quickFormData.chargeGroup}
-                    onChange={(e) => onFormChange({ chargeGroup: e.target.value.toUpperCase() })}
-                    className="flex h-8 w-full bg-transparent border border-slate-300 px-3 py-1 text-[10px] focus:ring-2 focus:ring-SkyBlue-500/40 focus:border-transparent outline-hidden font-normal text-center transition-all rounded-none cursor-text relative z-[1]"
+                    value={suggestedChargeGroup}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly
+                    className="fiori-input readable-disabled shadow-none uppercase"
                   />
                 </div>
                 <div className="sm:col-span-4 space-y-1">
-                  <div className="flex justify-between items-center h-5 ml-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <Hash className="w-2.5 h-2.5 text-slate-500" /> ORDEM CARGA
-                    </label>
-                    <button type="button" onClick={() => onSuggestOrder(quickFormData.chargeGroup, 'quick')} className="text-slate-600 hover:text-slate-900 transition-all active:scale-95" title="Sugerir próxima sequência">
-                      <PlusCircle className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="01.00"
-                    maxLength={5}
-                    value={quickFormData.chargeOrder}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
-                      const fmt = digits.length > 2 ? digits.slice(0, 2) + '.' + digits.slice(2) : digits;
-                      onFormChange({ chargeOrder: fmt });
-                    }}
-                    className={cn(
-                      "flex h-8 w-full bg-transparent border px-3 py-1 text-[10px] outline-hidden font-normal text-center transition-all rounded-none cursor-text relative z-[1]",
-                      quickFormData.chargeOrder && !isValidSequence(quickFormData.chargeOrder)
-                        ? "border-red-400 ring-2 ring-red-400 focus:ring-2 focus:ring-red-400 focus:border-red-400"
-                        : "border-slate-300 focus:ring-2 focus:ring-slate-500/40 focus:border-transparent",
-                    )}
-                  />
-                </div>
-
-                <div className="sm:col-span-12 space-y-1">
-                  <div className="flex justify-between items-center ml-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                      <Split className="w-2.5 h-2.5 text-emerald-500" /> ORDEM PARALELISMO
-                    </label>
-                    <button type="button" onClick={() => onSuggestParallelOrder(quickFormData.chargeGroup, 'quick')} className="text-emerald-600 hover:text-emerald-700 transition-all active:scale-95" title="Sugerir próxima ordem paralela">
-                      <PlusCircle className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="01.00"
-                    maxLength={5}
-                    value={quickFormData.parallelOrder}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
-                      const fmt = digits.length > 2 ? digits.slice(0, 2) + '.' + digits.slice(2) : digits;
-                      onFormChange({ parallelOrder: fmt });
-                    }}
-                    className={cn(
-                      "flex h-8 w-full bg-transparent border px-3 py-1 text-[10px] outline-hidden font-normal text-center transition-all rounded-none cursor-text relative z-[1]",
-                      quickFormData.parallelOrder && !isValidSequence(quickFormData.parallelOrder)
-                        ? "border-red-400 ring-2 ring-red-400 focus:ring-2 focus:ring-red-400 focus:border-red-400"
-                        : "border-emerald-300 focus:ring-2 focus:ring-emerald-500/40 focus:border-transparent",
-                    )}
-                  />
-                  <p className="text-[7.5px] text-slate-400 ml-1 leading-relaxed">Primeiros 2 dígitos = grupo paralelo · Ex: 01.00, 01.01, 01.02 executam no mesmo grupo</p>
-                </div>
-
-                <div className="sm:col-span-12 space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-2.5 h-2.5 text-SkyBlue-500" /> STATUS
+                  <label className="fiori-field-label">
+                    <Hash className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
+                    Seq. carga
                   </label>
-                  <select
-                    value={quickFormData.status}
-                    onChange={(e) => onFormChange({ status: e.target.value })}
-                    className="flex h-8 w-full bg-transparent border border-slate-300 px-3 py-1 text-[10px] focus:ring-2 focus:ring-SkyBlue-500/40 focus:border-transparent outline-hidden font-normal uppercase transition-all rounded-none appearance-none cursor-pointer relative z-[1]"
+                  <Input
+                    type="text"
+                    value={suggestedChargeOrder}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly
+                    className="fiori-input readable-disabled shadow-none"
+                  />
+                </div>
+                <div className="sm:col-span-4 space-y-1">
+                  <label className="fiori-field-label">Status</label>
+                  <Select
+                    value={quickFormData.status || "ATIVO"}
+                    onValueChange={(value) => onFormChange({ status: value })}
                   >
-                    <option value="ATIVO">ATIVO</option>
-                    <option value="INATIVO">INATIVO</option>
-                  </select>
+                    <SelectTrigger className="fiori-select-trigger fiori-select-trigger--status shadow-none">
+                      <span
+                        className={cn(
+                          "fiori-select-status-dot",
+                          STATUS_DOT_CLASS[quickFormData.status || "ATIVO"],
+                        )}
+                        aria-hidden
+                      />
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent className="fiori-select-content fiori-select-content--status">
+                      {STATUS_OPTIONS.map((option) => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className={cn(
+                            "fiori-select-item fiori-select-item--status",
+                            STATUS_ITEM_CLASS[option.value],
+                          )}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+            </section>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center ml-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DESCRIÇÃO TÉCNICA E FINALIDADE</label>
-                  <Button type="button" variant="ghost" size="sm" className="h-5 px-2 text-[10px] font-bold uppercase gap-1.5 border hover:bg-SkyBlue-100 transition-all" onClick={onAiGenerate} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 className="w-3 h-3 animate-spin text-current" /> : <Sparkles className="w-3 h-3 text-current" />} <span>SUGESTÃO IA</span>
-                  </Button>
+            {activityGroups.length > 0 && (
+              <section className="fiori-form-section">
+                <h3 className="fiori-section-title">
+                  <Layers className="h-3.5 w-3.5" />
+                  Grupos de atividade
+                </h3>
+                <p className="fiori-field-hint mb-1.5">
+                  Opcional. Selecione um ou mais grupos para classificar o objeto.
+                </p>
+                <div className="fiori-activity-chip-zone">
+                  {activityGroups.map((g) => {
+                    const selectedIds = quickFormData.activityGroupIds ?? [];
+                    const isSelected = selectedIds.includes(g.id);
+                    return (
+                      <Tooltip key={g.id}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const ids = isSelected
+                                ? selectedIds.filter((id) => id !== g.id)
+                                : [...selectedIds, g.id];
+                              onFormChange({ activityGroupIds: ids });
+                            }}
+                            className={cn(
+                              "fiori-chip",
+                              isSelected && "fiori-chip--outline fiori-chip-selected",
+                            )}
+                            style={isSelected ? { borderColor: g.color, color: g.color } : undefined}
+                          >
+                            {g.name}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" align="start" variant="fiori" className="max-w-xs">
+                          <p className="font-semibold">{g.name}</p>
+                          {g.description && (
+                            <p className="text-[var(--fiori-label)] mt-0.5">{g.description}</p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
                 </div>
-                <textarea
-                  placeholder="DESCREVA A FINALIDADE TÉCNICA DO OBJETO..."
-                  value={quickFormData.description}
-                  onChange={(e) => onFormChange({ description: e.target.value.toUpperCase() })}
-                  className="flex min-h-[100px] w-full bg-transparent border border-slate-300 px-3 py-2 text-[10px] focus:ring-2 focus:ring-SkyBlue-500/40 focus:border-transparent outline-hidden font-normal text-left transition-all rounded-none resize-none cursor-text relative z-[1]"
-                />
-              </div>
+              </section>
+            )}
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
-                  <Network className="w-2.5 h-2.5 text-amber-500" /> DEPENDÊNCIAS EXTERNAS (OBRIGATÓRIAS)
-                </label>
-                <textarea
-                  placeholder="UM OBJETO POR LINHA... EX: OBJETO_SAP_01"
-                  className="flex min-h-[80px] w-full bg-transparent border border-amber-300/80 px-3 py-2 text-[10px] focus:ring-2 focus:ring-amber-500/40 focus:border-transparent outline-hidden font-normal text-left transition-all rounded-none resize-none cursor-text relative z-[1]"
-                  value={quickFormData.externalDependencies?.join('\n') || ''}
-                  onChange={(e) =>
-                    onFormChange({
-                      externalDependencies: e.target.value
-                        .toUpperCase()
-                        .split("\n")
-                        .filter((s) => s.trim() !== ""),
-                    })
-                  }
-                />
-                <p className="text-[7.5px] text-slate-400 ml-1 leading-relaxed uppercase">Informe objetos externos que devem ser executados antes deste. Um por linha.</p>
-              </div>
+            <section className="fiori-form-section">
+              <h3 className="fiori-section-title">
+                <FileText className="h-3.5 w-3.5" />
+                Descrição técnica
+              </h3>
+              <Textarea
+                placeholder="Finalidade técnica do objeto..."
+                value={descriptionDraft}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                className="fiori-textarea uppercase shadow-none resize-none"
+                rows={2}
+              />
+            </section>
 
-              <div className="p-4 bg-amber-50/50 border border-amber-100/50 rounded-none space-y-2">
-                <p className="text-[10px] font-bold text-amber-700 uppercase flex items-center gap-2"><AlertCircle className="w-3 h-3" /> Atenção ao Cadastro Mestre</p>
-                <p className="text-[10px] font-medium text-amber-600/80 leading-relaxed uppercase">Este objeto será disponibilizado globalmente para todos os projetos do Migration Manager.</p>
+            <section className="fiori-form-section">
+              <h3 className="fiori-section-title">
+                <Link2 className="h-3.5 w-3.5" />
+                Dependências do catálogo
+              </h3>
+              <div className="fiori-deps-hint-row">
+                <p className="fiori-field-hint m-0">
+                  Objetos mestre do catálogo que devem preceder este no fluxo técnico.
+                </p>
+                <button
+                  type="button"
+                  className="fiori-btn-transparent fiori-btn-transparent--compact shrink-0"
+                  title="Selecionar dependências"
+                  onClick={() => setIsDepsOpen(true)}
+                >
+                  Selecionar
+                </button>
               </div>
+              <div className="fiori-deps-zone">
+                {linkedDepObjects.length > 0 ? (
+                  linkedDepObjects.map((dep) => (
+                    <span key={dep.id} className="fiori-dep-chip">
+                      {dep.name}
+                    </span>
+                  ))
+                ) : (
+                  <p className="fiori-deps-empty m-0">Nenhuma dependência selecionada.</p>
+                )}
+              </div>
+            </section>
+
+            <section className="fiori-form-section">
+              <h3 className="fiori-section-title">
+                <Split className="h-3.5 w-3.5" />
+                Processamento paralelo
+              </h3>
+              <div className="fiori-deps-hint-row">
+                <p className="fiori-field-hint m-0">
+                  Objetos do catálogo que executam em paralelo com este na mesma sequência de carga.
+                </p>
+                <button
+                  type="button"
+                  className="fiori-btn-transparent fiori-btn-transparent--compact shrink-0"
+                  title="Selecionar objetos em paralelo"
+                  onClick={() => {
+                    setParallelSelectDraft(parallelPeerIds);
+                    setIsParallelOpen(true);
+                  }}
+                >
+                  Selecionar
+                </button>
+              </div>
+              <div className="fiori-deps-zone fiori-parallel-zone">
+                {linkedParallelObjects.length > 0 ? (
+                  linkedParallelObjects.map((peer) => (
+                    <span key={peer.id} className="fiori-dep-chip fiori-parallel-chip">
+                      {peer.name}
+                    </span>
+                  ))
+                ) : (
+                  <p className="fiori-deps-empty m-0">Nenhum objeto em paralelo selecionado.</p>
+                )}
+              </div>
+            </section>
+
+            <section className="fiori-form-section">
+              <h3 className="fiori-section-title">
+                <Network className="h-3.5 w-3.5" />
+                Dependências externas
+              </h3>
+              <Textarea
+                placeholder="Um objeto por linha. Ex.: OBJETO_SAP_01"
+                className="fiori-textarea uppercase shadow-none resize-y min-h-[4.5rem]"
+                rows={4}
+                value={externalDepsDraft}
+                onChange={(e) => setExternalDepsDraft(e.target.value.toUpperCase())}
+                onBlur={flushExternalDependencies}
+              />
+              <p className="fiori-field-hint mt-1">
+                Objetos que devem ser executados antes deste, um por linha.
+              </p>
+            </section>
+
+            <div className="fiori-message-warning fiori-message-warning--compact">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                Objeto global para todos os projetos do Migration Manager.
+              </span>
             </div>
           </form>
         </div>
-        <DialogFooter className="px-5 py-4 border-t bg-white/50 shrink-0 flex flex-wrap items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="font-bold uppercase text-[10px] tracking-widest h-9 px-4 border text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all active:scale-95">
-            FECHAR
-          </Button>
-          <div className="flex flex-wrap items-center gap-2 justify-end flex-1">
-            <Button type="button" variant="outline" onClick={() => onSave(undefined, true)} className="font-bold uppercase text-[10px] tracking-widest h-9 px-4 bg-slate-900 text-white hover:bg-slate-800 transition-all active:scale-95 border-none shadow-xs">
-              SALVAR E CONTINUAR
-            </Button>
-            <Button type="submit" form="quick-create-form" variant="outline" className="font-bold uppercase text-[10px] tracking-widest h-9 px-6 bg-slate-900 text-white hover:bg-slate-800 transition-all active:scale-95 gap-2 border-none">
-              SALVAR
-            </Button>
+        <DialogFooter className="fiori-dialog-footer shrink-0 justify-between gap-2 sm:justify-between sm:space-x-0">
+          <button type="button" onClick={() => onOpenChange(false)} className="fiori-btn-ghost">
+            Fechar
+          </button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleSaveAndContinue}
+              className="fiori-btn-transparent"
+            >
+              Salvar e continuar
+            </button>
+            <button type="submit" form="quick-create-form" className="fiori-btn-emphasized">
+              Salvar
+            </button>
           </div>
         </DialogFooter>
       </DialogContent>
+      </TooltipProvider>
     </Dialog>
+
+    <DependencyMapperDialog
+      open={isDepsOpen}
+      onOpenChange={(next) => {
+        setIsDepsOpen(next);
+        if (!next) {
+          setDepSearchTerm("");
+          setDepFilterType("TODOS");
+        }
+      }}
+      targetObject={draftTarget}
+      objects={catalogObjects}
+      filterType={depFilterType}
+      onFilterTypeChange={setDepFilterType}
+      searchTerm={depSearchTerm}
+      onSearchChange={setDepSearchTerm}
+      onToggle={handleToggleDraftDependency}
+      elevated
+    />
+    <ParallelSelectDialog
+      open={isParallelOpen}
+      onOpenChange={(next) => {
+        setIsParallelOpen(next);
+        if (!next) setParallelSearchTerm("");
+      }}
+      targetObject={draftTarget}
+      objects={catalogObjects}
+      selectedIds={parallelSelectDraft}
+      searchTerm={parallelSearchTerm}
+      onSearchChange={setParallelSearchTerm}
+      onToggleId={handleToggleParallelPeer}
+      onSave={handleSaveParallelSelection}
+    />
+    </>
   );
 }

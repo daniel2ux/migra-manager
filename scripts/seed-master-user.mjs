@@ -88,7 +88,15 @@ if (createError) {
     process.exit(1);
   }
   userId = existing.id;
-  console.log(`Usuário ${email} já existe — atualizando profile master.`);
+  const { error: pwdError } = await admin.auth.admin.updateUserById(userId, {
+    password,
+    email_confirm: true,
+  });
+  if (pwdError) {
+    console.error('Erro ao redefinir senha:', pwdError.message);
+    process.exit(1);
+  }
+  console.log(`Usuário ${email} já existe — senha e profile master atualizados.`);
 } else {
   console.log(`Usuário criado: ${email}`);
 }

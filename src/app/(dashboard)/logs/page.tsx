@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   collection, query, where, orderBy, limit, startAfter,
   getDocs, getCountFromServer, QueryDocumentSnapshot, Timestamp,
-} from "firebase/firestore";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
-import { doc } from "firebase/firestore";
+} from "@/supabase/compat-db-shim";
+import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
+import { doc } from "@/supabase/compat-db-shim";
 import type { MigrationLog, MigrationLogStatus, Project, UserProfile } from "@/types/migration";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -61,10 +61,10 @@ export default function LogsPage() {
   const searchParams = useSearchParams();
   const page = Math.max(1, Number(searchParams.get("page")) || 1);
   const projectIdFromUrl = searchParams.get("projectId") ?? "";
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
-  const userDocRef = useMemoFirebase(() => (user ? doc(db!, "users", user.uid) : null), [db, user]);
+  const userDocRef = useMemoDb(() => (user ? doc(db!, "users", user.uid) : null), [db, user]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
   const isAdminOrMaster = userProfile?.role === "admin" || userProfile?.role === "master" || userProfile?.role === "user";
 
@@ -94,7 +94,7 @@ export default function LogsPage() {
   );
   const projectId = projectIdFromUrl || (dashboardProjectId !== "all" ? dashboardProjectId : "");
 
-  const projectDocRef = useMemoFirebase(
+  const projectDocRef = useMemoDb(
     () => (projectId ? doc(db!, "projects", projectId) : null),
     [db, projectId],
   );

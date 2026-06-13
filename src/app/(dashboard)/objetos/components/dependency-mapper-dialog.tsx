@@ -49,6 +49,8 @@ interface DependencyMapperDialogProps {
   triggerRef?: React.RefObject<HTMLElement>;
   searchRef?: React.RefObject<HTMLInputElement>;
   timerRef?: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
+  /** Abre acima de outro diálogo (ex.: cadastro rápido). */
+  elevated?: boolean;
 }
 
 export function DependencyMapperDialog({
@@ -64,6 +66,7 @@ export function DependencyMapperDialog({
   triggerRef,
   searchRef,
   timerRef,
+  elevated = false,
 }: DependencyMapperDialogProps) {
   const handleClose = (val: boolean) => {
     onOpenChange(val);
@@ -76,18 +79,27 @@ export function DependencyMapperDialog({
     return filterType === "TODOS" || depObj.type === filterType;
   });
 
-  const availableObjects = objects.filter(o =>
-    o.id !== targetObject?.id &&
-    (searchTerm === "" ||
-      o.name.includes(searchTerm) ||
-      (o.description || "").includes(searchTerm))
-  );
+  const availableObjects = objects
+    .filter((o) => {
+      if (o.id === targetObject?.id) return false;
+      if (filterType !== "TODOS" && o.type !== filterType) return false;
+      if (searchTerm === "") return true;
+      const term = searchTerm.toUpperCase();
+      return (
+        o.name.toUpperCase().includes(term) ||
+        (o.description || "").toUpperCase().includes(term)
+      );
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        overlayClassName="fiori-dialog-overlay"
-        className="fiori-dialog sm:max-w-[550px] h-[min(92vh,600px)] flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0 !rounded-[var(--fiori-radius)]"
+        overlayClassName={cn("fiori-dialog-overlay", elevated && "z-[220]")}
+        className={cn(
+          "fiori-dialog sm:max-w-[550px] h-[min(92vh,600px)] flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0 !rounded-[var(--fiori-radius)]",
+          elevated && "z-[230]",
+        )}
       >
         <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
           <div className="flex items-start gap-3">
@@ -169,8 +181,8 @@ export function DependencyMapperDialog({
 
         <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
           <div className="flex flex-wrap gap-2">
-            {searchTerm !== "" ? (
-              availableObjects.map(o => {
+            {availableObjects.length > 0 ? (
+              availableObjects.map((o) => {
                 const isSelected = targetObject?.dependencyIds?.includes(o.id);
                 return (
                   <Button
@@ -190,7 +202,11 @@ export function DependencyMapperDialog({
             ) : (
               <div className="w-full py-10 flex flex-col items-center justify-center text-center">
                 <Search className="w-8 h-8 text-[var(--fiori-border)] mb-3" />
-                <p className="fiori-empty-hint">Utilize a busca para listar objetos disponíveis</p>
+                <p className="fiori-empty-hint">
+                  {searchTerm !== "" || filterType !== "TODOS"
+                    ? "Nenhum objeto encontrado com os filtros atuais"
+                    : "Nenhum outro objeto cadastrado para vincular"}
+                </p>
               </div>
             )}
           </div>

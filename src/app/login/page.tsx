@@ -6,10 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 import { Mail, Lock, Loader2, Zap, Eye, EyeOff, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore } from '@/supabase';
-import { firebaseConfig, isFirebaseEnvComplete } from '@/supabase/config';
-import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, Auth } from 'firebase/auth';
-import { doc, getDoc, Firestore } from 'firebase/firestore';
+import { useAuth, useDb } from '@/supabase';
+import { isSupabaseEnvComplete } from '@/supabase/env';
+import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, Auth } from '@/supabase/auth-shim';
+import { doc, getDoc, type CompatDb } from '@/supabase/compat-db-shim';
 
 
 function LoginForm() {
@@ -17,7 +17,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const auth = useAuth();
-  const db = useFirestore();
+  const db = useDb();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +45,7 @@ function LoginForm() {
       return;
     }
 
-    if (!isFirebaseEnvComplete || firebaseConfig.projectId === 'migra-dev-placeholder') {
+    if (!isSupabaseEnvComplete) {
       setError('Supabase não configurado. Preencha .env.local e reinicie o servidor (npm run dev).');
       setLoading(false);
       return;
@@ -57,37 +57,43 @@ function LoginForm() {
       await setPersistence(auth as Auth, browserSessionPersistence);
 
       const userCredential = await signInWithEmailAndPassword(auth as Auth, normalizedEmail, password);
-      const user = userCredential.user;
+      const signedInUser = userCredential.user;
 
-      await user.getIdToken(true);
+      const { data: sessionData } = await (auth as Auth).getSession();
+      if (!sessionData.session) {
+        setError('Sessão não iniciada. Reinicie o navegador e tente novamente.');
+        return;
+      }
 
-      const userDocRef = doc(db as Firestore, 'users', user.uid);
+      await signedInUser.getIdToken(true);
+
+      const userDocRef = doc(db as CompatDb, 'users', signedInUser.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
         const userData = userDoc.data() as { isDisabled?: boolean; mustChangePassword?: boolean } | undefined;
-        if (!userData) return;
 
-        if (userData.isDisabled === true) {
+        if (userData?.isDisabled === true) {
           await signOut(auth as Auth);
           setError("Esta conta está bloqueada.");
           return;
         }
 
-        if (userData.mustChangePassword === true) {
+        if (userData?.mustChangePassword === true) {
           toast({
             title: "Primeiro Acesso",
             description: "Por favor, defina sua senha definitiva."
           });
-          router.push('/alterar-senha');
+          router.replace('/alterar-senha');
           return;
         }
       }
 
-      router.push('/');
+      router.replace('/');
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code;
-      console.error("[LoginPage] Erro de autenticação:", code, firebaseConfig.projectId);
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[LoginPage] Erro de autenticação:", code ?? message);
 
       const errorMap: Record<string, string> = {
         'auth/invalid-credential':
@@ -98,10 +104,11 @@ function LoginForm() {
         'auth/wrong-password': 'Senha incorreta.',
         'auth/too-many-requests': 'Muitas tentativas falhas. Aguarde alguns minutos e tente novamente.',
         'auth/network-request-failed': 'Falha de rede. Verifique sua conexão.',
+        'auth/weak-password': 'Senha não atende aos requisitos de segurança (mín. 10 caracteres, não pode estar em vazamentos conhecidos).',
         'permission-denied': 'Sem permissão para acessar o perfil. Contate o administrador.',
       };
 
-      setError(errorMap[code ?? ''] ?? 'Falha ao entrar. Verifique seus dados.');
+      setError(errorMap[code ?? ''] ?? message ?? 'Falha ao entrar. Verifique seus dados.');
     } finally {
       setLoading(false);
     }

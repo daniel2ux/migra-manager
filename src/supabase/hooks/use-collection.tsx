@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CollectionReference, Query } from '@/supabase/query-builder';
 import { subscribeCollection } from '@/supabase/query-builder';
 import { toCamelRow } from '@/supabase/field-map';
 import { errorEmitter } from '@/supabase/error-emitter';
-import { FirestorePermissionError } from '@/supabase/errors';
+import { SupabasePermissionError } from '@/supabase/errors';
 import { useSupabase } from '@/supabase/provider';
 import type { WithId } from './types';
 
@@ -13,6 +13,7 @@ export interface UseCollectionResult<T> {
   data: WithId<T>[] | null;
   isLoading: boolean;
   error: Error | null;
+  refetch: () => void;
 }
 
 export function useCollection<T = Record<string, unknown>>(
@@ -24,6 +25,11 @@ export function useCollection<T = Record<string, unknown>>(
   const [data, setData] = useState<WithId<T>[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(!!memoizedTargetRefOrQuery);
   const [error, setError] = useState<Error | null>(null);
+  const softRefetchRef = useRef<(() => void) | null>(null);
+  const hasLoadedOnceRef = useRef(false);
+  const refetch = useCallback(() => {
+    void softRefetchRef.current?.();
+  }, []);
   const { isUserLoading } = useSupabase();
 
   const pathKey = memoizedTargetRefOrQuery
@@ -33,16 +39,24 @@ export function useCollection<T = Record<string, unknown>>(
     : null;
 
   useEffect(() => {
+    hasLoadedOnceRef.current = false;
+  }, [pathKey]);
+
+  useEffect(() => {
     if (isUserLoading) return;
 
     if (!memoizedTargetRefOrQuery || !pathKey) {
       setData(null);
       setIsLoading(false);
       setError(null);
+      hasLoadedOnceRef.current = false;
+      softRefetchRef.current = null;
       return;
     }
 
-    setIsLoading(true);
+    if (!hasLoadedOnceRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
 
     const isQuery = '_constraints' in memoizedTargetRefOrQuery;
@@ -53,10 +67,13 @@ export function useCollection<T = Record<string, unknown>>(
       ? (memoizedTargetRefOrQuery as Query<CollectionReference>)._constraints
       : [];
 
-    const unsub = subscribeCollection(
+    let cancelled = false;
+
+    const { unsubscribe, refetch: refetchSubscription } = subscribeCollection(
       colRef._target,
       constraints,
       (rows) => {
+        if (cancelled) return;
         const mapped = rows.map((row) => {
           const id = String((row as Record<string, unknown>).id ?? '');
           const camel = toCamelRow(row as Record<string, unknown>) as WithId<T>;
@@ -64,11 +81,13 @@ export function useCollection<T = Record<string, unknown>>(
         });
         setData(mapped);
         setError(null);
+        hasLoadedOnceRef.current = true;
         setIsLoading(false);
       },
       (err) => {
+        if (cancelled) return;
         if ((err as { code?: string }).code === '42501' || err.message.includes('policy')) {
-          const contextualError = new FirestorePermissionError({
+          const contextualError = new SupabasePermissionError({
             operation: 'list',
             path: colRef.path,
           });
@@ -83,8 +102,15 @@ export function useCollection<T = Record<string, unknown>>(
       },
     );
 
-    return () => unsub();
-  }, [pathKey, isUserLoading, memoizedTargetRefOrQuery]);
+    softRefetchRef.current = refetchSubscription;
 
-  return { data, isLoading, error };
+    return () => {
+      cancelled = true;
+      softRefetchRef.current = null;
+      unsubscribe();
+    };
+    // pathKey já identifica a query; não depender do objeto ref (nova referência a cada render)
+  }, [pathKey, isUserLoading]);
+
+  return { data, isLoading, error, refetch };
 }

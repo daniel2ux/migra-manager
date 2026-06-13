@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FioriIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 import type { EmailSignature } from "@/types/usuarios";
 
 interface EmailSignaturesDialogProps {
@@ -126,14 +127,13 @@ export function EmailSignaturesDialog({
                         </>
                       )}
                     </div>
-                    <button
-                      type="button"
+                    <FioriIconButtonHint
+                      hint={`Excluir assinatura ${sig.name}`}
                       onClick={() => void onDelete(sig)}
                       className="fiori-icon-btn fiori-icon-btn-bordered shrink-0 text-[var(--fiori-negative)]"
-                      aria-label={`Excluir assinatura ${sig.name}`}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden />
-                    </button>
+                    </FioriIconButtonHint>
                   </div>
                 ))}
               </div>

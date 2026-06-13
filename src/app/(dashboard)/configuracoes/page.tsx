@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
-import { doc, setDoc, type Firestore } from "firebase/firestore";
+import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
+import { doc, setDoc, type CompatDb } from "@/supabase/compat-db-shim";
 import { PageHeader } from "@/components/layout/page-header";
 import { FileAliasesManager } from "@/components/configuracoes/file-aliases-manager";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
@@ -16,29 +16,32 @@ import {
   Mail,
   FileText,
   Settings,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import type { UserProfile } from "@/types/usuarios";
+import { formatNumber, unformatNumber } from "@/lib/formatters";
 
 export default function ConfiguracoesPage() {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
   const { toast } = useToast();
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db ? doc(db, "users", user.uid) : null),
     [db, user]
   );
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
 
-  const smtpDocRef = useMemoFirebase(() => (db ? doc(db, "appConfig", "smtpConfig") : null), [db]);
+  const smtpDocRef = useMemoDb(() => (db ? doc(db, "appConfig", "smtpConfig") : null), [db]);
   const { data: smtpData } = useDoc<any>(smtpDocRef);
 
-  const settingsDocRef = useMemoFirebase(() => (db ? doc(db, "appConfig", "settings") : null), [db]);
+  const settingsDocRef = useMemoDb(() => (db ? doc(db, "appConfig", "settings") : null), [db]);
   const { data: settingsData } = useDoc<any>(settingsDocRef);
 
   const { projectId } = useActiveProjectId();
-  const projectRef = useMemoFirebase(
+  const projectRef = useMemoDb(
     () => (db && projectId ? doc(db, "projects", projectId) : null),
     [db, projectId],
   );
@@ -49,6 +52,7 @@ export default function ConfiguracoesPage() {
   const [smtpSecure, setSmtpSecure] = useState(false);
   const [smtpUser, setSmtpUser] = useState("");
   const [smtpPass, setSmtpPass] = useState("");
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [isSavingSmtp, setIsSavingSmtp] = useState(false);
   const [savedSmtp, setSavedSmtp] = useState(false);
 
@@ -62,19 +66,40 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     if (smtpData) {
+      const port = Number(smtpData.port) || 587;
       setSmtpHost(smtpData.host ?? "");
-      setSmtpPort(String(smtpData.port ?? 587));
-      setSmtpSecure(smtpData.secure ?? false);
+      setSmtpPort(String(port));
+      setSmtpSecure(port === 465 ? true : port === 587 ? false : (smtpData.secure ?? false));
       setSmtpUser(smtpData.user ?? "");
       setSmtpPass(smtpData.pass ?? "");
     }
   }, [smtpData]);
 
+  const handleSmtpPortChange = (value: string) => {
+    setSmtpPort(value);
+    const port = parseInt(value, 10);
+    if (port === 465) setSmtpSecure(true);
+    else if (port === 587) setSmtpSecure(false);
+  };
+
   useEffect(() => {
     if (settingsData) {
-      setMaxImportLines(settingsData.maxImportLines ? String(settingsData.maxImportLines) : "");
+      setMaxImportLines(
+        settingsData.maxImportLines
+          ? formatNumber(settingsData.maxImportLines, false)
+          : ""
+      );
     }
   }, [settingsData]);
+
+  const handleMaxImportLinesChange = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (!digits) {
+      setMaxImportLines("");
+      return;
+    }
+    setMaxImportLines(formatNumber(parseInt(digits, 10), false));
+  };
 
   const handleSaveSmtp = async () => {
     if (!smtpHost.trim() || !smtpUser.trim() || !smtpPass.trim()) {
@@ -84,10 +109,12 @@ export default function ConfiguracoesPage() {
     setIsSavingSmtp(true);
     setSavedSmtp(false);
     try {
-      await setDoc(doc(db as Firestore, "appConfig", "smtpConfig"), {
+      const port = parseInt(smtpPort, 10) || 587;
+      const secure = port === 465 ? true : port === 587 ? false : smtpSecure;
+      await setDoc(doc(db as CompatDb, "appConfig", "smtpConfig"), {
         host: smtpHost.trim(),
-        port: parseInt(smtpPort) || 587,
-        secure: smtpSecure,
+        port,
+        secure,
         user: smtpUser.trim(),
         pass: smtpPass,
         updatedAt: new Date().toISOString(),
@@ -107,8 +134,8 @@ export default function ConfiguracoesPage() {
     setIsSavingSettings(true);
     setSavedSettings(false);
     try {
-      const maxLines = maxImportLines.trim() ? parseInt(maxImportLines) : undefined;
-      await setDoc(doc(db as Firestore, "appConfig", "settings"), {
+      const maxLines = maxImportLines.trim() ? unformatNumber(maxImportLines) : undefined;
+      await setDoc(doc(db as CompatDb, "appConfig", "settings"), {
         maxImportLines: maxLines,
         updatedAt: new Date().toISOString(),
         updatedByUid: user?.uid ?? "",
@@ -151,7 +178,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <DashboardShell noPadding>
-      <div className="flex flex-col w-full min-h-screen bg-slate-50/30">
+      <div className="flex h-[calc(100dvh-4rem)] min-h-0 w-full flex-col overflow-hidden bg-slate-50/30">
         <PageHeader
           variant="fiori"
           title="Configurações"
@@ -162,9 +189,9 @@ export default function ConfiguracoesPage() {
           backHref="/"
         />
 
-        <div className="px-4 md:px-8 py-8 max-w-2xl">
+        <div className="custom-scrollbar flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 py-4 md:px-8 md:py-6">
           {isMaster && (
-            <div className="fiori-settings-page">
+            <div className="fiori-settings-page mx-auto w-full max-w-2xl">
               <section className="fiori-settings-panel">
                 <header className="fiori-settings-panel-header fiori-settings-panel-header--actions">
                   <div className="fiori-settings-panel-header-main">
@@ -208,7 +235,7 @@ export default function ConfiguracoesPage() {
                       <Input
                         id="smtp-port"
                         value={smtpPort}
-                        onChange={e => setSmtpPort(e.target.value)}
+                        onChange={e => handleSmtpPortChange(e.target.value)}
                         placeholder="587"
                         className="fiori-input shadow-none"
                       />
@@ -225,14 +252,29 @@ export default function ConfiguracoesPage() {
                     </div>
                     <div className="fiori-form-field col-span-2 md:col-span-1">
                       <label className="fiori-field-label" htmlFor="smtp-pass">Senha</label>
-                      <Input
-                        id="smtp-pass"
-                        type="password"
-                        value={smtpPass}
-                        onChange={e => setSmtpPass(e.target.value)}
-                        placeholder="••••••••"
-                        className="fiori-input shadow-none"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="smtp-pass"
+                          type={showSmtpPass ? "text" : "password"}
+                          value={smtpPass}
+                          onChange={e => setSmtpPass(e.target.value)}
+                          placeholder="••••••••"
+                          className="fiori-input shadow-none pr-9"
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSmtpPass((v) => !v)}
+                          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-[var(--fiori-label)] transition-colors hover:bg-[#f5f6f7] hover:text-[var(--fiori-text)]"
+                          aria-label={showSmtpPass ? "Ocultar senha" : "Mostrar senha"}
+                        >
+                          {showSmtpPass ? (
+                            <EyeOff className="h-3.5 w-3.5" aria-hidden />
+                          ) : (
+                            <Eye className="h-3.5 w-3.5" aria-hidden />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="fiori-settings-switch-row">
@@ -250,7 +292,7 @@ export default function ConfiguracoesPage() {
                 </div>
               </section>
 
-              <FileAliasesManager />
+              <FileAliasesManager className="fiori-settings-panel--fill" />
 
               <section className="fiori-settings-panel">
                 <header className="fiori-settings-panel-header fiori-settings-panel-header--actions">
@@ -284,11 +326,16 @@ export default function ConfiguracoesPage() {
                     <label className="fiori-field-label" htmlFor="max-import-lines">Máximo de linhas</label>
                     <Input
                       id="max-import-lines"
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={maxImportLines}
-                      onChange={e => setMaxImportLines(e.target.value)}
-                      placeholder="Ex.: 100000 (deixe vazio para sem limite)"
-                      min="1"
+                      onChange={(e) => handleMaxImportLinesChange(e.target.value)}
+                      onBlur={() => {
+                        if (maxImportLines.trim()) {
+                          setMaxImportLines(formatNumber(unformatNumber(maxImportLines), false));
+                        }
+                      }}
+                      placeholder="Ex.: 100.000 (deixe vazio para sem limite)"
                       className="fiori-input shadow-none"
                     />
                   </div>

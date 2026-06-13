@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { doc, serverTimestamp, writeBatch, type Firestore } from 'firebase/firestore';
-import type { User } from 'firebase/auth';
-import { FIRESTORE_BATCH_SIZE } from '@/lib/constants';
+import { doc, serverTimestamp, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
+import type { User } from '@/supabase/auth-shim';
+import { DB_BATCH_SIZE } from '@/lib/constants';
 import type { MasterObject } from '../components/object-card';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
@@ -10,7 +10,7 @@ type ToastFn = ReturnType<typeof useToast>['toast'];
 type ImportLog = { msg: string; type: 'info' | 'success' | 'warning' | 'error' };
 
 interface UseObjectsImportDeps {
-  db: Firestore | null;
+  db: CompatDb | null;
   user: User | null;
   objects: MasterObject[] | null | undefined;
   toast: ToastFn;
@@ -20,7 +20,7 @@ interface UseObjectsImportDeps {
 
 /**
  * Gerencia o fluxo completo de importação de objetos via arquivo CSV/TXT,
- * incluindo drag-and-drop, progresso, logs e escrita em batch no Firestore.
+ * incluindo drag-and-drop, progresso, logs e escrita em batch no CompatDb.
  */
 export function useObjectsImport({
   db, user, objects, toast, fileInputRef, terminalEndRef,
@@ -83,7 +83,7 @@ export function useObjectsImport({
               chargeGroup: 'G', chargeOrder: 0, ownerId: user.uid, updatedAt: serverTimestamp(),
             }, { merge: true });
             batchCount++;
-            if (batchCount >= FIRESTORE_BATCH_SIZE) {
+            if (batchCount >= DB_BATCH_SIZE) {
               await currentBatch.commit();
               currentBatch = writeBatch(db);
               batchCount = 0;

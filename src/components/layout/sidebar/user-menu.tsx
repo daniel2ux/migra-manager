@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LogOut, ShieldCheck, User, FolderKanban } from "lucide-react";
-import { doc } from "firebase/firestore";
+import { doc } from "@/supabase/compat-db-shim";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useFirestore, useUser, useDoc, useMemoFirebase } from "@/supabase";
+import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -25,12 +25,12 @@ export function UserMenu() {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
 
-    const db = useFirestore();
+    const db = useDb();
     const { user, isUserLoading } = useUser();
     const handleSignOut = useSignOut();
     const [projectSwitchOpen, setProjectSwitchOpen] = useState(false);
 
-    const userDocRef = useMemoFirebase(
+    const userDocRef = useMemoDb(
         () => (user && db && !isUserLoading ? doc(db, "users", user.uid) : null),
         [db, user, isUserLoading],
     );

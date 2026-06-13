@@ -11,8 +11,8 @@ import {
   orderBy,
   query,
   setDoc,
-} from "firebase/firestore";
-import { useFirestore, useUser } from "@/supabase/provider";
+} from "@/supabase/compat-db-shim";
+import { useDb, useUser } from "@/supabase/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -199,7 +199,7 @@ export interface PerfisManagerRef {
 }
 
 export const PerfisManager = forwardRef<PerfisManagerRef, {}>((props, ref) => {
-  const firestore = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
   const [profiles, setProfiles] = useState<AccessProfile[]>([]);
@@ -220,9 +220,9 @@ export const PerfisManager = forwardRef<PerfisManagerRef, {}>((props, ref) => {
   // ── Load ────────────────────────────────────────────────────────────────────
 
   async function load() {
-    if (!firestore) return;
+    if (!db) return;
     setLoading(true);
-    const snap = await getDocs(query(collection(firestore, "accessProfiles"), orderBy("name")));
+    const snap = await getDocs(query(collection(db, "accessProfiles"), orderBy("name")));
 
     const systemProfilesObj: AccessProfile[] = [
       { id: "sys-master", name: "MASTER", description: "Acesso total, gerencia ambiente, projetos e todos os perfis customizados." },
@@ -252,17 +252,17 @@ export const PerfisManager = forwardRef<PerfisManagerRef, {}>((props, ref) => {
   // ── CRUD ────────────────────────────────────────────────────────────────────
 
   async function handleSaveProfile(data: Omit<AccessProfile, "id" | "createdAt" | "updatedAt" | "createdBy">) {
-    if (!firestore) return;
+    if (!db) return;
     if (profileDialog.initial) {
       // Impede renomear system profile
       if (SYSTEM_PROFILES.includes(profileDialog.initial.name) && data.name !== profileDialog.initial.name) return;
 
-      await setDoc(doc(firestore, "accessProfiles", profileDialog.initial.id), {
+      await setDoc(doc(db, "accessProfiles", profileDialog.initial.id), {
         ...data,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } else {
-      await addDoc(collection(firestore, "accessProfiles"), {
+      await addDoc(collection(db, "accessProfiles"), {
         ...data,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -273,10 +273,10 @@ export const PerfisManager = forwardRef<PerfisManagerRef, {}>((props, ref) => {
   }
 
   async function handleDeleteProfile() {
-    if (!firestore || !deleteDialog.profile) return;
+    if (!db || !deleteDialog.profile) return;
     if (SYSTEM_PROFILES.includes(deleteDialog.profile.name)) return; // Prevents deletion of core profiles
 
-    await deleteDoc(doc(firestore, "accessProfiles", deleteDialog.profile.id));
+    await deleteDoc(doc(db, "accessProfiles", deleteDialog.profile.id));
     await load();
   }
 

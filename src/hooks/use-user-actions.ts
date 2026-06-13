@@ -1,6 +1,6 @@
 "use client";
 
-import { useFirestore, useStorage } from "@/supabase";
+import { useDb, useStorage } from "@/supabase";
 import type { UserProfile, UserFormData, CreateUserData, ResetPasswordResult, EmailSignature } from "@/types/usuarios";
 import { useUserCrud } from "./user/use-user-crud";
 import { useUserSettings } from "./user/use-user-settings";
@@ -14,7 +14,7 @@ interface UseUserActionsProps {
 
 interface UseUserActionsReturn {
   handleEditUser: (userToEdit: UserProfile) => void;
-  handleSaveEdit: (selectedUser: UserProfile | null, editFormData: Partial<UserFormData>) => Promise<void>;
+  handleSaveEdit: (selectedUser: UserProfile | null, editFormData: Partial<UserFormData>) => Promise<boolean>;
   handleToggleBlock: (targetUser: UserProfile) => Promise<void>;
   handleOpenRoleDialog: (targetUser: UserProfile) => void;
   handleChangeRole: (roleDialogTarget: UserProfile | null, roleDialogNewRole: UserProfile["role"], roleDialogReason: string, roleDialogProfileName: string) => Promise<boolean>;
@@ -22,7 +22,8 @@ interface UseUserActionsReturn {
   handleResetPassword: (resetTarget: UserProfile | null) => Promise<ResetPasswordResult | null>;
   handleDeleteUser: (target: UserProfile | null) => Promise<boolean>;
   handleCopyPassword: (resetResult: ResetPasswordResult | null) => Promise<boolean>;
-  handleCreateUser: (createFormData: CreateUserData) => Promise<string | null>;
+  handleResendCredentials: (result: ResetPasswordResult | null) => Promise<ResetPasswordResult | null>;
+  handleCreateUser: (createFormData: CreateUserData) => Promise<ResetPasswordResult | null>;
   handleSaveEmail: (targetUid: string, emailEditValue: string) => Promise<boolean>;
   handleSaveMigrador: (migradorInput: string) => Promise<void>;
   handleSaveFromEmail: (fromEmailInput: string) => Promise<void>;
@@ -33,6 +34,7 @@ interface UseUserActionsReturn {
   isSavingEmail: boolean;
   isChangingRole: boolean;
   isResetting: boolean;
+  isResendingEmail: boolean;
   isDeletingUser: boolean;
   isCreatingUser: boolean;
   isSavingMigrador: boolean;
@@ -49,7 +51,7 @@ interface UseUserActionsReturn {
  * - useUserUploads: avatar, signature image
  */
 export function useUserActions({ user, isMaster, isAdmin }: UseUserActionsProps): UseUserActionsReturn {
-  const db = useFirestore();
+  const db = useDb();
   const storage = useStorage();
 
   const crud = useUserCrud({ user, isMaster, isAdmin });
@@ -71,6 +73,7 @@ export function useUserActions({ user, isMaster, isAdmin }: UseUserActionsProps)
     handleResetPassword: crud.handleResetPassword,
     handleDeleteUser: crud.handleDeleteUser,
     handleCopyPassword: crud.handleCopyPassword,
+    handleResendCredentials: crud.handleResendCredentials,
     handleCreateUser: crud.handleCreateUser,
     handleSaveEmail: crud.handleSaveEmail,
     handleSaveMigrador: settings.handleSaveMigrador,
@@ -82,6 +85,7 @@ export function useUserActions({ user, isMaster, isAdmin }: UseUserActionsProps)
     isSavingEmail: crud.isSavingEmail,
     isChangingRole: crud.isChangingRole,
     isResetting: crud.isResetting,
+    isResendingEmail: crud.isResendingEmail,
     isDeletingUser: crud.isDeletingUser,
     isCreatingUser: crud.isCreatingUser,
     isSavingMigrador: settings.isSavingMigrador,

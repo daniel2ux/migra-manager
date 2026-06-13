@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/select";
 import { Mail, Copy, ExternalLink, Send, Loader2, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useDoc, useMemoFirebase, useUser } from "@/supabase";
-import { doc, Firestore } from "firebase/firestore";
+import { useDb, useDoc, useMemoDb, useUser } from "@/supabase";
+import { doc, type CompatDb } from "@/supabase/compat-db-shim";
 import type { EmailSignature } from "@/types/migration";
 import { EmailMultiSelect } from "@/components/email/email-multi-select";
 import type { EmailRecipientSelection } from "@/types/email";
@@ -168,9 +168,9 @@ function buildErrorHtmlTable(rows: ErrorEmailRow[]) {
 
 export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, fromEmail, toSuggestions: _toSuggestions = [], recipientSelections: externalRecipientSelections, onRecipientSelectionsChange, errorRows = [] }: Props) {
     const { toast } = useToast();
-    const db = useFirestore();
+    const db = useDb();
     const { user: authUser } = useUser();
-    const smtpDocRef = useMemoFirebase(() => (db ? doc(db as Firestore, "appConfig", "smtpConfig") : null), [db]);
+    const smtpDocRef = useMemoDb(() => (db ? doc(db as CompatDb, "appConfig", "smtpConfig") : null), [db]);
     const { data: smtpData } = useDoc<any>(smtpDocRef);
     const smtpUser = smtpData?.user ?? "";
     const { resolveEmails } = useEmailRecipients();

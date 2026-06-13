@@ -38,7 +38,7 @@ export function ProjectLockDialog({
 }: ProjectLockDialogProps) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange} {...dashboardDialogRootProps}>
-            <AlertDialogContent variant="fiori" {...dashboardAlertDialogContentProps}>
+            <AlertDialogContent variant="fiori" open={open} {...dashboardAlertDialogContentProps}>
                 <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
                     <div className="flex items-center gap-3">
                         <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">

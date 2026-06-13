@@ -17,6 +17,7 @@ import { FOCUS_RETURN_DELAY, STORAGE_KEYS } from '@/lib/constants';
 import type { Mock } from '@/types/migration';
 import { useToast } from "@/hooks/use-toast";
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
+import { isActiveCatalogMaster } from '@/lib/dashboard/object-filters';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { safeRouterReplace, useRouterReady } from '@/lib/navigation/safe-router';
 
@@ -143,6 +144,11 @@ function MocksContent() {
   const selectedMockName = selectedMock?.name || "MOCK";
   const selectedMockDescription = selectedMock?.explanatoryText;
 
+  const catalogObjectCount = useMemo(
+    () => masterObjects?.filter(isActiveCatalogMaster).length ?? 0,
+    [masterObjects],
+  );
+
   const companyName = getProjectCompanyName(projectData);
   const headerEmpresa = companyName ?? projectData?.name;
   const headerProjectName = companyName ? projectData?.name : undefined;
@@ -215,6 +221,7 @@ function MocksContent() {
           isTogglingLoad={mocksActions.isTogglingLoad}
           isDeleting={null}
           objectsByMock={objectsByMock}
+          catalogObjectCount={catalogObjectCount}
           onToggleLock={(mock) => { mocksActions.handleToggleLock(mock); returnFocusToSelected(); }}
           onToggleLoadStatus={(mock) => { mocksActions.handleToggleLoadStatus(mock, mocks || []); returnFocusToSelected(); }}
           onClone={(mock) => { mocksActions.setCloneSourceMock(mock); mocksActions.setIsCloneDialogOpen(true); }}
@@ -260,7 +267,7 @@ function MocksContent() {
         onFormChange={setFormData}
         editingMock={editingMock}
         onSave={() =>
-          mocksActions.handleSaveMock(
+          void mocksActions.handleSaveMock(
             editingMock,
             formData,
             selectedMasterIdsForDialog,

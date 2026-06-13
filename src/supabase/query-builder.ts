@@ -1,7 +1,7 @@
 'use client';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { parseFirestorePath, collectionPathToTarget, type TableTarget } from './path-mapper';
+import { parseCompatDbPath, collectionPathToTarget, type TableTarget } from './path-mapper';
 import { toCamelRow, toSnakeRow } from './field-map';
 
 export type SupabaseDb = SupabaseClient;
@@ -85,7 +85,7 @@ export function doc(
 
   const _db = dbOrCol as SupabaseDb;
   const path = pathSegments.join('/');
-  const target = parseFirestorePath(path);
+  const target = parseCompatDbPath(path);
   const id = pathSegments[pathSegments.length - 1]!;
   return {
     path,
@@ -142,8 +142,12 @@ export function arrayRemove<T>(...items: T[]): { __arrayRemove: T[] } {
   return { __arrayRemove: items };
 }
 
+function resolveSnakeColumn(field: string): string {
+  const snake = toSnakeRow({ [field]: true });
+  return Object.keys(snake)[0] ?? field;
+}
+
 function applyFilters(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   q: any,
   target: TableTarget,
   constraints: QueryConstraint[],
@@ -153,7 +157,7 @@ function applyFilters(
   }
   for (const c of constraints) {
     if (c.type === 'where' && c.field) {
-      const col = (toSnakeRow({ [c.field]: c.value }) as Record<string, unknown>)[c.field] as string ?? c.field;
+      const col = resolveSnakeColumn(c.field);
       if (c.op === 'array-contains') {
         q = q.contains(col, [c.value]);
       } else if (c.op === '==') {
@@ -162,7 +166,7 @@ function applyFilters(
         q = q.in(col, c.value as string[]);
       }
     } else if (c.type === 'orderBy') {
-      const col = (toSnakeRow({ [c.field!]: true }) as Record<string, unknown>)[c.field!] as string ?? c.field;
+      const col = resolveSnakeColumn(c.field!);
       q = q.order(col, { ascending: c.direction !== 'desc' });
     } else if (c.type === 'limit' && c.count) {
       q = q.limit(c.count);
@@ -258,13 +262,29 @@ async function writeDoc(
     payload[f.column] = f.value;
   }
 
-  if (options?.merge) {
-    const { error } = await client.from(target.table).upsert(payload);
+  if (target.table === 'sessions') {
+    payload.updated_at = new Date().toISOString();
+    const { error } = await client.from('sessions').upsert(payload, { onConflict: 'user_id' });
     if (error) throw Object.assign(new Error(error.message), { code: error.code });
-  } else {
-    const { error } = await client.from(target.table).upsert(payload);
-    if (error) throw Object.assign(new Error(error.message), { code: error.code });
+    return;
   }
+
+  if (options?.merge && target.id) {
+    const updatePayload = { ...payload };
+    delete updatePayload.id;
+    let q = client.from(target.table).update(updatePayload).eq('id', target.id);
+    for (const f of target.filters) q = q.eq(f.column, f.value);
+    const { data, error } = await q.select('id').maybeSingle();
+    if (error) throw Object.assign(new Error(error.message), { code: error.code });
+    if (!data) {
+      const { error: upsertError } = await client.from(target.table).upsert(payload);
+      if (upsertError) throw Object.assign(new Error(upsertError.message), { code: upsertError.code });
+    }
+    return;
+  }
+
+  const { error } = await client.from(target.table).upsert(payload);
+  if (error) throw Object.assign(new Error(error.message), { code: error.code });
 }
 
 function resolveSpecialFields(data: Record<string, unknown>): Record<string, unknown> {
@@ -384,12 +404,19 @@ function getClient(): SupabaseClient {
   return _client;
 }
 
+let realtimeSubCounter = 0;
+
+function uniqueChannelName(prefix: string): string {
+  realtimeSubCounter += 1;
+  return `${prefix}:${realtimeSubCounter}:${crypto.randomUUID()}`;
+}
+
 export function subscribeCollection(
   target: TableTarget,
   constraints: QueryConstraint[],
   onData: (rows: Record<string, unknown>[]) => void,
   onError: (err: Error) => void,
-): () => void {
+): { unsubscribe: () => void; refetch: () => void } {
   const client = getClient();
 
   const fetchData = async () => {
@@ -404,17 +431,22 @@ export function subscribeCollection(
     }
   };
 
-  void fetchData();
-
   const channel = client
-    .channel(`rt:${target.table}:${JSON.stringify(target.filters)}`)
+    .channel(uniqueChannelName(`rt:col:${target.table}`))
     .on('postgres_changes', { event: '*', schema: 'public', table: target.table }, () => {
       void fetchData();
     })
     .subscribe();
 
-  return () => {
-    void client.removeChannel(channel);
+  void fetchData();
+
+  return {
+    unsubscribe: () => {
+      void client.removeChannel(channel);
+    },
+    refetch: () => {
+      void fetchData();
+    },
   };
 }
 
@@ -435,14 +467,19 @@ export function subscribeDoc(
     }
   };
 
-  void fetchData();
-
+  const changeFilter = target.id ? { filter: `id=eq.${target.id}` } : {};
   const channel = client
-    .channel(`rt:doc:${docRef.path}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: target.table }, () => {
-      void fetchData();
-    })
+    .channel(uniqueChannelName(`rt:doc:${docRef.path}`))
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: target.table, ...changeFilter },
+      () => {
+        void fetchData();
+      },
+    )
     .subscribe();
+
+  void fetchData();
 
   return () => {
     void client.removeChannel(channel);

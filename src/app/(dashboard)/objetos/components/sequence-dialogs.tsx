@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -10,15 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowUpDown, ChevronRight, Database, Hash, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
-import { compareSequences, normalizeSeqForDisplay } from "@/lib/migration/sequence-utils";
-
-interface MasterObject {
-  id: string;
-  name: string;
-  chargeGroup?: string;
-  chargeOrder?: string | number;
-}
+import { ArrowUpDown, Hash, Loader2, RefreshCw, Trash2 } from "lucide-react";
 
 // ── Reset Sequence Dialog ─────────────────────────────────────────────────────
 
@@ -115,78 +106,6 @@ export function MigrationDialog({ open, onOpenChange, isMigrating, objectsToConv
             {isMigrating ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> MIGRANDO...</> : "CONFIRMAR MIGRAÇÃO"}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ── Successor Dialog ──────────────────────────────────────────────────────────
-
-interface SuccessorDialogProps {
-  successorDialogObject: MasterObject | null;
-  onClose: () => void;
-  successorSearch: string;
-  onSearchChange: (s: string) => void;
-  objects: MasterObject[];
-  onSelectSuccessor: (target: MasterObject) => void;
-}
-
-export function SuccessorDialog({ successorDialogObject, onClose, successorSearch, onSearchChange, objects, onSelectSuccessor }: SuccessorDialogProps) {
-  const filtered = objects
-    .filter(o => o.id !== successorDialogObject?.id && o.name.toUpperCase().includes(successorSearch))
-    .sort((a, b) => compareSequences(a.chargeOrder, b.chargeOrder));
-
-  return (
-    <Dialog open={!!successorDialogObject} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sm:max-w-[420px] p-0 rounded-none border-none shadow-2xl bg-white overflow-hidden">
-        <DialogHeader className="p-5 border-b border-slate-100 bg-violet-50">
-          <DialogTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-700 flex items-center gap-2">
-            <ChevronRight className="w-3.5 h-3.5" /> Definir Próximo Card
-          </DialogTitle>
-          <DialogDescription className="text-[10px] font-bold text-violet-500 uppercase tracking-widest mt-1">
-            Escolha qual objeto deve vir imediatamente após <span className="text-violet-700">{successorDialogObject?.name}</span> na sequência de execução.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="p-4 border-b border-slate-100">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <Input
-              autoFocus
-              placeholder="PESQUISAR OBJETO..."
-              className="pl-9 h-9 text-[10px] font-black uppercase tracking-widest rounded-none border-slate-200 focus-visible:ring-violet-400"
-              value={successorSearch}
-              onChange={(e) => onSearchChange(e.target.value.toUpperCase())}
-            />
-          </div>
-        </div>
-        <div className="overflow-y-auto max-h-[340px] divide-y divide-slate-50">
-          {filtered.map(o => (
-            <button
-              key={o.id}
-              className="w-full flex items-center justify-between gap-3 px-5 py-3 hover:bg-violet-50 transition-colors text-left group"
-              onClick={() => successorDialogObject && onSelectSuccessor(o)}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="p-1 bg-SkyBlue-50 rounded-none shrink-0 group-hover:bg-violet-100 transition-colors">
-                  <Database className="w-3 h-3 text-SkyBlue-500 group-hover:text-violet-500 transition-colors" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase text-slate-800 truncate leading-none mb-0.5">{o.name}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{o.chargeGroup || "G"} · {normalizeSeqForDisplay(o.chargeOrder)}</p>
-                </div>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-violet-500 shrink-0 transition-colors" />
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <div className="px-5 py-8 text-center text-[10px] font-black uppercase tracking-widest text-slate-300">Nenhum objeto encontrado.</div>
-          )}
-        </div>
-        <div className="p-4 border-t border-slate-100 bg-slate-50">
-          <Button variant="ghost" onClick={onClose} className="w-full h-8 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-white rounded-none border-0">
-            CANCELAR
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );

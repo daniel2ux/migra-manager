@@ -45,7 +45,8 @@ export function buildMenuItems(isAdmin: boolean, isMaster: boolean): SidebarMenu
             skipParams: true,
             subItems: [
                 { href: "/usuarios", label: "USUÁRIOS", skipParams: true },
-                { href: "/grupos-atividade", label: "GRUPOS", skipParams: true },
+                { href: "/grupos-atividade", label: "GRUPOS DE ATIVIDADE", skipParams: true },
+                { href: "/grupos-objetos", label: "GRUPOS DE OBJETOS", skipParams: true },
                 { href: "/configuracoes/emails", label: "E-MAILS", skipParams: true },
                 ...(isMaster ? [{ href: "/configuracoes", label: "SISTEMA", skipParams: true }] : []),
             ]

@@ -1,6 +1,6 @@
 /**
  * Atualiza .env.local com variáveis Supabase do projeto Migra.
- * Não remove chaves Firebase existentes — comente-as manualmente se desejar.
+ * Não remove chaves legadas existentes — comente-as manualmente se desejar.
  *
  * Uso: node scripts/configure-supabase-env.mjs
  */
@@ -42,6 +42,12 @@ if (!lines.some((l) => l.startsWith('SUPABASE_SERVICE_ROLE_KEY='))) {
   lines.push('SUPABASE_SERVICE_ROLE_KEY=');
 }
 
+if (!lines.some((l) => l.startsWith('SUPABASE_ACCESS_TOKEN='))) {
+  lines.push('# Management API — https://supabase.com/dashboard/account/tokens');
+  lines.push('# SUPABASE_ACCESS_TOKEN=');
+}
+
 writeFileSync(ENV_PATH, lines.filter((l, i, arr) => !(l === '' && arr[i + 1] === '')).join('\n') + '\n');
 console.log('.env.local atualizado com URL e publishable key do projeto Migra.');
 console.log('Preencha SUPABASE_SERVICE_ROLE_KEY e rode: npm run db:seed-master');
+console.log('Opcional: SUPABASE_ACCESS_TOKEN → npm run db:configure-auth');

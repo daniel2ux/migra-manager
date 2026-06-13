@@ -1,5 +1,6 @@
 "use client"
 
+import '@xyflow/react/dist/style.css';
 import React, { useEffect, useContext, createContext, useMemo } from 'react';
 import type { ActivityGroup } from '@/types/activity-group';
 import {

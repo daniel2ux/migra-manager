@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, UserPlus } from "lucide-react";
 import {
   Dialog,
@@ -34,12 +34,16 @@ const ROLES = [
   { value: "membro", label: "Consultoria" },
 ] as const;
 
-const INITIAL_FORM: CreateUserData = {
-  name: "",
-  email: "",
-  role: "membro",
-  reason: "",
-};
+function createInitialForm(): CreateUserData {
+  return {
+    name: "",
+    email: "",
+    role: "membro",
+    company: "",
+    position: "",
+    reason: "",
+  };
+}
 
 export function CreateUserDialog({
   open,
@@ -47,7 +51,11 @@ export function CreateUserDialog({
   onCreate,
   isCreating,
 }: CreateUserDialogProps) {
-  const [formData, setFormData] = useState<CreateUserData>(INITIAL_FORM);
+  const [formData, setFormData] = useState<CreateUserData>(createInitialForm);
+
+  useEffect(() => {
+    if (open) setFormData(createInitialForm());
+  }, [open]);
 
   const isValid =
     !!formData.name?.trim() &&
@@ -60,13 +68,15 @@ export function CreateUserDialog({
       ...formData,
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
+      company: (formData.company ?? "").trim(),
+      position: (formData.position ?? "").trim(),
       reason: formData.reason.trim(),
     });
-    if (ok) setFormData(INITIAL_FORM);
+    if (ok) setFormData(createInitialForm());
   };
 
   const handleDismiss = () => {
-    setFormData(INITIAL_FORM);
+    setFormData(createInitialForm());
     onOpenChange(false);
   };
 
@@ -105,7 +115,7 @@ export function CreateUserDialog({
               </label>
               <Input
                 id="create-user-name"
-                value={formData.name}
+                value={formData.name ?? ""}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="João da Silva"
                 className="fiori-input readable-disabled shadow-none"
@@ -120,12 +130,41 @@ export function CreateUserDialog({
               <Input
                 id="create-user-email"
                 type="email"
-                value={formData.email}
+                value={formData.email ?? ""}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="joao@empresa.com"
                 className="fiori-input readable-disabled shadow-none"
                 autoComplete="email"
               />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="fiori-field-label" htmlFor="create-user-company">
+                  Empresa
+                </label>
+                <Input
+                  id="create-user-company"
+                  value={formData.company ?? ""}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="Acme Ltda"
+                  className="fiori-input readable-disabled shadow-none"
+                  autoComplete="organization"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="fiori-field-label" htmlFor="create-user-position">
+                  Cargo
+                </label>
+                <Input
+                  id="create-user-position"
+                  value={formData.position ?? ""}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  placeholder="Analista sênior"
+                  className="fiori-input readable-disabled shadow-none"
+                  autoComplete="organization-title"
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -155,7 +194,7 @@ export function CreateUserDialog({
               </label>
               <Input
                 id="create-user-reason"
-                value={formData.reason}
+                value={formData.reason ?? ""}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                 placeholder="Justificativa para o cadastro"
                 className="fiori-input readable-disabled shadow-none"

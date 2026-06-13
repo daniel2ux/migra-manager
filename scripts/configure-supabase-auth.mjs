@@ -39,7 +39,17 @@ function loadEnvLocal() {
 
 loadEnvLocal();
 
-const token = process.env.SUPABASE_ACCESS_TOKEN;
+function sanitizeToken(raw) {
+  if (!raw) return '';
+  let t = raw.trim();
+  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+    t = t.slice(1, -1).trim();
+  }
+  // Remove caracteres não-ASCII (ex.: bullet • colado ao copiar do Dashboard)
+  return t.replace(/[^\x21-\x7E]/g, '');
+}
+
+const token = sanitizeToken(process.env.SUPABASE_ACCESS_TOKEN);
 
 if (!token) {
   console.error(`
@@ -60,17 +70,38 @@ Opção B — Script (API):
   process.exit(1);
 }
 
+const headers = {
+  Authorization: `Bearer ${token}`,
+  'Content-Type': 'application/json',
+};
+
+async function getAuthConfig() {
+  const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth`, {
+    headers: { Authorization: headers.Authorization },
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`GET auth config ${res.status}: ${text}`);
+  return JSON.parse(text);
+}
+
 const body = {
   password_hibp_enabled: true,
   password_min_length: 10,
 };
 
+let before;
+try {
+  before = await getAuthConfig();
+  console.log('Config atual (antes):');
+  console.log(`  password_hibp_enabled: ${before.password_hibp_enabled ?? 'n/a'}`);
+  console.log(`  password_min_length: ${before.password_min_length ?? 'n/a'}`);
+} catch (err) {
+  console.warn('Não foi possível ler config atual:', err.message);
+}
+
 const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth`, {
   method: 'PATCH',
-  headers: {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  },
+  headers,
   body: JSON.stringify(body),
 });
 
@@ -84,12 +115,22 @@ try {
 
 if (!res.ok) {
   console.error('Falha ao atualizar auth config:', res.status, payload);
+  if (res.status === 401) {
+    console.error('Token inválido ou expirado. Gere um novo em https://supabase.com/dashboard/account/tokens');
+  }
   if (res.status === 403 || res.status === 402) {
     console.error('Nota: leaked password protection pode exigir plano Pro ou superior.');
+    console.error('Alternativa: configure manualmente em https://supabase.com/dashboard/project/' + PROJECT_REF + '/auth/providers');
   }
   process.exit(1);
 }
 
-console.log('Auth config atualizado:');
-console.log('  password_hibp_enabled: true');
-console.log('  password_min_length: 10');
+const after = payload.password_hibp_enabled !== undefined ? payload : await getAuthConfig();
+
+console.log('\nAuth config atualizado:');
+console.log(`  password_hibp_enabled: ${after.password_hibp_enabled}`);
+console.log(`  password_min_length: ${after.password_min_length}`);
+
+if (!after.password_hibp_enabled) {
+  console.warn('\nAviso: HIBP ainda desabilitado — verifique plano Pro ou use o Dashboard.');
+}

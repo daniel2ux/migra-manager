@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { collection, collectionGroup, doc, query, where } from "firebase/firestore";
-import { useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from "@/supabase";
+import { collection, collectionGroup, doc, query, where } from "@/supabase/compat-db-shim";
+import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { Mock, Project } from "@/types/migration";
 
 interface UseMocksDataReturn {
@@ -21,10 +21,10 @@ interface UseMocksDataReturn {
 }
 
 export function useMocksData(projectId: string | null): UseMocksDataReturn {
-  const db = useFirestore();
+  const db = useDb();
   const { user } = useUser();
 
-  const userDocRef = useMemoFirebase(
+  const userDocRef = useMemoDb(
     () => (user && db ? doc(db, "users", user.uid) : null),
     [db, user],
   );
@@ -37,19 +37,19 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
   const userProjectIds = userProfile?.projectIds || [];
   const hasAccess = isAdmin || (projectId && userProjectIds.includes(projectId));
 
-  const projectDocRef = useMemoFirebase(() => {
+  const projectDocRef = useMemoDb(() => {
     if (!db || !projectId) return null;
     return doc(db, "projects", projectId);
   }, [db, projectId]);
   const { data: projectData } = useDoc<Project>(projectDocRef);
 
-  const masterObjectsQuery = useMemoFirebase(
+  const masterObjectsQuery = useMemoDb(
     () => (db ? collection(db, "masterObjects") : null),
     [db],
   );
   const { data: masterObjects } = useCollection<any>(masterObjectsQuery);
 
-  const mocksQuery = useMemoFirebase(() => {
+  const mocksQuery = useMemoDb(() => {
     if (!db || !projectId || !user || isProfileLoading || !userProfile) return null;
     if (!hasAccess) return null;
     return collection(db, "projects", projectId, "mocks");
@@ -57,7 +57,7 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
 
   const { data: mocks, isLoading } = useCollection<Mock>(mocksQuery);
 
-  const migrationObjectsQuery = useMemoFirebase(() => {
+  const migrationObjectsQuery = useMemoDb(() => {
     if (!db || !projectId || !hasAccess) return null;
     return query(collectionGroup(db, "migrationObjects"), where("projectId", "==", projectId));
   }, [db, projectId, hasAccess]);

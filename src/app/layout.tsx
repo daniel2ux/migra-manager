@@ -24,12 +24,12 @@ export default function RootLayout({
         {/* eslint-disable-next-line @next/next/no-page-custom-font -- Inter global no root layout */}
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         
-        {/* Global error handler for ChunkLoadErrors (deployment mismatches) */}
+        {/* Em produção: recarrega se chunk/CSS estático falhar após deploy */}
+        {process.env.NODE_ENV === "production" && (
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                // Handle JS ChunkLoadErrors
                 window.onerror = function(msg) {
                   if (msg && (msg.toString().toLowerCase().indexOf('chunkloaderror') !== -1 || 
                       msg.toString().toLowerCase().indexOf('loading chunk') !== -1)) {
@@ -42,7 +42,6 @@ export default function RootLayout({
                     window.location.reload();
                   }
                 };
-                // Handle static resource 404s (CSS/Scripts)
                 window.addEventListener('error', function(e) {
                   var target = e.target;
                   if (target && (target.tagName === 'LINK' || target.tagName === 'SCRIPT')) {
@@ -57,6 +56,7 @@ export default function RootLayout({
             `
           }}
         />
+        )}
       </head>
       <body className="font-body antialiased">
         <ErrorBoundary>

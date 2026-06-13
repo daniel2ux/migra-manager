@@ -2,21 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/supabase/admin';
 import { verifyCallerRole } from '@/lib/admin-auth';
 import type { UserRole } from '@/types/admin';
-import { randomInt } from 'node:crypto';
 import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
+import { generateTempPassword } from '@/lib/security/temp-password';
+import { sendWelcomeUserEmail } from '@/lib/email/send-welcome-user';
+import { resolveAppLoginUrl } from '@/lib/email/welcome-user';
+import { getSmtpConfig } from '@/lib/email/smtp';
 
 const VALID_ROLES: UserRole[] = ['master', 'admin', 'especialista', 'membro'];
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function generateTempPassword(length: number = 8): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let out = '';
-  for (let i = 0; i < length; i++) {
-    out += chars[randomInt(0, chars.length)];
-  }
-  return out;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { email, name, role, reason, callerToken } = body;
+    const { email, name, role, company, position, reason, callerToken } = body;
 
     if (!email || !name || !role || !reason?.trim() || !callerToken) {
       return NextResponse.json(
@@ -53,53 +47,116 @@ export async function POST(req: NextRequest) {
     }
     const caller = verification.decoded;
 
-    // Gera senha temporária com CSPRNG (evita Math.random).
-    const tempPassword = generateTempPassword(8);
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedName = name.trim().toUpperCase();
 
-    let userRecord;
+    // Gera senha temporária com CSPRNG (evita Math.random).
+    const tempPassword = generateTempPassword();
+
+    let userRecord: { uid: string; email?: string | null };
+    let createdAuth = false;
+
     try {
       userRecord = await adminAuth.createUser({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password: tempPassword,
-        displayName: name.trim().toUpperCase(),
+        displayName: normalizedName,
       });
+      createdAuth = true;
     } catch (e: unknown) {
-      if ((e as { code?: string })?.code === 'auth/email-already-exists') {
+      if ((e as { code?: string })?.code !== 'auth/email-already-exists') {
+        throw e;
+      }
+
+      const existingAuth = await adminAuth.getUserByEmail(normalizedEmail);
+      const existingProfile = await adminDb.collection('users').doc(existingAuth.uid).get();
+      if (existingProfile.exists) {
         return NextResponse.json({ error: 'O e-mail fornecido já está em uso.' }, { status: 400 });
       }
-      throw e;
+
+      // Auth órfão (cadastro anterior falhou ao gravar profile) — recupera o cadastro.
+      await adminAuth.updateUser(existingAuth.uid, { password: tempPassword, disabled: false });
+      userRecord = { uid: existingAuth.uid, email: existingAuth.email };
     }
 
     const targetRef = adminDb.collection('users').doc(userRecord.uid);
-    await targetRef.set({
+    const normalizedCompany = typeof company === 'string' ? company.trim() : '';
+    const normalizedPosition = typeof position === 'string' ? position.trim().toUpperCase() : '';
+
+    const profilePayload = {
       uid: userRecord.uid,
-      email: email.trim().toLowerCase(),
-      name: name.trim().toUpperCase(),
+      email: normalizedEmail,
+      name: normalizedName,
       role,
+      company: normalizedCompany || null,
+      position: normalizedPosition || null,
       isDisabled: false,
+      mustChangePassword: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    });
+    };
 
-    await adminDb.collection('audit_logs').add({
-      action: 'CREATE_USER',
-      targetUid: userRecord.uid,
-      targetEmail: email.trim().toLowerCase(),
-      targetName: name.trim().toUpperCase(),
-      newRole: role,
-      reason: reason.trim(),
-      callerUid: caller.uid,
-      callerEmail: caller.email ?? 'N/A',
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      await targetRef.set(profilePayload);
+
+      await adminDb.collection('audit_logs').add({
+        action: 'CREATE_USER',
+        targetUid: userRecord.uid,
+        targetEmail: normalizedEmail,
+        targetName: normalizedName,
+        newRole: role,
+        reason: reason.trim(),
+        callerUid: caller.uid,
+        callerEmail: caller.email ?? 'N/A',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (profileErr) {
+      if (createdAuth) {
+        await adminAuth.deleteUser(userRecord.uid).catch((rollbackErr) => {
+          console.error('[create-user] rollback auth falhou:', rollbackErr);
+        });
+      }
+      throw profileErr;
+    }
+
+    let emailSent = false;
+    let emailError: string | undefined;
+    let messageId: string | undefined;
+    const smtp = await getSmtpConfig();
+    try {
+      const mailResult = await sendWelcomeUserEmail(
+        {
+          name: normalizedName,
+          email: normalizedEmail,
+          tempPassword,
+          role,
+          company: normalizedCompany,
+          position: normalizedPosition,
+          loginUrl: resolveAppLoginUrl(req),
+        },
+        {
+          fromName: 'Migra Manager',
+          replyTo: caller.email ?? undefined,
+          bcc: smtp?.user,
+        },
+      );
+      emailSent = true;
+      messageId = mailResult.messageId;
+      console.info('[create-user] e-mail enviado:', { to: normalizedEmail, messageId });
+    } catch (mailErr: unknown) {
+      emailError = mailErr instanceof Error ? mailErr.message : 'Falha ao enviar e-mail.';
+      console.warn('[create-user] e-mail não enviado:', emailError);
+    }
 
     return NextResponse.json(
-      { success: true, uid: userRecord.uid, tempPassword },
+      { success: true, uid: userRecord.uid, tempPassword, emailSent, emailError, messageId, sentTo: normalizedEmail },
       { headers: { "Cache-Control": "no-store" } }
     );
-  } catch {
+  } catch (err: unknown) {
+    console.error('[create-user]', err);
+    const message = err instanceof Error ? err.message : 'Erro interno do servidor.';
     return NextResponse.json(
-      { error: 'Erro interno do servidor.' },
+      { error: message },
       { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }

@@ -45,8 +45,8 @@ export function BackupCreatePanel({
         Criar backup
       </h3>
       <p className="fiori-wizard-panel-desc">
-        Exporte todo o Firestore ou selecione uma mock do projeto atual (mock, objetos e logs).
-        Escolha gravar no Firebase Storage ou salvar em uma pasta local do seu computador.
+        Exporte todos os dados do sistema ou selecione uma mock do projeto atual (mock, objetos e logs).
+        Escolha gravar no armazenamento na nuvem ou salvar em uma pasta local do seu computador.
       </p>
 
       <div className="fiori-backup-type-row">
@@ -87,7 +87,7 @@ export function BackupCreatePanel({
               )}
               onClick={() => onBackupDestinationChange('storage')}
             >
-              Firebase Storage
+              Nuvem
             </button>
             <button
               type="button"

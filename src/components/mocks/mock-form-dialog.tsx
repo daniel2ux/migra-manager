@@ -12,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent } from "@/components/ui/popover";
+import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 import { Calendar } from "@/components/ui/calendar";
 import {
     Select,
@@ -119,7 +120,7 @@ function MockDateTimeField({
     const date = parseLocalDateTime(isoValue);
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-1">
             <label className="fiori-field-label">{label}</label>
             <div className="flex gap-2">
                 <Input
@@ -132,19 +133,16 @@ function MockDateTimeField({
                     onChange={(e) => onDraftChange(e.target.value)}
                     onBlur={onCommit}
                     placeholder="dd/mm/aaaa hh:mm:ss"
-                    className="fiori-input min-w-0 flex-1 font-mono readable-disabled shadow-none"
+                    className="fiori-input min-w-0 flex-1 text-sm readable-disabled shadow-none"
                 />
                 <Popover>
-                    <PopoverTrigger asChild>
-                        <button
-                            type="button"
-                            disabled={readonly}
-                            className="fiori-icon-btn fiori-icon-btn-bordered shrink-0"
-                            aria-label={pickerAriaLabel}
-                        >
-                            <CalendarDays className="h-4 w-4" />
-                        </button>
-                    </PopoverTrigger>
+                    <FioriPopoverIconButtonHint
+                        hint={pickerAriaLabel}
+                        disabled={readonly}
+                        className="fiori-icon-btn fiori-icon-btn-bordered shrink-0"
+                    >
+                        <CalendarDays className="h-4 w-4" />
+                    </FioriPopoverIconButtonHint>
                     <PopoverContent
                         variant="fiori"
                         className="fiori-datetime-popover"
@@ -382,7 +380,7 @@ export function MockFormDialog({
             <DialogContent
                 variant="fiori"
                 overlayClassName="fiori-dialog-overlay"
-                className="fiori-dialog fiori-dialog--form flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
+                className="fiori-dialog fiori-dialog--form fiori-dialog--mock-form flex h-[min(92vh,560px)] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
             >
                 <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
                     <DialogDescription className="sr-only">
@@ -434,8 +432,8 @@ export function MockFormDialog({
                             <Hash className="h-3.5 w-3.5" />
                             Identificação
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-x-4 gap-y-4">
-                            <div className="col-span-1 sm:col-span-8 space-y-1.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-x-3 gap-y-2">
+                            <div className="col-span-1 sm:col-span-8 space-y-1">
                                 <div className="flex items-center justify-between gap-2">
                                     <label className="fiori-field-label">Nome (prefixo)</label>
                                     <span className="fiori-field-hint">Ex.: MOCK, TESTE…</span>
@@ -447,11 +445,11 @@ export function MockFormDialog({
                                     }
                                     placeholder="MOCK"
                                     disabled={readonly}
-                                    className="fiori-input uppercase readable-disabled shadow-none"
+                                    className="fiori-input text-sm uppercase readable-disabled shadow-none"
                                 />
                             </div>
 
-                            <div className="col-span-1 sm:col-span-4 space-y-1.5">
+                            <div className="col-span-1 sm:col-span-4 space-y-1">
                                 <label className="fiori-field-label">Parte numérica</label>
                                 <Input
                                     value={formData.sequence}
@@ -460,7 +458,7 @@ export function MockFormDialog({
                                     }
                                     placeholder="01"
                                     disabled={readonly}
-                                    className="fiori-input text-center readable-disabled shadow-none"
+                                    className="fiori-input text-sm text-center readable-disabled shadow-none"
                                 />
                             </div>
 
@@ -474,7 +472,7 @@ export function MockFormDialog({
                     </section>
 
                     <section className="fiori-form-section">
-                        <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center justify-between gap-2 mb-2">
                             <h3 className="fiori-section-title mb-0">
                                 <FileText className="h-3.5 w-3.5" />
                                 Texto explicativo
@@ -498,7 +496,7 @@ export function MockFormDialog({
                             }
                             placeholder="Descreva o escopo e objetivos desta janela..."
                             disabled={readonly}
-                            className="fiori-textarea readable-disabled shadow-none min-h-[88px] resize-none"
+                            className="fiori-textarea text-sm readable-disabled shadow-none min-h-[3.5rem] resize-none"
                         />
                     </section>
 
@@ -507,7 +505,7 @@ export function MockFormDialog({
                             <Timer className="h-3.5 w-3.5" />
                             Período de execução
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <MockDateTimeField
                                 label="Data início"
                                 draft={startDraft}
@@ -544,7 +542,7 @@ export function MockFormDialog({
                         </h3>
 
                         {isAdmin && (
-                            <div className="space-y-1.5 mb-4">
+                            <div className="space-y-1 mb-3">
                                 <label className="fiori-field-label">Status da mock</label>
                                 <Select
                                     value={formData.status || "PENDENTE"}
@@ -587,7 +585,7 @@ export function MockFormDialog({
                         )}
 
                         {isNew && isAdmin && masterObjects && masterObjects.length > 0 && (
-                            <div className="space-y-1.5 mb-4">
+                            <div className="space-y-1 mb-3">
                                 <div className="fiori-master-picker-header">
                                     <label className="fiori-field-label">
                                         <Database className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />

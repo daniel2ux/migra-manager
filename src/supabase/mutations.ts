@@ -3,19 +3,19 @@
 import type { CollectionReference, DocumentReference } from '@/supabase/query-builder';
 import { setDoc, updateDoc, deleteDoc, addDoc } from '@/supabase/query-builder';
 import { errorEmitter } from '@/supabase/error-emitter';
-import { FirestorePermissionError } from '@/supabase/errors';
+import { SupabasePermissionError } from '@/supabase/errors';
 
 function handleWriteError(
   error: unknown,
   path: string,
-  operation: FirestorePermissionError['request']['method'],
+  operation: SupabasePermissionError['request']['method'],
   data?: unknown,
 ) {
   const code = (error as { code?: string })?.code;
   if (code === '42501' || (error instanceof Error && error.message.includes('policy'))) {
     errorEmitter.emit(
       'permission-error',
-      new FirestorePermissionError({ path, operation, requestResourceData: data }),
+      new SupabasePermissionError({ path, operation, requestResourceData: data }),
     );
   }
 }

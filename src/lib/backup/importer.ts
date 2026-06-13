@@ -12,6 +12,7 @@ const PATH_TABLE_MAP: Record<string, string> = {
   comments: 'comments',
   masterObjects: 'master_objects',
   activityGroups: 'activity_groups',
+  chargeGroups: 'charge_groups',
   emailContacts: 'email_contacts',
   emailGroups: 'email_groups',
   accessProfiles: 'access_profiles',

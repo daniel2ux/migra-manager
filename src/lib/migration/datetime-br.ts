@@ -22,6 +22,20 @@ export function parseBrazilianLocalDateTime(value: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** Ex.: `01/07/2026` — aceita ISO `yyyy-mm-dd` ou texto `dd/mm/yyyy`. */
+export function formatBrazilianDate(value: string): string {
+  if (!value?.trim()) return "";
+  const v = value.trim();
+  const isoMatch = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, yyyy, mm, dd] = isoMatch;
+    return `${dd}/${mm}/${yyyy}`;
+  }
+  const brMatch = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (brMatch) return v;
+  return v;
+}
+
 /** Ex.: `20/05/2026, 11:08:00` (pt-BR, 24h, com segundos). */
 export function formatBrazilianDateTime(isoOrBr: string): string {
   if (!isoOrBr?.trim()) return "";
@@ -38,7 +52,7 @@ export function formatBrazilianDateTime(isoOrBr: string): string {
   }).format(parsed);
 }
 
-/** ISO local com segundos (sem timezone Z), usado no Firestore/formulários. */
+/** ISO local com segundos (sem timezone Z), usado no CompatDb/formulários. */
 export function toIsoLocalSeconds(date: Date): string {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");

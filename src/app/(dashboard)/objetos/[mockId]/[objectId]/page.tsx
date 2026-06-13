@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSelection } from '@/context/selection-context';
 import { ArrowLeft, Box, Calendar, Clock, Database, Gauge, BarChart, CheckCircle2, Loader2, Info, History } from 'lucide-react';
-import { useFirestore } from '@/supabase';
-import { doc, getDoc } from 'firebase/firestore';
+import { useDb } from '@/supabase';
+import { doc, getDoc } from '@/supabase/compat-db-shim';
 import { MigrationObject } from '@/types/migration';
 import { formatNumber, formatDateTime, renderDuration, formatPercentage } from '@/lib/formatters';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ export default function ObjectDetails() {
   const { selectedProjectId } = useSelection();
   const projectId = searchParams.get('projectId') || selectedProjectId;
   const router = useRouter();
-  const db = useFirestore();
+  const db = useDb();
 
   const [obj, setObj] = useState<MigrationObject | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ export default function ObjectDetails() {
         
         // Daniel: If mockId looks like a slug (has hyphens), resolve it first
         if (mockId.includes('-')) {
-          const { query, collection, where, getDocs } = await import('firebase/firestore');
+          const { query, collection, where, getDocs } = await import('@/supabase/compat-db-shim');
           const mockQuery = query(collection(db, "projects", projectId, "mocks"), where("slug", "==", mockId));
           const mockSnap = await getDocs(mockQuery);
           if (!mockSnap.empty) {

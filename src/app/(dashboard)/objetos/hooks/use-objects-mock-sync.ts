@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot } from '@/supabase/compat-db-shim';
 
 const MOCK_ID_STORAGE_KEY = 'dashboard_last_mock_id';
 
@@ -18,7 +18,7 @@ function readMockIdFromStorage(): string | null {
 
 /**
  * Sincroniza o mock selecionado via localStorage e escuta
- * status/nome em tempo real no Firestore.
+ * status/nome em tempo real no CompatDb.
  */
 export function useObjectsMockSync(db: any, selectedProjectId: string | null) {
   const [selectedMockId, setSelectedMockId] = useState<string | null>(null);
@@ -98,5 +98,5 @@ export function useObjectsMockSync(db: any, selectedProjectId: string | null) {
     return () => unsubscribe();
   }, [selectedMockId, db, selectedProjectId]);
 
-  return { selectedMockId, selectedMockName, isMockLocked, mocksForProject };
+  return { selectedMockId, selectedMockName, isMockLocked };
 }

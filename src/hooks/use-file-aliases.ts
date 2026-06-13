@@ -1,47 +1,103 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc } from "firebase/firestore";
-import { useFirestore, useAuth } from "@/supabase/provider";
+import { collection, addDoc, deleteDoc, doc, getDocs, onSnapshot, updateDoc } from "@/supabase/compat-db-shim";
+import { useDb, useUser } from "@/supabase/provider";
 import type { FileAlias } from "@/types/file-alias";
 
-function _validate(firestore: any): asserts firestore {
-  if (!firestore) throw new Error("Firestore not initialized");
+function _validate(db: unknown): asserts db {
+  if (!db) throw new Error("Banco de dados não inicializado");
+}
+
+function mapSnapshotDocs(
+  docs: { id: string; data: () => Record<string, unknown> | undefined }[],
+): FileAlias[] {
+  return docs.map((d) => {
+    const data = d.data() ?? {};
+    return {
+      id: d.id,
+      objectName: String(data.objectName ?? data.object_name ?? ""),
+      fileNamePatterns: Array.isArray(data.fileNamePatterns)
+        ? (data.fileNamePatterns as string[])
+        : Array.isArray(data.file_name_patterns)
+          ? (data.file_name_patterns as string[])
+          : [],
+    };
+  });
 }
 
 export function useFileAliases() {
-  const firestore = useFirestore();
-  const auth = useAuth();
+  const db = useDb();
+  const { user } = useUser();
   const [aliases, setAliases] = useState<FileAlias[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const reloadAliases = useCallback(async () => {
+    if (!db || !user) return;
+    const snap = await getDocs(collection(db, "fileAliases"));
+    setAliases(mapSnapshotDocs(snap.docs));
+    setError(null);
+  }, [db, user]);
+
   useEffect(() => {
-    if (!firestore || !auth?.currentUser) return;
+    if (!db || !user) {
+      setAliases([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     const unsub = onSnapshot(
-      collection(firestore, "fileAliases"),
-      snap => { setAliases(snap.docs.map(d => ({ id: d.id, ...d.data() } as FileAlias))); setLoading(false); },
-      err => { setError(err.message); setLoading(false); }
+      collection(db, "fileAliases"),
+      (snap) => {
+        setAliases(mapSnapshotDocs(snap.docs));
+        setError(null);
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message);
+        setLoading(false);
+      },
     );
     return () => unsub();
-  }, [firestore, auth?.currentUser]);
+  }, [db, user]);
 
-  const addAlias = useCallback(async (alias: Omit<FileAlias, "id">) => {
-    _validate(firestore);
-    await addDoc(collection(firestore, "fileAliases"), {
-      ...alias, createdAt: new Date().toISOString(), createdBy: auth?.currentUser?.uid || "unknown"
-    });
-  }, [firestore, auth]);
+  const addAlias = useCallback(
+    async (alias: Omit<FileAlias, "id">) => {
+      _validate(db);
+      const payload: Record<string, unknown> = {
+        ...alias,
+        createdAt: new Date().toISOString(),
+      };
+      if (user?.uid) payload.createdBy = user.uid;
 
-  const updateAlias = useCallback(async (id: string, data: Partial<FileAlias>) => {
-    _validate(firestore);
-    await updateDoc(doc(firestore, "fileAliases", id), { ...data, updatedAt: new Date().toISOString() });
-  }, [firestore]);
+      await addDoc(collection(db, "fileAliases"), payload);
+      await reloadAliases();
+    },
+    [db, user, reloadAliases],
+  );
 
-  const deleteAlias = useCallback(async (id: string) => {
-    _validate(firestore);
-    await deleteDoc(doc(firestore, "fileAliases", id));
-  }, [firestore]);
+  const updateAlias = useCallback(
+    async (id: string, data: Partial<FileAlias>) => {
+      _validate(db);
+      const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+      if (data.objectName !== undefined) patch.objectName = data.objectName;
+      if (data.fileNamePatterns !== undefined) patch.fileNamePatterns = data.fileNamePatterns;
+      await updateDoc(doc(db, "fileAliases", id), patch);
+      await reloadAliases();
+    },
+    [db, reloadAliases],
+  );
 
-  return { aliases, loading, error, addAlias, updateAlias, deleteAlias };
+  const deleteAlias = useCallback(
+    async (id: string) => {
+      _validate(db);
+      await deleteDoc(doc(db, "fileAliases", id));
+      await reloadAliases();
+    },
+    [db, reloadAliases],
+  );
+
+  return { aliases, loading, error, addAlias, updateAlias, deleteAlias, reloadAliases };
 }

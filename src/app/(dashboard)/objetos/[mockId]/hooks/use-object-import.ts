@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useFirestore, useUser } from "@/supabase";
-import { collection, doc, serverTimestamp, getDocs, query, collectionGroup, where } from "firebase/firestore";
+import { useDb, useUser } from "@/supabase";
+import { collection, doc, serverTimestamp, getDocs, query, collectionGroup, where } from "@/supabase/compat-db-shim";
 import { setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/supabase/mutations";
 import { parseBrazilianDateTime } from "@/lib/migration/format-utils";
 import { parseCsvHeader, parseCsvLine } from "@/lib/import/csv-parser";
@@ -19,7 +19,7 @@ interface UseObjectImportProps {
 }
 
 export function useObjectImport({ projectId, mockId, objects, masterObjects, userProfile }: UseObjectImportProps) {
-    const db = useFirestore();
+    const db = useDb();
     const { user } = useUser();
 
     const [isImporting, setIsImporting] = useState(false);
