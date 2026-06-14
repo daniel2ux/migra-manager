@@ -53,7 +53,7 @@ interface MockObjectsToolbarProps {
   onImportFile: (file: File) => void;
   onGlobalReset: () => void;
   onOpenImportDialog: () => void;
-  onExportCsv: () => void;
+  onExportJson: () => void;
   onAddObjects: () => void;
 }
 
@@ -80,7 +80,7 @@ export function MockObjectsToolbar({
   onImportFile,
   onGlobalReset,
   onOpenImportDialog,
-  onExportCsv,
+  onExportJson,
   onAddObjects,
 }: MockObjectsToolbarProps) {
   return (
@@ -326,7 +326,7 @@ export function MockObjectsToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" variant="fiori">
-                Importar CSV (ver layout)
+                Importar JSON (ver layout)
               </TooltipContent>
             </Tooltip>
             <Tooltip>
@@ -334,14 +334,14 @@ export function MockObjectsToolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onExportCsv}
+                  onClick={onExportJson}
                   className={PAGE_TOOLBAR_BTN}
                 >
                   <Download className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" variant="fiori">
-                Exportar CSV
+                Exportar JSON
               </TooltipContent>
             </Tooltip>
             <Tooltip>

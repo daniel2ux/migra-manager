@@ -10,7 +10,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { StopCircle } from "lucide-react";
-import { dashboardAlertDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 
 interface FinalizeCargaDialogProps {
     open: boolean;
@@ -26,8 +25,8 @@ export function FinalizeCargaDialog({
     confirmFinalizeCarga,
 }: FinalizeCargaDialogProps) {
     return (
-        <AlertDialog open={open} onOpenChange={onOpenChange} {...dashboardDialogRootProps}>
-            <AlertDialogContent className="border shadow-2xl bg-white rounded-none" open={open} {...dashboardAlertDialogContentProps}>
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogContent className="border shadow-2xl bg-white rounded-none" open={open}>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="font-bold uppercase tracking-tight text-slate-900 flex items-center gap-2">
                         <StopCircle className="w-5 h-5 text-red-500" /> FINALIZAR CARGA DA JANELA?

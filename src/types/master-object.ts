@@ -13,6 +13,7 @@ export interface MasterObject {
     dependencyIds?: string[];
     externalDependencies?: string[];
     ownerId?: string;
+    projectId?: string;
     updatedAt?: Timestamp | Date | null;
     activityGroupIds?: string[];
     /** ID do documento em `migrationObjects/{mock}` ao visualizar/editar sequência nesta mock. */

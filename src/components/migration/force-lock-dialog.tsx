@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
-import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 
 interface ForceLockDialogProps {
     open: boolean;
@@ -20,7 +19,6 @@ interface ForceLockDialogProps {
     onForceAcquire: () => void;
     onViewOnly?: () => void;
     contextLabel?: string;
-    preserveScroll?: boolean;
 }
 
 export function ForceLockDialog({
@@ -31,22 +29,17 @@ export function ForceLockDialog({
     onForceAcquire,
     onViewOnly,
     contextLabel = "no Dashboard",
-    preserveScroll = false,
 }: ForceLockDialogProps) {
     const title = onViewOnly ? "Registro Bloqueado" : "Objeto Bloqueado";
     const description = onViewOnly
         ? `Conflito de edição ${contextLabel}`
         : "Conflito de edição detectado";
 
-    const dialogRootProps = preserveScroll ? dashboardDialogRootProps : {};
-    const dialogContentProps = preserveScroll ? dashboardDialogContentProps : {};
-
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} {...dialogRootProps}>
+        <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 open={open}
                 className="sm:max-w-md bg-white rounded-none border-none shadow-2xl p-0 overflow-hidden text-left"
-                {...dialogContentProps}
             >
                 <DialogHeader className="p-6 bg-slate-900 text-white">
                     <div className="flex items-center gap-3 mb-2">

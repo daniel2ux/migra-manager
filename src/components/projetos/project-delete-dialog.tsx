@@ -11,10 +11,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
-import {
-    dashboardAlertDialogContentProps,
-    dashboardDialogRootProps,
-} from "@/lib/dashboard/scroll-preservation";
 
 const DELETE_EFFECTS = [
     "Mocks vinculadas ao projeto",
@@ -37,8 +33,8 @@ export function ProjectDeleteDialog({
     onConfirm,
 }: ProjectDeleteDialogProps) {
     return (
-        <AlertDialog open={open} onOpenChange={onOpenChange} {...dashboardDialogRootProps}>
-            <AlertDialogContent variant="fiori" open={open} {...dashboardAlertDialogContentProps}>
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogContent variant="fiori" open={open}>
                 <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
                     <div className="flex items-center gap-3">
                         <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">

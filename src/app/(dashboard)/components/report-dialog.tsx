@@ -18,7 +18,6 @@ import {
 } from "@/lib/formatters";
 import { normalizeSeqForDisplay } from "@/lib/migration/sequence-utils";
 import { FioriDialogContextFields } from "@/components/ui/fiori-dialog-context-fields";
-import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 import type { AggregatedObject, Mock } from "@/types/migration";
 
 interface ReportDialogProps {
@@ -59,11 +58,10 @@ export function ReportDialog({
     );
 
     return (
-        <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(true); }} {...dashboardDialogRootProps}>
+        <Dialog preserveDashboardScroll open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(true); }}>
             <DialogContent
                 open={open}
                 className="fiori-dialog fiori-dialog-fullscreen p-0 flex flex-col gap-0 shadow-lg [&>button]:hidden"
-                {...dashboardDialogContentProps}
             >
                 <DialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
                     <div className="fiori-dialog-header-row">

@@ -77,8 +77,8 @@ export const AiPerformanceAnalysisDialog = ({
   }, [open, result, isLoading, runAnalysis]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-md border-slate-200 p-0 overflow-hidden rounded-none shadow-2xl">
+    <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
+      <DialogContent open={open} className="max-w-2xl bg-white/95 backdrop-blur-md border-slate-200 p-0 overflow-hidden rounded-none shadow-2xl">
         <div className="h-1.5 w-full bg-linear-to-r from-SkyBlue-400 via-indigo-500 to-violet-500" />
         
         <DialogHeader className="px-6 pt-6 pb-4">

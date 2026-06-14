@@ -37,8 +37,8 @@ export function BackupRestoreDialog({
   onConfirm,
 }: BackupRestoreDialogProps) {
   return (
-    <Dialog open={!!restoreTarget} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-none border-slate-200 [&>button]:hidden p-0">
+    <Dialog preserveDashboardScroll open={!!restoreTarget} onOpenChange={onOpenChange}>
+      <DialogContent open={!!restoreTarget} className="max-w-lg rounded-none border-slate-200 [&>button]:hidden p-0">
         <DialogTitle className="sr-only">Restaurar backup</DialogTitle>
 
         <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100 bg-slate-50">

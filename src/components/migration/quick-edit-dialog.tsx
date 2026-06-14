@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, Loader2, CalendarDays, Zap, Database, Timer } from "lucide-react";
 import { FioriDialogContextFields } from "@/components/ui/fiori-dialog-context-fields";
-import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 import { Calendar } from "@/components/ui/calendar";
@@ -60,7 +59,6 @@ type DashboardQuickEditProps = BaseQuickEditProps & {
     mode?: "dashboard";
     handleSaveQuick?: (data: QuickFormData) => Promise<void> | void;
     readOnly?: boolean;
-    preserveScroll?: boolean;
 };
 
 type MockQuickEditProps = BaseQuickEditProps & {
@@ -91,7 +89,6 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
 
     const isMock = props.mode === "mock";
     const readOnly = !isMock && (props.readOnly ?? false);
-    const preserveScroll = !isMock && (props.preserveScroll ?? true);
 
     const [formData, setFormData] = useState<QuickFormData>({
         targetRecordsCount: 0,
@@ -331,9 +328,6 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
         }
     };
 
-    const dialogRootProps = preserveScroll ? dashboardDialogRootProps : {};
-    const dialogContentProps = preserveScroll ? dashboardDialogContentProps : {};
-
     const renderDateTimeField = (
         key: "chargeStartTime" | "chargeEndTime",
         label: string,
@@ -415,17 +409,15 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
     );
 
     return (
-        <Dialog open={open} onOpenChange={(v) => !isSaving && onOpenChange(v)} {...dialogRootProps}>
+        <Dialog preserveDashboardScroll open={open} onOpenChange={(v) => !isSaving && onOpenChange(v)}>
             <DialogContent
                 open={open}
-                overlayClassName={preserveScroll ? undefined : "fiori-dialog-overlay"}
                 className={cn(
                     "fiori-dialog !flex w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden",
                     isMock
                         ? "h-[min(92vh,640px)] max-w-4xl"
                         : "h-[min(36rem,calc(100dvh-2rem))] max-w-lg",
                 )}
-                {...dialogContentProps}
             >
                 <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
                     <DialogDescription className="sr-only">

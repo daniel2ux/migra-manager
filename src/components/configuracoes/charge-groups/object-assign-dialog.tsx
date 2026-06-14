@@ -101,8 +101,9 @@ export function ChargeObjectAssignDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
+        open={open}
         overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog fiori-dialog-fullscreen !flex max-w-none flex-col gap-0 overflow-hidden p-0 [&>button]:hidden"
       >

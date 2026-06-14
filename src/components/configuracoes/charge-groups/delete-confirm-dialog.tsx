@@ -38,8 +38,8 @@ export function ChargeGroupDeleteDialog({
   if (!group) return null;
 
   return (
-    <AlertDialog open={open} onOpenChange={(o) => { if (!o && !deleting) onClose(); }}>
-      <AlertDialogContent variant="fiori" className="max-w-md">
+    <AlertDialog preserveDashboardScroll open={open} onOpenChange={(o) => { if (!o && !deleting) onClose(); }}>
+      <AlertDialogContent open={open} variant="fiori" className="max-w-md">
         <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
           <div className="flex items-center gap-3">
             <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">

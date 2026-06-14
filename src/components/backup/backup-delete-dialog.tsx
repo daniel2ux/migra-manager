@@ -21,8 +21,8 @@ export function BackupDeleteDialog({
   onConfirm,
 }: BackupDeleteDialogProps) {
   return (
-    <Dialog open={!!deleteTarget} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-none border-slate-200 [&>button]:hidden p-0">
+    <Dialog preserveDashboardScroll open={!!deleteTarget} onOpenChange={onOpenChange}>
+      <DialogContent open={!!deleteTarget} className="max-w-sm rounded-none border-slate-200 [&>button]:hidden p-0">
         <DialogTitle className="sr-only">Excluir backup</DialogTitle>
 
         <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100 bg-slate-50">

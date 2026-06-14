@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { MASTER_CATALOG_JSON_ACCEPT } from "@/lib/migration/master-catalog-export";
 import { CheckCircle2, FileUp, Terminal, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,18 +71,19 @@ export function ImportDialog({
     ? "Resumo do processamento"
     : isUploading
       ? "Processando dados do arquivo"
-      : "Arraste ou selecione o arquivo";
+      : "Arraste ou selecione o arquivo JSON";
 
   return (
     <Dialog
+      preserveDashboardScroll
       open={open}
       onOpenChange={(o) => {
         if (!isUploading) onOpenChange(o);
       }}
     >
       <DialogContent
+        open={open}
         variant="fiori"
-        overlayClassName="fiori-dialog-overlay"
         className={cn(
           "fiori-dialog fiori-dialog--form flex flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]",
           "h-[min(480px,85vh)] w-[calc(100vw-1rem)] sm:max-w-[500px]",
@@ -89,7 +91,7 @@ export function ImportDialog({
       >
         <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
           <DialogDescription className="sr-only">
-            Importação de objetos do catálogo mestre via arquivo CSV ou TXT.
+            Importação de objetos do catálogo mestre via arquivo JSON.
           </DialogDescription>
           <div className="fiori-dialog-header-row">
             <div className="fiori-dialog-icon shrink-0">
@@ -122,23 +124,23 @@ export function ImportDialog({
                 }}
                 role="button"
                 tabIndex={0}
-                aria-label="Selecionar arquivo CSV ou TXT"
+                aria-label="Selecionar arquivo JSON do catálogo"
               >
                 <input
                   type="file"
                   ref={fileInputRef}
                   className="hidden"
-                  accept=".csv,.txt"
+                  accept={MASTER_CATALOG_JSON_ACCEPT}
                   onChange={onFileSelect}
                 />
                 <div className="fiori-import-dropzone-icon">
                   <Upload className="h-5 w-5" aria-hidden />
                 </div>
                 <p className="fiori-import-dropzone-title">
-                  Clique ou arraste seu arquivo .csv/.txt
+                  Clique ou arraste seu arquivo .json
                 </p>
                 <p className="fiori-import-dropzone-hint">
-                  Formatos suportados: CSV e TXT (delimitado por vírgula ou ponto-e-vírgula).
+                  Use o JSON exportado pela plataforma (versão 1). Objetos com o mesmo nome serão ignorados.
                 </p>
               </div>
             </div>

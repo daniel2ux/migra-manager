@@ -25,8 +25,8 @@ export function LogDetailModal({ log, open, onClose, mockMap }: LogDetailModalPr
     ["IMPORTADO EM", fmtTs(log.importedAt)], ["FILENAME", log.filename || "—"],
   ];
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] rounded-none p-0 border-none shadow-2xl overflow-hidden bg-white">
+    <Dialog preserveDashboardScroll open={open} onOpenChange={onClose}>
+      <DialogContent open={open} className="sm:max-w-[600px] rounded-none p-0 border-none shadow-2xl overflow-hidden bg-white">
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2"><Terminal className="w-4 h-4 text-SkyBlue-500" /><DialogTitle className="text-[10px] font-black uppercase tracking-widest text-slate-900">Detalhe do Registro</DialogTitle></div>
         </DialogHeader>

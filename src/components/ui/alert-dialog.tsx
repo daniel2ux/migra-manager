@@ -5,6 +5,7 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
+import { dashboardDialogFocusProps } from "@/lib/dashboard/scroll-preservation"
 
 function isFioriFormAlert(className?: string, variant?: "default" | "fiori") {
   if (variant === "fiori") return true
@@ -18,7 +19,20 @@ const ALERT_OVERLAY_MOTION =
 const ALERT_CONTENT_MOTION =
   "duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]"
 
-const AlertDialog = AlertDialogPrimitive.Root
+const PreserveDashboardScrollContext = React.createContext(false)
+
+type AlertDialogProps = React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Root> & {
+  preserveDashboardScroll?: boolean
+}
+
+const AlertDialog = ({ preserveDashboardScroll = false, ...props }: AlertDialogProps) => (
+  <PreserveDashboardScrollContext.Provider value={preserveDashboardScroll}>
+    <AlertDialogPrimitive.Root
+      {...props}
+      {...(preserveDashboardScroll ? { modal: false as const } : {})}
+    />
+  </PreserveDashboardScrollContext.Provider>
+)
 
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger
 
@@ -51,12 +65,14 @@ type AlertDialogContentProps = React.ComponentPropsWithoutRef<typeof AlertDialog
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
   AlertDialogContentProps
->(({ className, overlayClassName, manualBackdrop, open, variant = "default", ...props }, ref) => {
+>(({ className, overlayClassName, manualBackdrop, open, variant = "default", onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+  const preserveDashboardScroll = React.useContext(PreserveDashboardScrollContext)
+  const useManualBackdrop = manualBackdrop ?? preserveDashboardScroll
   const instantOpen = isFioriFormAlert(className, variant)
 
   return (
   <AlertDialogPortal>
-    {manualBackdrop && open ? (
+    {useManualBackdrop && open ? (
       <div
         aria-hidden="true"
         className={cn(
@@ -66,7 +82,7 @@ const AlertDialogContent = React.forwardRef<
         )}
       />
     ) : (
-      !manualBackdrop && (
+      !useManualBackdrop && (
         <AlertDialogOverlay motion={!instantOpen} className={overlayClassName} />
       )
     )}
@@ -80,6 +96,8 @@ const AlertDialogContent = React.forwardRef<
           : "grid max-w-lg gap-4 border bg-background p-6 shadow-lg sm:rounded-lg",
         className
       )}
+      onOpenAutoFocus={onOpenAutoFocus ?? (preserveDashboardScroll ? dashboardDialogFocusProps.onOpenAutoFocus : undefined)}
+      onCloseAutoFocus={onCloseAutoFocus ?? (preserveDashboardScroll ? dashboardDialogFocusProps.onCloseAutoFocus : undefined)}
       {...props}
     />
   </AlertDialogPortal>

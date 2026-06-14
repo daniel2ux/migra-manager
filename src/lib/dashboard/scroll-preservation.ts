@@ -130,18 +130,19 @@ export const dashboardDialogFocusProps = {
   onCloseAutoFocus: (event: Event) => event.preventDefault(),
 } as const;
 
-/** Evita RemoveScroll do Radix (scroll real está no `<main>`). */
+/** @deprecated Use `preserveDashboardScroll` no componente `Dialog`. */
 export const dashboardDialogRootProps = {
   modal: false as const,
 };
 
-/** Overlay + focus: backdrop manual (Radix não renderiza overlay com modal={false}). */
+/** @deprecated Use `preserveDashboardScroll` no componente `DialogContent`. */
 export const dashboardDialogContentProps = {
   manualBackdrop: true as const,
   overlayClassName: "fiori-dashboard-dialog-overlay",
   ...dashboardDialogFocusProps,
 } as const;
 
+/** @deprecated Use `preserveDashboardScroll` no componente `AlertDialogContent`. */
 export const dashboardAlertDialogContentProps = {
   manualBackdrop: true as const,
   overlayClassName: "fiori-dashboard-dialog-overlay",

@@ -72,14 +72,15 @@ export function EmailSignaturesDialog({
 
   return (
     <Dialog
+      preserveDashboardScroll
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) handleDismiss();
       }}
     >
       <DialogContent
+        open={open}
         variant="fiori"
-        overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog fiori-dialog--form flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
       >
         <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">

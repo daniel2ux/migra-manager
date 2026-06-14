@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { collection, orderBy, query } from "@/supabase/compat-db-shim";
 import { useDb, useCollection, useMemoDb } from "@/supabase";
 import type { AccessProfileRecord } from "@/hooks/use-access-permissions";

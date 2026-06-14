@@ -73,6 +73,7 @@ export function ChargeGroupDialog({
 
   return (
     <Dialog
+      preserveDashboardScroll
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen && isCreateMode) return;
@@ -80,8 +81,8 @@ export function ChargeGroupDialog({
       }}
     >
       <DialogContent
+        open={open}
         variant="fiori"
-        overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog fiori-dialog--form flex h-[min(92vh,480px)] w-[calc(100vw-1rem)] max-w-[480px] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden"
         onInteractOutside={isCreateMode ? (e) => e.preventDefault() : undefined}
         onEscapeKeyDown={isCreateMode ? (e) => e.preventDefault() : undefined}

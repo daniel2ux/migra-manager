@@ -18,7 +18,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 import {
   AlertCircle,
   Loader2,
@@ -243,11 +242,10 @@ export function LogViewerDialog({
   ].filter(Boolean);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }} {...dashboardDialogRootProps}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
         open={open}
         className="fiori-dialog fiori-dialog-fullscreen !flex p-0 flex-col gap-0 shadow-lg [&>button]:hidden"
-        {...dashboardDialogContentProps}
       >
         <DialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
           <div className="fiori-dialog-header-row">

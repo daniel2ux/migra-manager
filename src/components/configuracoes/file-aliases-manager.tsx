@@ -286,13 +286,13 @@ export function FileAliasesManager({ className }: FileAliasesManagerProps) {
         </div>
       </section>
 
-      <AlertDialog
+      <AlertDialog preserveDashboardScroll
         open={aliasToDelete !== null}
         onOpenChange={(open) => {
           if (!open && !deleting) setAliasToDelete(null);
         }}
       >
-        <AlertDialogContent variant="fiori" className="max-w-md">
+        <AlertDialogContent open={aliasToDelete !== null} variant="fiori" className="max-w-md">
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">
@@ -337,8 +337,9 @@ export function FileAliasesManager({ className }: FileAliasesManagerProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog preserveDashboardScroll open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent
+          open={isDialogOpen}
           variant="fiori"
           overlayClassName="fiori-dialog-overlay"
           className="fiori-dialog fiori-dialog--form flex w-[calc(100vw-1rem)] max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"

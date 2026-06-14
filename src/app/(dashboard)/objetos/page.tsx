@@ -5,7 +5,7 @@ import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Button } from '@/components/ui/button';
 import {
   Loader2, Plus, Search, Network, Database,
-  FileUp,
+  FileUp, Download,
   Table as TableIcon, Grid3X3, X,
 } from 'lucide-react';
 import {
@@ -71,13 +71,14 @@ function ObjetosMasterPageContent() {
     // Derived
     objects, isLoading, isAdmin, isAdminOrMaster, isLockedByOther, lockedByName,
     usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, hasActiveFilters, selectedMockName, isMockLocked,
+    canRegisterObjects, objectCatalogBlockedReason,
     displayChargeOrderById,
     // Handlers
     handleClearFilters, handleOpenDependencies, handleSaveDependencySelect, handleOpenParallelSelect, handleSaveParallelSelect,
     handleOpenSelectNext, handleSelectNextConfirm, handleOpenPrecedence,
     handleDragOver, handleDragLeave, handleDrop,
     suggestNextParallelOrder,
-    handleFileImport, handleDelete,
+    handleFileImport, handleExportJson, handleDelete,
     handleOpenEditDialog, handleForceAcquire,
     handleSaveQuick, performReorder, handleSaveEdit, handlePatchMaster,
     releaseLock, editSaveError, clearEditSaveError,
@@ -181,6 +182,24 @@ function ObjetosMasterPageContent() {
                   </TooltipContent>
                 </Tooltip>
 
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleExportJson()}
+                      disabled={isLoading || !(objects?.length)}
+                      className={PAGE_TOOLBAR_BTN}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" variant="fiori">
+                    Exportar catálogo (.json)
+                  </TooltipContent>
+                </Tooltip>
+
                 {isAdmin && (
                   <>
                     <Tooltip>
@@ -190,6 +209,7 @@ function ObjetosMasterPageContent() {
                           variant="ghost"
                           size="icon"
                           onClick={() => setIsImportOpen(true)}
+                          disabled={!canRegisterObjects}
                           className={PAGE_TOOLBAR_BTN}
                         >
                           <FileUp className="w-4 h-4" />
@@ -240,6 +260,12 @@ function ObjetosMasterPageContent() {
             </TooltipProvider>
           }
         />
+
+        {objectCatalogBlockedReason && (
+          <div className="mx-4 md:mx-8 mt-3 px-4 py-3 bg-amber-50 border border-amber-200/80 text-[11px] font-semibold text-amber-900 uppercase tracking-wide">
+            {objectCatalogBlockedReason}
+          </div>
+        )}
 
         {/* TIER 2: SEARCH/FILTERS */}
         <ObjetosFilters

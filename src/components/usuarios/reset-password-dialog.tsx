@@ -38,8 +38,8 @@ export function ResetPasswordConfirmDialog({
   isResetting,
 }: ResetPasswordConfirmDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent variant="fiori" overlayClassName="fiori-dialog-overlay">
+    <AlertDialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent open={open} variant="fiori" overlayClassName="fiori-dialog-overlay">
         <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
           <div className="flex items-center gap-3">
             <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">
@@ -103,8 +103,9 @@ export function ResetPasswordResultDialog({
   isResending = false,
 }: ResetPasswordResultDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        open={open}
         variant="fiori"
         overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog fiori-dialog--form flex w-[calc(100vw-1rem)] max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
@@ -221,8 +222,8 @@ export function DeleteUserConfirmDialog({
   isDeleting,
 }: DeleteUserConfirmDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent variant="fiori" overlayClassName="fiori-dialog-overlay">
+    <AlertDialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent open={open} variant="fiori" overlayClassName="fiori-dialog-overlay">
         <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
           <div className="flex items-center gap-3">
             <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">

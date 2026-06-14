@@ -34,7 +34,7 @@ function MocksContent() {
 
   // Data hook
   const {
-    userProfile, isAdmin, isMaster, can, mocks, isLoading, masterObjects, projectData, objectsByMock
+    userProfile, isMaster, can, mocks, isLoading, masterObjects, projectData, objectsByMock
   } = useMocksData(projectId);
   const isProjectLocked = !!projectData?.isLocked;
   const locked = isProjectLocked;

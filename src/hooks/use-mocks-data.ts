@@ -5,6 +5,7 @@ import { collection, collectionGroup, doc, query, where } from "@/supabase/compa
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { Mock, Project } from "@/types/migration";
 import { filterActiveMocks } from "@/lib/mock-utils";
+import { masterObjectsQueryForProject } from "@/lib/migration/master-objects-query";
 import { useAccessPermissions } from "@/hooks/use-access-permissions";
 import type { PermissionKey } from "@/lib/auth/permissions";
 
@@ -37,29 +38,51 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
   const { can, isMaster, isAdmin } = useAccessPermissions(userProfile, user?.uid ?? null);
 
   const userProjectIds = userProfile?.projectIds || [];
-  const hasAccess =
-    can("mocks.view") &&
-    (isAdmin || (projectId && userProjectIds.includes(projectId)));
 
   const projectDocRef = useMemoDb(() => {
     if (!db || !projectId) return null;
     return doc(db, "projects", projectId);
   }, [db, projectId]);
-  const { data: projectData } = useDoc<Project>(projectDocRef);
+  const { data: projectData, isLoading: isProjectLoading } = useDoc<Project>(projectDocRef);
+
+  const isProjectMember = Boolean(
+    projectId && user?.uid && projectData?.memberUids?.includes(user.uid),
+  );
+  /** Escopo alinhado ao RLS (`has_project_access`: admin, project_ids, member_uids). */
+  const hasAccess =
+    can("mocks.view") &&
+    !!projectId &&
+    (isAdmin || userProjectIds.includes(projectId) || isProjectMember);
 
   const masterObjectsQuery = useMemoDb(
-    () => (db && can("master_catalog.view") ? collection(db, "masterObjects") : null),
-    [db, can],
+    () => (db && can("master_catalog.view") && projectId ? masterObjectsQueryForProject(db, projectId) : null),
+    [db, can, projectId],
   );
   const { data: masterObjects } = useCollection<any>(masterObjectsQuery);
 
+  const awaitingProjectMembership =
+    !!projectId &&
+    !isAdmin &&
+    !userProjectIds.includes(projectId) &&
+    isProjectLoading;
+
   const mocksQuery = useMemoDb(() => {
     if (!db || !projectId || !user || isProfileLoading || !userProfile) return null;
+    if (awaitingProjectMembership) return null;
     if (!hasAccess) return null;
     return collection(db, "projects", projectId, "mocks");
-  }, [db, projectId, user, hasAccess, isProfileLoading, userProfile]);
+  }, [
+    db,
+    projectId,
+    user,
+    hasAccess,
+    isProfileLoading,
+    userProfile,
+    awaitingProjectMembership,
+  ]);
 
-  const { data: mocks, isLoading } = useCollection<Mock>(mocksQuery);
+  const { data: mocks, isLoading: isMocksLoading } = useCollection<Mock>(mocksQuery);
+  const isLoading = isProfileLoading || awaitingProjectMembership || isMocksLoading;
 
   const migrationObjectsQuery = useMemoDb(() => {
     if (!db || !projectId || !hasAccess || !can("objects.view")) return null;

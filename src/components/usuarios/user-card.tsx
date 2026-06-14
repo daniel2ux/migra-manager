@@ -691,8 +691,9 @@ function EmailMetricPopover({
         {metricBody}
       </button>
 
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <Dialog preserveDashboardScroll open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent
+          open={isOpen}
           variant="fiori"
           overlayClassName="fiori-dialog-overlay"
           className="fiori-dialog fiori-dialog--form flex w-[calc(100vw-2rem)] max-w-[20rem] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden"

@@ -404,18 +404,27 @@ export function ProjectCard({
           )}
         </div>
 
-        <Link
-          href="/mocks"
-          onClick={(e) => {
-            e.stopPropagation();
-            dispatchProjectChange(project.id);
-          }}
-        >
-          <Button variant="ghost" className="fiori-project-card-mocks-btn shadow-none">
-            <span>Mocks</span>
-            <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-          </Button>
-        </Link>
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <Link
+              href="/mocks"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatchProjectChange(project.id);
+              }}
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="fiori-project-card-mocks-btn shadow-none"
+                aria-label="Mocks"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent variant="fiori">Mocks</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

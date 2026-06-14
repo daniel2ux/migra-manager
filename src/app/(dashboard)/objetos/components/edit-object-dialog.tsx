@@ -157,6 +157,7 @@ export function EditObjectDialog({
 
   return (
     <Dialog
+      preserveDashboardScroll
       open={open}
       onOpenChange={(v) => {
         if (!v) onClearSaveError?.();
@@ -165,7 +166,9 @@ export function EditObjectDialog({
       }}
     >
       <TooltipProvider delayDuration={200}>
-        <DialogContent className="fiori-dialog w-[calc(100vw-1rem)] sm:max-w-[420px] h-[min(92vh,760px)] max-h-[92vh] min-h-0 flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0">
+        <DialogContent
+          open={open}
+          className="fiori-dialog w-[calc(100vw-1rem)] sm:max-w-[420px] h-[min(92vh,760px)] max-h-[92vh] min-h-0 flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0">
           <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
             <DialogTitle className="fiori-dialog-title">{dialogTitle}</DialogTitle>
           </DialogHeader>

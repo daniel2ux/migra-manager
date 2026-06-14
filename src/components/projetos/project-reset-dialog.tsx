@@ -12,10 +12,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-    dashboardAlertDialogContentProps,
-    dashboardDialogRootProps,
-} from "@/lib/dashboard/scroll-preservation";
 
 const RESET_EFFECTS = [
     "Mocks vinculadas ao projeto",
@@ -39,8 +35,8 @@ export function ProjectResetDialog({
     isResetting,
 }: ProjectResetDialogProps) {
     return (
-        <AlertDialog open={open} onOpenChange={(next) => !isResetting && onOpenChange(next)} {...dashboardDialogRootProps}>
-            <AlertDialogContent variant="fiori" open={open} {...dashboardAlertDialogContentProps}>
+        <AlertDialog preserveDashboardScroll open={open} onOpenChange={(next) => !isResetting && onOpenChange(next)}>
+            <AlertDialogContent variant="fiori" open={open}>
                 <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
                     <div className="flex items-center gap-3">
                         <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">

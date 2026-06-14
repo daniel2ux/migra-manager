@@ -159,7 +159,7 @@ const ADMIN_EDIT_PERMISSIONS: PermissionKey[] = [
   "utilities.clone_mock",
 ];
 
-/** Exclusões opcionais no perfil ADMIN — desligadas por padrão. */
+/** Exclusões no perfil ADMIN — deletes e permissões exclusivas do Master. */
 const ADMIN_DELETE_PERMISSIONS: PermissionKey[] = [
   "projects.delete",
   "mocks.delete",
@@ -186,6 +186,18 @@ const MASTER_EXCLUSIVE_PERMISSIONS: PermissionKey[] = [
   "utilities.clean_logs",
 ];
 
+function excludePermissions(
+  keys: PermissionKey[],
+  denied: Set<PermissionKey>,
+): PermissionKey[] {
+  return keys.filter((k) => !denied.has(k));
+}
+
+const ADMIN_DENIED_PERMISSIONS = new Set<PermissionKey>([
+  ...ADMIN_DELETE_PERMISSIONS,
+  ...MASTER_EXCLUSIVE_PERMISSIONS,
+]);
+
 export const SYSTEM_PROFILE_NAMES = ["MASTER", "ADMIN", "ESPECIALISTA", "MEMBRO"] as const;
 export type SystemProfileName = (typeof SYSTEM_PROFILE_NAMES)[number];
 
@@ -207,7 +219,10 @@ export function buildDefaultPermissions(profileName: string): PermissionKey[] {
   }
 
   if (name === "ADMIN") {
-    return [...VIEW_PERMISSIONS, ...ADMIN_EDIT_PERMISSIONS];
+    return excludePermissions(
+      [...VIEW_PERMISSIONS, ...ADMIN_EDIT_PERMISSIONS],
+      ADMIN_DENIED_PERMISSIONS,
+    );
   }
 
   if (name === "ESPECIALISTA") {

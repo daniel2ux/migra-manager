@@ -45,10 +45,7 @@ import {
 } from "@/lib/migration/sequence-utils";
 import type { AggregatedObject } from "@/types/migration";
 import { getDashboardCardDomId } from "@/lib/dashboard/card-key";
-import {
-    beginDashboardDialogScroll,
-    endDashboardDialogScroll,
-} from "@/lib/dashboard/scroll-preservation";
+import { beginDashboardDialogScroll, endDashboardDialogScroll } from "@/lib/dashboard/scroll-preservation";
 
 type CardPopoverPanel = "precedence" | "external" | "parallel" | "consolidated";
 

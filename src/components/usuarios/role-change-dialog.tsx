@@ -61,8 +61,9 @@ export function RoleChangeDialog({
   const isValid = !!reason.trim();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        open={open}
         variant="fiori"
         overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog fiori-dialog--form flex w-[calc(100vw-1rem)] max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"

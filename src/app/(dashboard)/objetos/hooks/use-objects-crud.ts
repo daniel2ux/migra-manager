@@ -87,6 +87,8 @@ interface UseObjectsCRUDDeps {
   chargeGroups?: ChargeGroup[];
   displayChargeOrderById?: ReadonlyMap<string, string>;
   reorderDisplayList?: MasterObject[];
+  projectId?: string | null;
+  canRegisterObjects?: boolean;
 }
 
 function resolveFormChargeOrder(
@@ -257,6 +259,8 @@ function useQuickCreate(
   setQuickFormData: React.Dispatch<React.SetStateAction<ObjectFormData>>, 
   toast: ToastFn,
   refetchObjects?: () => void,
+  projectId: string | null = null,
+  canRegisterObjects = false,
 ) {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
@@ -264,6 +268,13 @@ function useQuickCreate(
   const handleSave = async (e?: React.FormEvent, stayOpen = false, patch?: Partial<ObjectFormData>) => {
     const form = { ...quickFormData, ...patch };
     if (!isAdmin || !db || !user) return;
+    if (!canRegisterObjects || !projectId) {
+      toast({
+        variant: 'destructive',
+        description: 'CADASTRE A EMPRESA NO PROJETO ANTES DE CRIAR OBJETOS NO CATÁLOGO.',
+      });
+      return;
+    }
     if (!form.name) {
       toast({ variant: 'destructive', description: 'O NOME DO OBJETO É OBRIGATÓRIO.' });
       return;
@@ -334,6 +345,7 @@ function useQuickCreate(
             isParallel: newMaster.isParallel,
             activityGroupIds: newMaster.activityGroupIds,
             ownerId: user.uid,
+            projectId,
             updatedAt: serverTimestamp(),
           },
           { merge: true },
@@ -370,6 +382,7 @@ function useQuickCreate(
             isParallel: autoIsParallel,
             activityGroupIds: form.activityGroupIds ?? [],
             ownerId: user.uid,
+            projectId,
             updatedAt: serverTimestamp(),
           },
           { merge: true },
@@ -700,6 +713,8 @@ export function useObjectsCRUD(deps: UseObjectsCRUDDeps) {
     deps.setQuickFormData,
     toast,
     deps.refetchObjects,
+    deps.projectId ?? null,
+    deps.canRegisterObjects ?? false,
   );
   const edit = useEditDialog(db, user, isAdmin, deps.isMockLocked, deps.objects, deps.editFormData, deps.setEditFormData, deps.editingObject, deps.setEditingObject, deps.acquireLock, deps.releaseLock, deps.performReorder, deps.extractChargeOrderDisplay, toast, deps.refetchObjects, deps.displayChargeOrderById, deps.reorderDisplayList);
 

@@ -32,7 +32,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCommentDate } from "@/lib/formatters";
-import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 
 /** Ordenação decrescente: CompatDb Timestamp, Date, ms ou ISO. */
 function commentCreatedAtMs(createdAt: unknown): number {
@@ -98,7 +97,6 @@ interface CommentDialogProps {
     currentUserId?: string | undefined;
     footerMode?: "close-only" | "cancel-save";
     submitShortcut?: "ctrl-enter" | "enter";
-    preserveScroll?: boolean;
 }
 
 export function CommentDialog({
@@ -118,7 +116,6 @@ export function CommentDialog({
     currentUserId,
     footerMode = "close-only",
     submitShortcut = "ctrl-enter",
-    preserveScroll = false,
     setQuickCommentText,
 }: CommentDialogProps) {
     const [draft, setDraft] = useState("");
@@ -208,17 +205,12 @@ export function CommentDialog({
         applySaveResult(saveFn(t));
     };
 
-    const dialogRootProps = preserveScroll ? dashboardDialogRootProps : {};
-    const dialogContentProps = preserveScroll ? dashboardDialogContentProps : {};
-
     return (
         <>
-            <Dialog open={open} onOpenChange={onOpenChange} {...dialogRootProps}>
+            <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
                 <DialogContent
                     open={open}
-                    overlayClassName={preserveScroll ? undefined : "fiori-dialog-overlay"}
                     className="fiori-dialog !flex h-[min(36rem,calc(100dvh-2rem))] w-[calc(100vw-1rem)] max-w-[480px] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden"
-                    {...dialogContentProps}
                 >
                     <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
                         <DialogDescription className="sr-only">
@@ -426,8 +418,8 @@ export function CommentDialog({
             </Dialog>
 
             {confirmDelete && (
-                <AlertDialog open={!!pendingDelete} onOpenChange={(v) => !v && setPendingDelete(null)}>
-                    <AlertDialogContent className="fiori-dialog sm:max-w-sm p-0 overflow-hidden border-none shadow-lg gap-0">
+                <AlertDialog preserveDashboardScroll open={!!pendingDelete} onOpenChange={(v) => !v && setPendingDelete(null)}>
+                    <AlertDialogContent open={!!pendingDelete} className="fiori-dialog sm:max-w-sm p-0 overflow-hidden border-none shadow-lg gap-0">
                         <AlertDialogHeader className="fiori-dialog-header space-y-0 text-left">
                             <AlertDialogTitle className="fiori-dialog-title">Remover comentário</AlertDialogTitle>
                             <AlertDialogDescription className="fiori-dialog-subtitle pt-1">

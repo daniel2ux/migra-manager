@@ -11,7 +11,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RefreshCcw } from "lucide-react";
-import { dashboardAlertDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 import type { AggregatedObject } from "@/types/migration";
 
 const RESET_EFFECTS = [
@@ -38,17 +37,16 @@ export function ResetObjectDialog({
 }: ResetObjectDialogProps) {
     return (
         <AlertDialog
+            preserveDashboardScroll
             open={open}
             onOpenChange={(nextOpen) => {
                 onOpenChange(nextOpen);
                 if (!nextOpen) onClear();
             }}
-            {...dashboardDialogRootProps}
         >
             <AlertDialogContent
                 variant="fiori"
                 open={open}
-                {...dashboardAlertDialogContentProps}
             >
                 <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
                     <div className="flex items-center gap-3">

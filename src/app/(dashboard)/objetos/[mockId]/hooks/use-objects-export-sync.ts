@@ -6,10 +6,16 @@ import { setDocumentNonBlocking } from '@/supabase/mutations';
 import type { Mock } from '@/types/migration';
 import { filterActiveMocks } from '@/lib/mock-utils';
 import type { MigrationObject } from '../types';
+import {
+  buildMigrationObjectsExportPayload,
+  downloadJsonFile,
+  suggestMigrationObjectsExportFilename,
+} from '@/lib/migration/migration-objects-export';
 
 interface UseObjectsExportSyncDeps {
   db: any;
   projectId: string | null;
+  projectName: string;
   mockId: string | null;
   isAdmin: boolean;
   isEffectiveLocked: boolean;
@@ -20,54 +26,36 @@ interface UseObjectsExportSyncDeps {
 }
 
 /**
- * Gerencia exportação CSV dos objetos e sincronização de referências
+ * Exportação JSON dos objetos e sincronização de referências
  * com o mock anterior (previousChargeDurationMs / previousMigratedRecordsCount).
  */
 export function useObjectsExportSync({
-  db, projectId, mockId, isAdmin, isEffectiveLocked,
+  db, projectId, projectName, mockId, isAdmin, isEffectiveLocked,
   objects, sortedObjects, mockData, toast,
 }: UseObjectsExportSyncDeps) {
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // ── Exportação CSV ───────────────────────────────────────────────────────────
-  const handleExportCSV = () => {
+  const handleExportJson = () => {
     if (!objects || objects.length === 0) {
       toast({ variant: 'destructive', description: 'Nenhum objeto para exportar.' });
       return;
     }
+    if (!projectId || !mockId || !mockData) {
+      toast({ variant: 'destructive', description: 'Projeto ou mock não identificados.' });
+      return;
+    }
 
-    const header = ['OBJETO', 'DATA_INICIO', 'DATA_FIM', 'TARGET', 'PROCESSADO', 'ERRO', 'STATUS'];
-    const rows = sortedObjects.map(obj => {
-      const fmt = (dt: string) => dt
-        ? new Date(dt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-        : '';
-      const processed = Number(obj.processedRecordsCount) || 0;
-      const error = Number(obj.errorRecordsCount) || 0;
-      return [
-        obj.name.toUpperCase(),
-        fmt(obj.chargeStartTime),
-        fmt(obj.chargeEndTime),
-        obj.targetRecordsCount || 0,
-        processed,
-        error,
-        obj.status || (obj.chargeStartTime && !obj.chargeEndTime ? 'CARGA_EM_ANDAMENTO' : 'PENDENTE'),
-      ].join(';');
+    const payload = buildMigrationObjectsExportPayload(sortedObjects, projectId, {
+      id: mockId,
+      name: mockData.name,
     });
-
-    const csvContent = [header.join(';'), ...rows].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const dateStr = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `MIGRA_EXPORT_${mockData?.name?.toUpperCase() || 'MOCK'}_${dateStr}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const filename = suggestMigrationObjectsExportFilename(
+      projectName || 'projeto',
+      mockData.name,
+    );
+    downloadJsonFile(payload, filename);
   };
 
-  // ── Sincronização de referências com mock anterior ───────────────────────────
   const handleSyncPreviousReferences = async () => {
     if (!isAdmin || isEffectiveLocked || !projectId || !mockId || !db) return;
 
@@ -112,5 +100,5 @@ export function useObjectsExportSync({
     }
   };
 
-  return { isSyncing, handleExportCSV, handleSyncPreviousReferences };
+  return { isSyncing, handleExportJson, handleSyncPreviousReferences };
 }

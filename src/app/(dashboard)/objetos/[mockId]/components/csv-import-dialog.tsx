@@ -15,26 +15,7 @@ import { Upload, FileUp, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ImportLog } from "../hooks/use-object-import";
 
-const CSV_HEADERS = [
-    "OBJETO",
-    "DATA_INICIO",
-    "DATA_FIM",
-    "TARGET",
-    "PROCESSADO",
-    "ERRO",
-    "COMENTARIO",
-    "STATUS",
-] as const;
-
-const DROPZONE_HEADERS = [
-    "OBJETO",
-    "INICIO",
-    "FIM",
-    "TARGET",
-    "PROCESSADO",
-    "ERRO",
-    "COMENTARIO",
-] as const;
+import { MASTER_CATALOG_JSON_ACCEPT } from "@/lib/migration/master-catalog-export";
 
 interface CsvImportDialogProps {
     open: boolean;
@@ -111,14 +92,15 @@ export function CsvImportDialog({
                 : "fiori-import-log-line--info";
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
+        <Dialog preserveDashboardScroll open={open} onOpenChange={handleOpenChange}>
             <DialogContent
+                open={open}
                 overlayClassName="fiori-dialog-overlay"
                 className="fiori-dialog flex h-[min(610px,92vh)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
             >
                 <DialogHeader className="fiori-dialog-header shrink-0 space-y-1">
                     <DialogDescription className="sr-only">
-                        Importação de arquivo CSV ou TXT com métricas de carga.
+                        Importação de arquivo JSON com métricas de carga e logs técnicos.
                     </DialogDescription>
                     <div className="flex items-center gap-3">
                         <div className="fiori-dialog-icon">
@@ -139,23 +121,13 @@ export function CsvImportDialog({
                     {!isImporting && !importFinished ? (
                         <>
                             <div className="fiori-csv-layout">
-                                <p className="fiori-csv-layout-title">Layout de importação (CSV/TXT)</p>
-                                <div className="fiori-csv-chip-row">
-                                    {CSV_HEADERS.map((h) => (
-                                        <span key={h} className="fiori-csv-field-chip">
-                                            {h}
-                                        </span>
-                                    ))}
-                                </div>
+                                <p className="fiori-csv-layout-title">Formato de importação (JSON)</p>
                                 <p className="fiori-csv-example">
-                                    Exemplo:
-                                    <code>
-                                        ADRPSTCODE;01/03/2026 08:00:00;01/03/2026 09:30:00;1000;980;20;Falha de
-                                        validação;aberta
-                                    </code>
+                                    Exporte a mock pela plataforma e reimporte o arquivo
+                                    <code>.json</code> gerado (versão 1).
                                 </p>
                                 <p className="fiori-field-hint mt-2">
-                                    Separador: ; , ou TAB · Datas: dd/mm/aaaa hh:mm:ss
+                                    Campos por objeto: nome, datas de carga, métricas, comentário e status do log.
                                 </p>
                             </div>
 
@@ -173,7 +145,7 @@ export function CsvImportDialog({
                                     type="file"
                                     ref={importFileInputRef}
                                     className="hidden"
-                                    accept=".csv,.txt"
+                                    accept={MASTER_CATALOG_JSON_ACCEPT}
                                     onChange={(e) =>
                                         e.target.files?.[0] && onImportFile(e.target.files[0])
                                     }
@@ -182,17 +154,10 @@ export function CsvImportDialog({
                                     <Upload className="h-6 w-6" />
                                 </div>
                                 <p className="fiori-csv-dropzone-title">
-                                    Arraste seu arquivo .csv ou .txt
+                                    Arraste seu arquivo .json
                                 </p>
-                                <div className="fiori-csv-chip-row justify-center">
-                                    {DROPZONE_HEADERS.map((h) => (
-                                        <span key={h} className="fiori-csv-field-chip">
-                                            {h}
-                                        </span>
-                                    ))}
-                                </div>
                                 <p className="fiori-field-hint">
-                                    Delimitado por vírgula (,) ou ponto-e-vírgula (;)
+                                    Use o JSON exportado pela plataforma nesta mock.
                                 </p>
                             </div>
                         </>

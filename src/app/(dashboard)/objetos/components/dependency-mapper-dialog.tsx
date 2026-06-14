@@ -78,8 +78,9 @@ export function DependencyMapperDialog({
     .sort(compareObjectNames);
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={handleClose}>
       <DialogContent
+        open={open}
         overlayClassName={cn("fiori-dialog-overlay", elevated && "z-[220]")}
         className={cn(
           "fiori-dialog sm:max-w-[500px] h-[min(92vh,640px)] flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0 !rounded-[var(--fiori-radius)]",

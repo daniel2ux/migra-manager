@@ -13,11 +13,6 @@ import {
 } from 'lucide-react';
 import { Mock } from "@/types/migration";
 import { cn } from "@/lib/utils";
-import {
-  dashboardAlertDialogContentProps,
-  dashboardDialogContentProps,
-  dashboardDialogRootProps,
-} from "@/lib/dashboard/scroll-preservation";
 
 const BULK_RESTART_EFFECTS = [
   "Objetos de migração da janela",
@@ -80,8 +75,8 @@ export function MockAlerts({
   return (
     <>
       {/* Finalize Carga Alert */}
-      <AlertDialog open={isCargaConfirmOpen} onOpenChange={setIsCargaConfirmOpen} {...dashboardDialogRootProps}>
-        <AlertDialogContent variant="fiori" open={isCargaConfirmOpen} {...dashboardAlertDialogContentProps}>
+      <AlertDialog open={isCargaConfirmOpen} onOpenChange={setIsCargaConfirmOpen}>
+        <AlertDialogContent variant="fiori" open={isCargaConfirmOpen}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon shrink-0">
@@ -116,8 +111,8 @@ export function MockAlerts({
       </AlertDialog>
 
       {/* Restart Ciclo Alert */}
-      <AlertDialog open={isRestartConfirmOpen} onOpenChange={setIsRestartConfirmOpen} {...dashboardDialogRootProps}>
-        <AlertDialogContent variant="fiori" open={isRestartConfirmOpen} {...dashboardAlertDialogContentProps}>
+      <AlertDialog open={isRestartConfirmOpen} onOpenChange={setIsRestartConfirmOpen}>
+        <AlertDialogContent variant="fiori" open={isRestartConfirmOpen}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">
@@ -156,8 +151,8 @@ export function MockAlerts({
       </AlertDialog>
 
       {/* Bulk Delete Alert */}
-      <AlertDialog open={isBulkDeleteConfirmOpen} onOpenChange={setIsBulkDeleteConfirmOpen} {...dashboardDialogRootProps}>
-        <AlertDialogContent variant="fiori" open={isBulkDeleteConfirmOpen} {...dashboardAlertDialogContentProps}>
+      <AlertDialog open={isBulkDeleteConfirmOpen} onOpenChange={setIsBulkDeleteConfirmOpen}>
+        <AlertDialogContent variant="fiori" open={isBulkDeleteConfirmOpen}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">
@@ -202,12 +197,11 @@ export function MockAlerts({
       </AlertDialog>
 
       {/* Bulk Restart Alert */}
-      <AlertDialog
+      <AlertDialog preserveDashboardScroll
         open={isBulkRestartConfirmOpen}
         onOpenChange={(open) => !isBulkReseting && setIsBulkRestartConfirmOpen(open)}
-        {...dashboardDialogRootProps}
       >
-        <AlertDialogContent variant="fiori" open={isBulkRestartConfirmOpen} {...dashboardAlertDialogContentProps}>
+        <AlertDialogContent variant="fiori" open={isBulkRestartConfirmOpen}>
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">
@@ -260,11 +254,10 @@ export function MockAlerts({
       </AlertDialog>
 
       {/* Force Unlock Dialog */}
-      <Dialog open={isForceLockOpen} onOpenChange={setIsForceLockOpen} {...dashboardDialogRootProps}>
+      <Dialog open={isForceLockOpen} onOpenChange={setIsForceLockOpen}>
         <DialogContent
           open={isForceLockOpen}
           className="sm:max-w-[380px] rounded-none"
-          {...dashboardDialogContentProps}
         >
           <DialogHeader>
             <AlertDialogTitle className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-900/80 flex items-center gap-2">

@@ -393,8 +393,9 @@ export function LogImportDialog({
   }, [open, directoryHandle, aliasesKey, resolve, targetObjects, aliases]);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
+        open={open}
         overlayClassName="fiori-dialog-overlay"
         className={cn(
           "fiori-dialog flex flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]",

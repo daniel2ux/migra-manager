@@ -300,8 +300,9 @@ export function MigrationObjectFormDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        open={open}
         overlayClassName="fiori-dialog-overlay"
         className={cn(
           "fiori-dialog flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]",

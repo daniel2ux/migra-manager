@@ -472,7 +472,7 @@ export default function EmailsPage() {
           </div>
         </div>
 
-        <Dialog
+        <Dialog preserveDashboardScroll
           open={contactDialogOpen}
           onOpenChange={(open) => {
             setContactDialogOpen(open);
@@ -480,6 +480,7 @@ export default function EmailsPage() {
           }}
         >
           <DialogContent
+            open={contactDialogOpen}
             variant="fiori"
             overlayClassName="fiori-dialog-overlay"
             className="fiori-dialog fiori-dialog--form fiori-emails-contact-dialog flex h-[min(92vh,560px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
@@ -634,7 +635,7 @@ export default function EmailsPage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog
+        <Dialog preserveDashboardScroll
           open={groupDialogOpen}
           onOpenChange={(open) => {
             setGroupDialogOpen(open);
@@ -645,6 +646,7 @@ export default function EmailsPage() {
           }}
         >
           <DialogContent
+            open={contactDialogOpen}
             variant="fiori"
             overlayClassName="fiori-dialog-overlay"
             className="fiori-dialog fiori-dialog--form flex w-[calc(100vw-1rem)] max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
@@ -698,8 +700,9 @@ export default function EmailsPage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={!!deleteConfirmGroup} onOpenChange={(open) => !open && setDeleteConfirmGroup(null)}>
+        <Dialog preserveDashboardScroll open={!!deleteConfirmGroup} onOpenChange={(open) => !open && setDeleteConfirmGroup(null)}>
           <DialogContent
+            open={contactDialogOpen}
             variant="fiori"
             overlayClassName="fiori-dialog-overlay"
             className="fiori-dialog fiori-message-box flex max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
@@ -735,8 +738,9 @@ export default function EmailsPage() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={!!deleteConfirmContact} onOpenChange={(open) => !open && setDeleteConfirmContact(null)}>
+        <Dialog preserveDashboardScroll open={!!deleteConfirmContact} onOpenChange={(open) => !open && setDeleteConfirmContact(null)}>
           <DialogContent
+            open={contactDialogOpen}
             variant="fiori"
             overlayClassName="fiori-dialog-overlay"
             className="fiori-dialog fiori-message-box flex max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"

@@ -104,8 +104,8 @@ function ProfileDialog({
     : false;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="fiori-dialog w-[min(720px,95vw)] max-h-[90vh] flex flex-col gap-0 p-0 [&>button]:hidden">
+    <Dialog preserveDashboardScroll open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent open={open} className="fiori-dialog w-[min(720px,95vw)] max-h-[90vh] flex flex-col gap-0 p-0 [&>button]:hidden">
         <DialogHeader className="fiori-dialog-header shrink-0 px-5 pt-4 pb-3 border-b border-[var(--fiori-border-light)]">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-[#0070f2]" />
@@ -191,8 +191,8 @@ function DeleteConfirmDialog({
 
   if (!profile) return null;
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="w-[420px] max-w-[95vw] rounded-none border-none shadow-2xl bg-white p-0 [&>button]:hidden">
+    <Dialog preserveDashboardScroll open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent open={open} className="w-[420px] max-w-[95vw] rounded-none border-none shadow-2xl bg-white p-0 [&>button]:hidden">
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100 bg-slate-50/60">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-500" />

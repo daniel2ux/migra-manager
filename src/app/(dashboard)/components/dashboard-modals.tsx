@@ -181,7 +181,6 @@ export function DashboardModals(props: DashboardModalsProps) {
                 quickEditObject={props.quickEditObject}
                 handleSaveQuick={props.handleSaveQuick}
                 readOnly={props.isQuickReadOnly}
-                preserveScroll
                 empresa={props.empresa ?? undefined}
                 projectName={props.projectName}
                 mockName={
@@ -206,7 +205,6 @@ export function DashboardModals(props: DashboardModalsProps) {
                 handleUpdateQuickComment={props.handleUpdateQuickComment}
                 isAdmin={props.isAdmin}
                 currentUserId={props.currentUserId}
-                preserveScroll
             />
 
             <FinalizeCargaDialog
@@ -252,7 +250,6 @@ export function DashboardModals(props: DashboardModalsProps) {
                 blockerName={props.forceLockBlockerName}
                 onForceAcquire={props.handleForceAcquireQuick}
                 onViewOnly={props.handleViewOnlyQuick}
-                preserveScroll
             />
 
             {props.isEmailComposeOpen && (

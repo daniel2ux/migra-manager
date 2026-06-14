@@ -337,8 +337,8 @@ export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, 
     };
 
     return (
-        <Dialog open={open} onOpenChange={v => !v && onClose()}>
-            <DialogContent className="fiori-dialog fiori-dialog-fullscreen !flex p-0 flex-col gap-0 shadow-lg [&>button]:hidden">
+        <Dialog preserveDashboardScroll open={open} onOpenChange={v => !v && onClose()}>
+            <DialogContent open={open} className="fiori-dialog fiori-dialog-fullscreen !flex p-0 flex-col gap-0 shadow-lg [&>button]:hidden">
                 <DialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
                     <div className="fiori-dialog-header-row">
                         <div className="fiori-dialog-header-main">

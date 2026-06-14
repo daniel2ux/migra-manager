@@ -78,8 +78,8 @@ export function ConfirmationDialogs({
 }: ConfirmationDialogsProps) {
   return (
     <>
-      <AlertDialog open={isGlobalResetOpen} onOpenChange={onGlobalResetChange}>
-        <AlertDialogContent variant="fiori" className="max-w-md">
+      <AlertDialog preserveDashboardScroll open={isGlobalResetOpen} onOpenChange={onGlobalResetChange}>
+        <AlertDialogContent open={isGlobalResetOpen} variant="fiori" className="max-w-md">
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">
@@ -119,8 +119,8 @@ export function ConfirmationDialogs({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={isResetProgressOpen} onOpenChange={() => {}}>
-        <DialogContent className="fiori-dialog fiori-message-box flex max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]">
+      <Dialog preserveDashboardScroll open={isResetProgressOpen} onOpenChange={() => {}}>
+        <DialogContent open={isResetProgressOpen} className="fiori-dialog fiori-message-box flex max-w-md flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]">
           <div className="p-8 space-y-6 text-center">
             <DialogHeader className="hidden">
               <DialogTitle>{resetProgress < 100 ? "Processando reset total" : "Reset concluído"}</DialogTitle>
@@ -163,14 +163,14 @@ export function ConfirmationDialogs({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
+      <AlertDialog preserveDashboardScroll
         open={isIndividualResetOpen}
         onOpenChange={(open) => {
           onIndividualResetChange(open);
           if (!open) onClearObjectToReset();
         }}
       >
-        <AlertDialogContent variant="fiori" className="max-w-md">
+        <AlertDialogContent open={isGlobalResetOpen} variant="fiori" className="max-w-md">
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">
@@ -210,8 +210,8 @@ export function ConfirmationDialogs({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isBulkDeleteOpen} onOpenChange={onBulkDeleteChange}>
-        <AlertDialogContent variant="fiori" className="max-w-md">
+      <AlertDialog preserveDashboardScroll open={isBulkDeleteOpen} onOpenChange={onBulkDeleteChange}>
+        <AlertDialogContent open={isGlobalResetOpen} variant="fiori" className="max-w-md">
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">
@@ -251,8 +251,8 @@ export function ConfirmationDialogs({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isBulkResetOpen} onOpenChange={onBulkResetChange}>
-        <AlertDialogContent variant="fiori" className="max-w-md">
+      <AlertDialog preserveDashboardScroll open={isBulkResetOpen} onOpenChange={onBulkResetChange}>
+        <AlertDialogContent open={isGlobalResetOpen} variant="fiori" className="max-w-md">
           <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
             <div className="flex items-center gap-3">
               <div className="fiori-dialog-icon fiori-dialog-icon--warning shrink-0">

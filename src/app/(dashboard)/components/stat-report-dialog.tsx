@@ -18,7 +18,6 @@ import {
 import { ChevronLeft, ChevronDown, BarChart2, FileText, Mail, Printer, Loader2, Check, Search, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FioriDialogContextFields } from "@/components/ui/fiori-dialog-context-fields";
-import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 import type { AggregatedObject, Mock } from "@/types/migration";
 
 interface StatReportDialogProps {
@@ -225,8 +224,8 @@ export function StatReportDialog({
         mocksByIdMap.get(effectiveMockId || "")?.name || effectiveMockId || undefined;
 
     return (
-        <Dialog open={open} onOpenChange={handleClose} {...dashboardDialogRootProps}>
-            <DialogContent open={open} className="fiori-dialog fiori-dialog-fullscreen !flex p-0 flex-col gap-0 shadow-lg [&>button]:hidden" {...dashboardDialogContentProps}>
+        <Dialog open={open} onOpenChange={handleClose}>
+            <DialogContent open={open} className="fiori-dialog fiori-dialog-fullscreen !flex p-0 flex-col gap-0 shadow-lg [&>button]:hidden">
                 <DialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
                     <div className="fiori-dialog-header-row">
                         <div className="fiori-dialog-header-main">

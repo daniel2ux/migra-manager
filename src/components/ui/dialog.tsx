@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { dashboardDialogFocusProps } from "@/lib/dashboard/scroll-preservation"
 
 function isFioriFormDialog(className?: string, variant?: "default" | "fiori") {
   if (variant === "fiori") return true
@@ -23,7 +24,21 @@ const DIALOG_CONTENT_MOTION_DEFAULT = cn(
   "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
 )
 
-const Dialog = DialogPrimitive.Root
+const PreserveDashboardScrollContext = React.createContext(false)
+
+type DialogProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Root> & {
+  /** Evita bloqueio de scroll no body (scroll real está no `<main>` do dashboard). */
+  preserveDashboardScroll?: boolean
+}
+
+const Dialog = ({ preserveDashboardScroll = false, modal, ...props }: DialogProps) => (
+  <PreserveDashboardScrollContext.Provider value={preserveDashboardScroll}>
+    <DialogPrimitive.Root
+      modal={preserveDashboardScroll ? false : modal}
+      {...props}
+    />
+  </PreserveDashboardScrollContext.Provider>
+)
 
 const DialogTrigger = DialogPrimitive.Trigger
 
@@ -59,12 +74,14 @@ type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, overlayClassName, manualBackdrop, open, variant = "default", children, ...props }, ref) => {
+>(({ className, overlayClassName, manualBackdrop, open, variant = "default", children, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+  const preserveDashboardScroll = React.useContext(PreserveDashboardScrollContext)
+  const useManualBackdrop = manualBackdrop ?? preserveDashboardScroll
   const instantOpen = isFioriFormDialog(className, variant)
 
   return (
   <DialogPortal>
-    {manualBackdrop && open ? (
+    {useManualBackdrop && open ? (
       <div
         aria-hidden="true"
         className={cn(
@@ -74,7 +91,7 @@ const DialogContent = React.forwardRef<
         )}
       />
     ) : (
-      !manualBackdrop && (
+      !useManualBackdrop && (
         <DialogOverlay motion={!instantOpen} className={overlayClassName} />
       )
     )}
@@ -93,6 +110,8 @@ const DialogContent = React.forwardRef<
             ),
         className
       )}
+      onOpenAutoFocus={onOpenAutoFocus ?? (preserveDashboardScroll ? dashboardDialogFocusProps.onOpenAutoFocus : undefined)}
+      onCloseAutoFocus={onCloseAutoFocus ?? (preserveDashboardScroll ? dashboardDialogFocusProps.onCloseAutoFocus : undefined)}
       {...props}
     >
       {children}

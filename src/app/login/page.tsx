@@ -107,6 +107,7 @@ function LoginForm() {
         'auth/network-request-failed': 'Falha de rede. Verifique sua conexão.',
         'auth/weak-password': 'Senha não atende aos requisitos de segurança (mín. 10 caracteres, não pode estar em vazamentos conhecidos).',
         'permission-denied': 'Sem permissão para acessar o perfil. Contate o administrador.',
+        'Supabase client not initialized': 'Serviço temporariamente indisponível. Recarregue a página e tente novamente.',
       };
 
       setError(errorMap[code ?? ''] ?? message ?? 'Falha ao entrar. Verifique seus dados.');

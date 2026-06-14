@@ -269,9 +269,10 @@ export function QuickCreateObjectDialog({
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
       <TooltipProvider delayDuration={200}>
       <DialogContent
+        open={open}
         variant="fiori"
         className="fiori-dialog fiori-dialog--form fiori-dialog--mock-form fiori-dialog--object-master-form flex h-[min(92vh,620px)] w-[calc(100vw-1rem)] max-w-[500px] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
       >

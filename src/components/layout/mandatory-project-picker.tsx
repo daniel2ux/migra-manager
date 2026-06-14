@@ -218,8 +218,9 @@ export function MandatoryProjectPicker() {
         </div>
       )}
 
-      <Dialog open={mustPick}>
+      <Dialog preserveDashboardScroll open={mustPick}>
         <DialogContent
+          open={mustPick}
           overlayClassName="fiori-dialog-overlay"
           className="fiori-dialog fiori-project-picker-dialog !flex p-0 flex-col gap-0 overflow-hidden shadow-lg [&>button]:hidden"
           onPointerDownOutside={(e) => e.preventDefault()}

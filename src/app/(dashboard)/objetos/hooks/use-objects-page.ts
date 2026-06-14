@@ -26,6 +26,14 @@ import {
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
 import { SUPERADMIN_UID, idsForDbIn } from '@/lib/constants';
 import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
+import {
+  buildMasterCatalogExportPayload,
+  downloadJsonFile,
+  suggestMasterCatalogExportFilename,
+} from '@/lib/migration/master-catalog-export';
+import { projectAllowsMasterObjectRegistration } from '@/lib/migration/company-sync';
+import { masterObjectsQueryForProject } from '@/lib/migration/master-objects-query';
+import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { computeSuggestedNextChargeOrder } from '@/lib/migration/master-catalog-charge-reflow';
 import { buildGestaoRowsFromMockMigrations } from '@/lib/migration/gestao-sequence';
 import { useObjectsMockSync } from './use-objects-mock-sync';
@@ -36,7 +44,13 @@ import {
 } from './use-objects-reorder';
 import { useObjectsCRUD } from './use-objects-crud';
 
-interface Project { id: string; name: string; company?: string; empresa?: string; }
+interface Project {
+  id: string;
+  name: string;
+  company?: string;
+  empresa?: string;
+  companyId?: string | null;
+}
 
 function _defaultExtractChargeOrderDisplay(chargeOrder: string | number | undefined): string {
   if (chargeOrder === undefined || chargeOrder === null) return '';
@@ -72,10 +86,16 @@ function useObjectsQueries(
   /** Projeto atual na URL/contexto (`null`/`all` → não restringir por igualdade aqui). */
   scopedProjectId: string | null,
 ) {
+  const scoped =
+    scopedProjectId && scopedProjectId !== 'all'
+      ? scopedProjectId
+      : null;
+
   const objectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading) return null;
+    if (scoped) return masterObjectsQueryForProject(db, scoped);
     return collection(db, 'masterObjects');
-  }, [db, user, isProfileLoading]);
+  }, [db, user, isProfileLoading, scoped]);
   const { data: objects, isLoading, refetch: refetchObjects } = useCollection<MasterObject>(objectsQuery);
 
   const projectsQuery = useMemoDb(() => {
@@ -91,11 +111,6 @@ function useObjectsQueries(
     () => (allProjects?.map((p) => p.id) ?? []).slice(0, 30),
     [allProjects],
   );
-
-  const scoped =
-    scopedProjectId && scopedProjectId !== 'all'
-      ? scopedProjectId
-      : null;
 
   const migrationObjectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading || !hasUserProfile) return null;
@@ -421,6 +436,43 @@ export function useObjectsPage() {
     return queries.allProjects.find((p) => p.id === selectedProjectId) ?? null;
   }, [selectedProjectId, queries.allProjects]);
 
+  const canRegisterObjects = useMemo(
+    () => projectAllowsMasterObjectRegistration(activeProject),
+    [activeProject],
+  );
+
+  const objectCatalogBlockedReason = useMemo(() => {
+    if (!selectedProjectId || selectedProjectId === 'all') {
+      return 'SELECIONE UM PROJETO PARA GERENCIAR O CATÁLOGO.';
+    }
+    if (!canRegisterObjects) {
+      return 'CADASTRE A EMPRESA NO PROJETO PARA CRIAR OU IMPORTAR OBJETOS NO CATÁLOGO.';
+    }
+    return null;
+  }, [selectedProjectId, canRegisterObjects]);
+
+  const handleExportJson = useCallback(() => {
+    const catalogObjects = queries.objects ?? [];
+    if (!catalogObjects.length) {
+      toast({ variant: 'destructive', description: 'NENHUM OBJETO PARA EXPORTAR.' });
+      return;
+    }
+    if (!activeProject) {
+      toast({ variant: 'destructive', description: 'SELECIONE UM PROJETO PARA EXPORTAR O CATÁLOGO.' });
+      return;
+    }
+    const company = getProjectCompanyName(activeProject) ?? undefined;
+    const payload = buildMasterCatalogExportPayload(catalogObjects, {
+      id: activeProject.id,
+      name: activeProject.name,
+      company,
+    });
+    downloadJsonFile(
+      payload,
+      suggestMasterCatalogExportFilename(activeProject.name),
+    );
+  }, [activeProject, queries.objects, toast]);
+
   const sequenceStore = useMemo((): CatalogSequenceStore => {
     // Admin na gestão do catálogo mestre: sequência persiste em master_objects
     if (auth.isAdmin) return { kind: 'master' };
@@ -432,7 +484,14 @@ export function useObjectsPage() {
 
   // Sub-hooks
   const importHook = useObjectsImport({
-    db, user: auth.user, objects: queries.objects, toast, fileInputRef, terminalEndRef,
+    db,
+    user: auth.user,
+    objects: queries.objects,
+    toast,
+    fileInputRef,
+    terminalEndRef,
+    projectId: selectedProjectId && selectedProjectId !== 'all' ? selectedProjectId : null,
+    canRegisterObjects,
   });
   const reorder = useObjectsReorder({
     db,
@@ -468,6 +527,8 @@ export function useObjectsPage() {
     chargeGroups,
     displayChargeOrderById,
     reorderDisplayList: sortedFilteredObjects,
+    projectId: selectedProjectId && selectedProjectId !== 'all' ? selectedProjectId : null,
+    canRegisterObjects,
   });
 
   // Derived flags
@@ -573,6 +634,7 @@ export function useObjectsPage() {
     isLockedByOther,
     lockedByName,
     usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject,
+    canRegisterObjects, objectCatalogBlockedReason,
     displayChargeOrderById,
     searchTerm, setSearchTerm, sortMode, statusFilter, setStatusFilter,
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode, selectedCardId, setSelectedCardId,
@@ -583,6 +645,7 @@ export function useObjectsPage() {
     editingObject,
     quickFormData, setQuickFormData, editFormData, setEditFormData,
     ...mockSync, ...importHook,
+    handleExportJson,
     handleClearFilters, handleOpenDependencies, handleSaveDependencySelect,
     handleOpenPrecedence, suggestNextOrder, suggestNextParallelOrder,
     releaseLock,

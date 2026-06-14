@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc, serverTimestamp, type CompatDb } from '@/supabase/compat-db-shim';
-import { ref, uploadBytes, getDownloadURL, avatarRef, type CompatStorage } from '@/supabase/storage-shim';
+import { uploadBytes, getDownloadURL, avatarRef, type CompatStorage } from '@/supabase/storage-shim';
 import Link from 'next/link';
 import { useDb, useUser, useDoc, useMemoDb, useStorage } from '@/supabase';
 import { Camera, X } from 'lucide-react';

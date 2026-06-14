@@ -147,9 +147,10 @@ function ObjetosContent() {
     toast: page.toast,
     });
 
-    const { isSyncing, handleExportCSV, handleSyncPreviousReferences } = useObjectsExportSync({
+    const { isSyncing, handleExportJson, handleSyncPreviousReferences } = useObjectsExportSync({
     db: page.db,
     projectId: page.projectId,
+    projectName: page.projectData?.name ?? page.headerEmpresa ?? 'projeto',
     mockId: page.mockId,
     isAdmin: !!page.isAdmin,
     isEffectiveLocked: !!page.isEffectiveLocked,
@@ -278,7 +279,7 @@ function ObjetosContent() {
               onImportFile={handleImportFile}
               onGlobalReset={() => setIsGlobalResetOpen(true)}
               onOpenImportDialog={() => setImportLogOpen(true)}
-              onExportCsv={() => handleExportCSV()}
+              onExportJson={() => handleExportJson()}
               onAddObjects={() => handleOpenDialog()}
             />
           }

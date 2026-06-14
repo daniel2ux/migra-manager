@@ -24,6 +24,7 @@ const SEGMENT_TABLE: Record<string, string> = {
   emailGroups: 'email_groups',
   accessProfiles: 'access_profiles',
   fileAliases: 'file_aliases',
+  companies: 'companies',
   editLocks: 'edit_locks',
   sessions: 'sessions',
   audit_logs: 'audit_logs',

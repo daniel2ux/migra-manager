@@ -26,8 +26,9 @@ export function ProjectPickerDialog({
     onPick: (id: string) => void;
 }) {
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
             <DialogContent
+                open={open}
                 overlayClassName="fiori-dialog-overlay"
                 className="fiori-dialog fiori-project-picker-dialog fiori-project-picker-dialog--switch !flex p-0 flex-col gap-0 overflow-hidden border-none bg-white shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden"
             >

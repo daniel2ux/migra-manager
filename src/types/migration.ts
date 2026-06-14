@@ -19,6 +19,8 @@ export interface Project {
   lockedByName?: string;
   /** Empresa-cliente (campo `company` no CompatDb) */
   company?: string;
+  /** FK para `companies` — obrigatório para cadastro de objetos mestre */
+  companyId?: string;
   /** @deprecated Preferir `company` */
   empresa?: string;
 }

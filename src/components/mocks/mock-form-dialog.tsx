@@ -384,8 +384,9 @@ export function MockFormDialog({
     const statusLabel = STATUS_LABELS[formData.status || "PENDENTE"] ?? formData.status;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
             <DialogContent
+                open={open}
                 variant="fiori"
                 overlayClassName="fiori-dialog-overlay"
                 className="fiori-dialog fiori-dialog--form fiori-dialog--mock-form flex h-[min(92vh,560px)] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"

@@ -35,7 +35,11 @@ export interface UserHookResult {
 const SupabaseContext = createContext<SupabaseContextState | undefined>(undefined);
 
 export function SupabaseProvider({ children }: { children: ReactNode }) {
-  const client = useMemo(() => createSupabaseBrowserClient(), []);
+  const client = useMemo(() => {
+    const instance = createSupabaseBrowserClient();
+    setQueryClient(instance);
+    return instance;
+  }, []);
   const [user, setUser] = useState<CompatUser | null>(null);
   const [isUserLoading, setIsUserLoading] = useState(true);
   const [userError, setUserError] = useState<Error | null>(null);

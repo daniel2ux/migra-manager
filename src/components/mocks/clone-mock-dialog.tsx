@@ -61,8 +61,9 @@ export function CloneMockDialog({
   if (!sourceMock) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        open={open}
         variant="fiori"
         overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog fiori-dialog--form fiori-dialog--mock-form flex h-auto max-h-[min(92vh,420px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"

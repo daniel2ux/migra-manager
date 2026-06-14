@@ -13,7 +13,6 @@ import {
 import { ChevronLeft, Database, Network, Search, X } from "lucide-react";
 import { DependencyGraph } from "@/components/objetos/dependency-graph";
 
-import { dashboardDialogContentProps, dashboardDialogRootProps } from "@/lib/dashboard/scroll-preservation";
 import { MasterObject } from "@/types/master-object";
 
 interface PrecedenceDialogProps {
@@ -58,11 +57,10 @@ export function PrecedenceDialog({
       : "Informe o objeto para ver a precedência recursiva completa";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} {...dashboardDialogRootProps}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         open={open}
         className="fiori-dialog fiori-dialog-fullscreen !flex p-0 flex-col gap-0 overflow-hidden shadow-lg [&>button]:hidden"
-        {...dashboardDialogContentProps}
       >
         <DialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
           <DialogDescription className="sr-only">
