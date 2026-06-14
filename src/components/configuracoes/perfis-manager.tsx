@@ -11,6 +11,7 @@ import {
   orderBy,
   query,
   setDoc,
+  where,
 } from "@/supabase/compat-db-shim";
 import { useDb, useUser } from "@/supabase/provider";
 import { Button } from "@/components/ui/button";
@@ -32,19 +33,25 @@ import {
 import { cn } from "@/lib/utils";
 import { Shield, AlertTriangle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+import { PermissionsEditor } from "@/components/configuracoes/permissions-editor";
+import {
+  buildDefaultPermissions,
+  normalizePermissions,
+  permissionsToArray,
+  SYSTEM_PROFILE_NAMES,
+  type PermissionKey,
+} from "@/lib/auth/permissions";
 
 export interface AccessProfile {
   id: string;
   name: string;
   description: string;
-  createdAt?: any;
-  updatedAt?: any;
+  permissions?: string[];
+  isSystem?: boolean;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   createdBy?: string;
 }
-
-// ─── Dialog de Formulário ─────────────────────────────────────────────────────
 
 function ProfileDialog({
   open,
@@ -54,17 +61,26 @@ function ProfileDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<AccessProfile, "id" | "createdAt" | "updatedAt" | "createdBy">) => Promise<void>;
+  onSave: (data: {
+    name: string;
+    description: string;
+    permissions: PermissionKey[];
+  }) => Promise<void>;
   initial?: AccessProfile | null;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [permissions, setPermissions] = useState<Set<PermissionKey>>(new Set());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
+      const profileName = initial?.name ?? "MEMBRO";
       setName(initial?.name ?? "");
       setDescription(initial?.description ?? "");
+      setPermissions(
+        normalizePermissions(initial?.permissions, profileName),
+      );
     }
   }, [open, initial]);
 
@@ -75,6 +91,7 @@ function ProfileDialog({
       await onSave({
         name: name.trim().toUpperCase(),
         description: description.trim(),
+        permissions: permissionsToArray(permissions),
       });
       onClose();
     } finally {
@@ -82,58 +99,77 @@ function ProfileDialog({
     }
   }
 
+  const isSystem = initial
+    ? SYSTEM_PROFILE_NAMES.includes(initial.name as (typeof SYSTEM_PROFILE_NAMES)[number])
+    : false;
+
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="w-[480px] max-w-[95vw] rounded-none border-none shadow-2xl bg-white p-0 [&>button]:hidden">
-        <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100 bg-slate-50/60">
+      <DialogContent className="fiori-dialog w-[min(720px,95vw)] max-h-[90vh] flex flex-col gap-0 p-0 [&>button]:hidden">
+        <DialogHeader className="fiori-dialog-header shrink-0 px-5 pt-4 pb-3 border-b border-[var(--fiori-border-light)]">
           <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-SkyBlue-500" />
-            <DialogTitle className="text-[10px] font-black uppercase tracking-widest text-slate-900">
-              {initial ? "Editar Perfil" : "Novo Perfil"}
+            <Shield className="w-4 h-4 text-[#0070f2]" />
+            <DialogTitle className="fiori-dialog-title">
+              {initial ? "Editar perfil de acesso" : "Novo perfil de acesso"}
             </DialogTitle>
           </div>
         </DialogHeader>
 
-        <div className="px-6 py-5 space-y-4">
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Nome do Perfil</label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value.toUpperCase())}
-              placeholder="EX: ANALISTA JÚNIOR"
-              className="font-normal text-[14px]! bg-slate-100/80 border-slate-300 rounded-none uppercase"
-            />
+        <div className="fiori-dialog-body flex-1 min-h-0 overflow-y-auto custom-scrollbar px-5 py-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="fiori-field-label">Nome do perfil</label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value.toUpperCase())}
+                placeholder="EX: ANALISTA"
+                readOnly={isSystem}
+                className={cn("fiori-input shadow-none uppercase", isSystem && "readable-disabled")}
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <label className="fiori-field-label">Descrição</label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Resumo do que este perfil pode executar..."
+                className="fiori-textarea shadow-none min-h-[4rem] resize-none"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Descrição</label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="O que este perfil pode acessar..."
-              className="font-normal text-[12px]! bg-slate-100/80 border-slate-300 rounded-none resize-none min-h-[80px]"
+          <div className="space-y-2">
+            <h3 className="fiori-section-title text-[0.8125rem]">Permissões</h3>
+            <PermissionsEditor
+              value={permissions}
+              onChange={setPermissions}
+              profileName={name}
             />
           </div>
         </div>
 
-        <div className="px-6 py-3 border-t border-slate-100 flex justify-between items-center">
-          <Button onClick={onClose} className="rounded-none bg-slate-100 hover:bg-slate-200 text-slate-700 border-0 text-[10px] font-bold uppercase tracking-widest h-8">
+        <div className="fiori-dialog-footer shrink-0 px-5 py-3 border-t border-[var(--fiori-border-light)] flex justify-between gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            className="fiori-wizard-btn fiori-wizard-btn--ghost"
+            onClick={onClose}
+          >
             Cancelar
           </Button>
           <Button
+            type="button"
+            className="fiori-wizard-btn fiori-wizard-btn--emphasized"
             onClick={handleSave}
             disabled={!name.trim() || saving}
-            className="rounded-none bg-slate-900 hover:bg-slate-800 text-white border-0 text-[10px] font-bold uppercase tracking-widest h-8 disabled:opacity-40"
           >
-            {saving ? "Salvando..." : initial ? "Salvar Alterações" : "Criar Perfil"}
+            {saving ? "Salvando…" : initial ? "Salvar alterações" : "Criar perfil"}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-// ─── Dialog de Confirmação de Exclusão ────────────────────────────────────────
 
 function DeleteConfirmDialog({
   open,
@@ -161,30 +197,19 @@ function DeleteConfirmDialog({
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-500" />
             <DialogTitle className="text-[10px] font-black uppercase tracking-widest text-slate-900">
-              Excluir Perfil
+              Excluir perfil
             </DialogTitle>
           </div>
         </DialogHeader>
         <div className="px-6 py-5 space-y-2">
           <p className="text-[14px] text-slate-600">
-            Tem certeza que deseja excluir o perfil <span className="font-bold">{profile.name}</span>?
+            Excluir o perfil <span className="font-bold">{profile.name}</span>?
           </p>
-          <div className="bg-amber-50 p-3 border border-amber-200">
-            <p className="text-[11px] text-amber-700">
-              Esta ação removerá este perfil permanentemente da plataforma.
-            </p>
-          </div>
         </div>
         <div className="px-6 py-3 border-t border-slate-100 flex justify-between">
-          <Button onClick={onClose} className="rounded-none bg-slate-100 hover:bg-slate-200 text-slate-700 border-0 text-[10px] font-bold uppercase tracking-widest h-8">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={deleting}
-            className="rounded-none bg-red-600 hover:bg-red-700 text-white border-0 text-[10px] font-bold uppercase tracking-widest h-8"
-          >
-            {deleting ? "Excluindo..." : "Excluir"}
+          <Button onClick={onClose} variant="ghost">Cancelar</Button>
+          <Button onClick={handleConfirm} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">
+            {deleting ? "Excluindo…" : "Excluir"}
           </Button>
         </div>
       </DialogContent>
@@ -192,78 +217,119 @@ function DeleteConfirmDialog({
   );
 }
 
-// ─── Manager Principal ────────────────────────────────────────────────────────
-
 export interface PerfisManagerRef {
   openNewProfile: () => void;
 }
 
-export const PerfisManager = forwardRef<PerfisManagerRef, {}>((props, ref) => {
+export const PerfisManager = forwardRef<PerfisManagerRef, object>((_props, ref) => {
   const db = useDb();
   const { user } = useUser();
 
   const [profiles, setProfiles] = useState<AccessProfile[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Hardcoded default profiles that can't be deleted or edited here (except visual overrides if needed)
-  const SYSTEM_PROFILES = ["MASTER", "ADMIN", "ESPECIALISTA", "MEMBRO"];
-
   const [profileDialog, setProfileDialog] = useState<{ open: boolean; initial?: AccessProfile | null }>({ open: false });
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; profile?: AccessProfile | null }>({ open: false });
 
   useImperativeHandle(ref, () => ({
-    openNewProfile: () => {
-      setProfileDialog({ open: true, initial: null });
-    }
+    openNewProfile: () => setProfileDialog({ open: true, initial: null }),
   }));
-
-  // ── Load ────────────────────────────────────────────────────────────────────
 
   async function load() {
     if (!db) return;
     setLoading(true);
     const snap = await getDocs(query(collection(db, "accessProfiles"), orderBy("name")));
 
-    const systemProfilesObj: AccessProfile[] = [
-      { id: "sys-master", name: "MASTER", description: "Acesso total, gerencia ambiente, projetos e todos os perfis customizados." },
-      { id: "sys-admin", name: "ADMIN", description: "Administrador de sistema. Acesso a todos os projetos e membros." },
-      { id: "sys-especialista", name: "ESPECIALISTA", description: "Consultor com visibilidade técnica em áreas alocadas (não listado em membros)." },
-      { id: "sys-membro", name: "MEMBRO", description: "Integrante padrão de projeto com acesso às funções operacionais." },
-    ];
+    const systemDefaults: AccessProfile[] = SYSTEM_PROFILE_NAMES.map((name) => ({
+      id: `sys-${name.toLowerCase()}`,
+      name,
+      description: "",
+      permissions: buildDefaultPermissions(name),
+      isSystem: true,
+    }));
 
-    const fetchedProfiles = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<AccessProfile, "id">) }));
-
-    const enhancedSystemProfiles = systemProfilesObj.map(sp => {
-      const dbProfile = fetchedProfiles.find(fp => fp.name === sp.name);
-      return dbProfile ? { ...sp, id: dbProfile.id, description: dbProfile.description } : sp;
+    const fetched = snap.docs.map((d) => {
+      const data = d.data() as Omit<AccessProfile, "id">;
+      return {
+        id: d.id,
+        ...data,
+        permissions: data.permissions ?? buildDefaultPermissions(data.name),
+      };
     });
 
-    const customProfiles = fetchedProfiles.filter((p) => !SYSTEM_PROFILES.includes(p.name));
+    const mergedSystem = systemDefaults.map((sp) => {
+      const dbProfile = fetched.find((fp) => fp.name.toUpperCase() === sp.name);
+      return dbProfile
+        ? { ...sp, ...dbProfile, isSystem: true }
+        : sp;
+    });
 
-    const allProfiles = [...enhancedSystemProfiles, ...customProfiles].sort((a, b) => a.name.localeCompare(b.name));
+    const customProfiles = fetched.filter(
+      (p) => !SYSTEM_PROFILE_NAMES.includes(p.name.toUpperCase() as (typeof SYSTEM_PROFILE_NAMES)[number]),
+    );
 
-    setProfiles(allProfiles);
+    setProfiles([...mergedSystem, ...customProfiles].sort((a, b) => a.name.localeCompare(b.name)));
     setLoading(false);
   }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- montagem: carregar perfis uma vez
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void load(); }, [db]);
 
-  // ── CRUD ────────────────────────────────────────────────────────────────────
-
-  async function handleSaveProfile(data: Omit<AccessProfile, "id" | "createdAt" | "updatedAt" | "createdBy">) {
+  async function upsertSystemProfile(
+    systemName: string,
+    data: { name: string; description: string; permissions: PermissionKey[] },
+  ) {
     if (!db) return;
-    if (profileDialog.initial) {
-      // Impede renomear system profile
-      if (SYSTEM_PROFILES.includes(profileDialog.initial.name) && data.name !== profileDialog.initial.name) return;
+    const snap = await getDocs(
+      query(collection(db, "accessProfiles"), where("name", "==", systemName)),
+    );
+    const payload = {
+      name: systemName,
+      description: data.description,
+      permissions: data.permissions,
+      isSystem: true,
+      updatedAt: serverTimestamp(),
+    };
+    if (snap.empty) {
+      await addDoc(collection(db, "accessProfiles"), {
+        ...payload,
+        createdAt: serverTimestamp(),
+        createdBy: user?.uid ?? "",
+      });
+    } else {
+      await setDoc(doc(db, "accessProfiles", snap.docs[0].id), payload, { merge: true });
+    }
+  }
 
-      await setDoc(doc(db, "accessProfiles", profileDialog.initial.id), {
-        ...data,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
+  async function handleSaveProfile(data: {
+    name: string;
+    description: string;
+    permissions: PermissionKey[];
+  }) {
+    if (!db) return;
+    const isSystem = SYSTEM_PROFILE_NAMES.includes(
+      (profileDialog.initial?.name ?? data.name) as (typeof SYSTEM_PROFILE_NAMES)[number],
+    );
+
+    if (profileDialog.initial) {
+      if (isSystem) {
+        await upsertSystemProfile(profileDialog.initial.name, data);
+      } else {
+        await setDoc(
+          doc(db, "accessProfiles", profileDialog.initial.id),
+          {
+            name: data.name,
+            description: data.description,
+            permissions: data.permissions,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+      }
     } else {
       await addDoc(collection(db, "accessProfiles"), {
-        ...data,
+        name: data.name,
+        description: data.description,
+        permissions: data.permissions,
+        isSystem: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: user?.uid ?? "",
@@ -274,36 +340,31 @@ export const PerfisManager = forwardRef<PerfisManagerRef, {}>((props, ref) => {
 
   async function handleDeleteProfile() {
     if (!db || !deleteDialog.profile) return;
-    if (SYSTEM_PROFILES.includes(deleteDialog.profile.name)) return; // Prevents deletion of core profiles
-
+    if (SYSTEM_PROFILE_NAMES.includes(deleteDialog.profile.name as (typeof SYSTEM_PROFILE_NAMES)[number])) return;
+    if (deleteDialog.profile.id.startsWith("sys-")) return;
     await deleteDoc(doc(db, "accessProfiles", deleteDialog.profile.id));
     await load();
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Table */}
       <div className="relative flex-1 min-h-0 flex flex-col border-t border-slate-200">
-        <Table
-          wrapperClassName="h-full overflow-auto"
-          className="text-[11px]!"
-        >
+        <Table wrapperClassName="h-full overflow-auto" className="text-[11px]!">
           <colgroup>
             <col className="w-12" />
-            <col className="w-1/3" />
+            <col className="w-1/4" />
             <col />
-            <col className="w-48" />
+            <col className="w-32" />
+            <col className="w-40" />
           </colgroup>
           <TableHeader>
             <TableRow className="h-8 border-none hover:bg-transparent">
-              {["", "Perfil", "Descrição", "Ações"].map((h, index, arr) => (
+              {["", "Perfil", "Descrição", "Permissões", "Ações"].map((h, index, arr) => (
                 <TableHead
-                  key={h}
+                  key={h || "icon"}
                   className={cn(
                     "py-0 text-[10px] font-bold uppercase tracking-widest text-slate-900 sticky top-0 z-20 bg-slate-200 border-b border-slate-300/40",
-                    index === 0 ? "pl-4 md:pl-8 pr-2 text-center" : index === arr.length - 1 ? "pr-4 md:pr-8 pl-4" : "px-4"
+                    index === 0 ? "pl-4 md:pl-8 pr-2 text-center" : index === arr.length - 1 ? "pr-4 md:pr-8 pl-4" : "px-4",
                   )}
                 >
                   {h}
@@ -314,59 +375,60 @@ export const PerfisManager = forwardRef<PerfisManagerRef, {}>((props, ref) => {
           <TableBody className="text-[11px]!">
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-40 text-center text-[14px] text-slate-400 font-bold uppercase tracking-widest">
-                  Carregando...
+                <TableCell colSpan={5} className="h-40 text-center text-slate-400">
+                  Carregando…
                 </TableCell>
               </TableRow>
-            ) : profiles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="h-40 text-center text-[14px] text-slate-400 font-bold uppercase tracking-widest">
-                  Nenhum perfil customizado. Crie o primeiro acima.
-                </TableCell>
-              </TableRow>
-            ) : profiles.map((p, i) => (
-              <TableRow key={p.id} className={cn("h-8 border-b border-slate-100", i % 2 === 0 ? "bg-white" : "bg-slate-50/30")}>
-                <TableCell className="pl-4 md:pl-8 pr-2 py-0 whitespace-nowrap text-center align-middle">
-                  <Shield className="w-3.5 h-3.5 text-slate-400 inline-block" />
-                </TableCell>
-                <TableCell className="px-4 py-0 font-bold text-slate-900 truncate text-[11px]! align-middle">
-                  {p.name}
-                </TableCell>
-                <TableCell className="px-4 py-0 text-slate-500 truncate text-[11px]! align-middle">
-                  {p.description || "—"}
-                </TableCell>
-                <TableCell className="pr-4 md:pr-8 pl-4 py-0 align-middle">
-                  <div className="flex items-center gap-1">
-                    {SYSTEM_PROFILES.includes(p.name) ? (
-                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 inline-block px-1.5 py-0.5 mr-1 border border-slate-200 bg-slate-50">
-                        PADRÃO
+            ) : (
+              profiles.map((p, i) => (
+                <TableRow
+                  key={p.id}
+                  className={cn("h-8 border-b border-slate-100", i % 2 === 0 ? "bg-white" : "bg-slate-50/30")}
+                >
+                  <TableCell className="pl-4 md:pl-8 pr-2 py-0 text-center align-middle">
+                    <Shield className="w-3.5 h-3.5 text-slate-400 inline-block" />
+                  </TableCell>
+                  <TableCell className="px-4 py-0 font-bold text-slate-900 truncate align-middle">
+                    {p.name}
+                    {p.isSystem && (
+                      <span className="ml-2 text-[9px] font-black uppercase text-slate-400 border border-slate-200 px-1">
+                        Padrão
                       </span>
-                    ) : null}
-                    <button
-                      onClick={() => setProfileDialog({ open: true, initial: p })}
-                      className="h-6 px-3 text-[9px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-                    >
-                      Editar
-                    </button>
-                    {!SYSTEM_PROFILES.includes(p.name) && (
-                      <button
-                        onClick={() => setDeleteDialog({ open: true, profile: p })}
-                        className="h-6 px-3 text-[9px] font-black uppercase tracking-widest bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 transition-colors ml-1"
-                      >
-                        Excluir
-                      </button>
                     )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="px-4 py-0 text-slate-500 truncate align-middle">
+                    {p.description || "—"}
+                  </TableCell>
+                  <TableCell className="px-4 py-0 text-slate-600 align-middle tabular-nums">
+                    {normalizePermissions(p.permissions, p.name).size}
+                  </TableCell>
+                  <TableCell className="pr-4 md:pr-8 pl-4 py-0 align-middle">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setProfileDialog({ open: true, initial: p })}
+                        className="h-6 px-3 text-[9px] font-black uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-600"
+                      >
+                        Permissões
+                      </button>
+                      {!p.isSystem && !p.id.startsWith("sys-") && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteDialog({ open: true, profile: p })}
+                          className="h-6 px-3 text-[9px] font-black uppercase tracking-widest bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600"
+                        >
+                          Excluir
+                        </button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
-        {/* Gradient fade at the bottom for smooth scroll finish */}
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-linear-to-t from-white to-transparent z-10" />
       </div>
 
-      {/* Dialogs */}
       <ProfileDialog
         open={profileDialog.open}
         onClose={() => setProfileDialog({ open: false })}

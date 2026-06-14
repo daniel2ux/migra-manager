@@ -14,4 +14,5 @@ export interface ChangeRoleRequest {
   newRole: UserRole;
   reason: string;
   callerToken: string;
+  accessProfileId?: string | null;
 }

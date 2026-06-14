@@ -48,7 +48,8 @@ export default function LimparCatalogoMasterPage() {
   const router = useRouter();
   const isRouterReady = useRouterReady();
   const { projectId } = useActiveProjectId();
-  const { isMaster, isProfileLoading } = useUsersData('');
+  const { can, isProfileLoading } = useUsersData('');
+  const canCleanCatalog = can('utilities.clean_catalog');
   const { toast } = useToast();
 
   const projectRef = useMemoDb(
@@ -155,7 +156,7 @@ export default function LimparCatalogoMasterPage() {
     );
   }
 
-  if (!isMaster) {
+  if (!canCleanCatalog) {
     return (
       <DashboardShell noPadding>
         <div className="flex flex-col h-full">

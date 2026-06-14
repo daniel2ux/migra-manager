@@ -14,12 +14,13 @@ import {
   FileText,
   Settings,
   Crown,
+  Shield,
   KeyRound,
   Ban,
   ShieldCheck,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -45,14 +46,18 @@ import {
 import { cn } from "@/lib/utils";
 import { formatBrazilianDate } from "@/lib/migration/datetime-br";
 import { formatBrazilianPhone } from "@/lib/formatters";
+import { normalizeAvatarPublicUrl } from "@/lib/storage/avatar-url";
 import type { UserProfile } from "@/types/usuarios";
 import { ROLE_LABELS } from "@/types/usuarios";
+import type { AccessProfileRecord } from "@/hooks/use-access-permissions";
+import { accessProfileCardLabel } from "@/hooks/use-access-profile-options";
 
 const CARD_TOOLBAR_BTN =
   "fiori-card-toolbar-btn !rounded-[0.375rem] !size-7 min-h-0 min-w-0";
 
 interface UserCardProps {
   user: UserProfile;
+  accessProfiles?: AccessProfileRecord[];
   isMe: boolean;
   isMaster: boolean;
   isAdmin: boolean;
@@ -104,6 +109,52 @@ function getRoleMeta(role: string, blocked: boolean) {
   };
 }
 
+function RoleStatusBadge({
+  roleMeta,
+  canChange,
+  onChangeRole,
+}: {
+  roleMeta: ReturnType<typeof getRoleMeta>;
+  canChange: boolean;
+  onChangeRole: () => void;
+}) {
+  if (!canChange) {
+    return (
+      <div className={cn("fiori-project-card-status-label shrink-0", roleMeta.labelClass)}>
+        {roleMeta.icon}
+        {roleMeta.label}
+      </div>
+    );
+  }
+
+  return (
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "fiori-project-card-status-label fiori-card-meta-editable shrink-0",
+            roleMeta.labelClass,
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onChangeRole();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          aria-label={`Alterar perfil (${roleMeta.label})`}
+        >
+          {roleMeta.icon}
+          {roleMeta.label}
+          <ChevronDown className="w-2.5 h-2.5 opacity-60" aria-hidden />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" variant="fiori">
+        Alterar perfil
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function canDeleteUserProfile(
   viewer: { isMe: boolean; isMaster: boolean; isAdmin: boolean },
   target: UserProfile,
@@ -123,6 +174,7 @@ function canDeleteUserProfile(
 
 export function UserCard({
   user,
+  accessProfiles = [],
   isMe,
   isMaster,
   isAdmin,
@@ -150,6 +202,14 @@ export function UserCard({
   const roleMeta = getRoleMeta(user.role, blocked);
   const canDelete = canDeleteUserProfile({ isMe, isMaster, isAdmin }, user);
   const canEditEmail = isMaster || isMe;
+  const { label: accessProfileName, isCustom: accessProfileIsCustom } = accessProfileCardLabel(
+    accessProfiles,
+    user.accessProfileId,
+    user.role,
+    user.isMaster,
+  );
+  const canChangeRole = isMaster && !isMe;
+  const avatarSrc = normalizeAvatarPublicUrl(user.photoURL);
 
   const cardContent = (
     <div
@@ -165,19 +225,30 @@ export function UserCard({
             className={cn("fiori-user-card-avatar", isMe && "cursor-pointer")}
             onClick={() => isMe && fileInputRef.current?.click()}
           >
-            <Avatar className="h-full w-full rounded-none border-0">
-              <AvatarImage src={user.photoURL} className="object-cover" />
-              <AvatarFallback className="rounded-none bg-[#e8f3ff] text-[0.625rem] font-semibold text-[#0070f2]">
-                {user.name?.substring(0, 2)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="fiori-user-card-avatar-inner" aria-hidden>
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt=""
+                  className="fiori-user-card-avatar-img"
+                  draggable={false}
+                />
+              ) : (
+                <span className="fiori-user-card-avatar-fallback">
+                  {user.name?.substring(0, 2)}
+                </span>
+              )}
+            </div>
             {isMe && !isUploadingAvatar && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+              <div
+                className="fiori-user-card-avatar-overlay flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                aria-hidden
+              >
                 <Camera className="w-3 h-3 text-white" aria-hidden />
               </div>
             )}
             {isMe && isUploadingAvatar && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <div className="fiori-user-card-avatar-overlay flex items-center justify-center bg-black/40">
                 <Loader2 className="w-3 h-3 animate-spin text-white" aria-hidden />
               </div>
             )}
@@ -188,10 +259,11 @@ export function UserCard({
           </div>
         </div>
 
-        <div className={cn("fiori-project-card-status-label shrink-0", roleMeta.labelClass)}>
-          {roleMeta.icon}
-          {roleMeta.label}
-        </div>
+        <RoleStatusBadge
+          roleMeta={roleMeta}
+          canChange={canChangeRole}
+          onChangeRole={onOpenRoleDialog}
+        />
       </div>
 
       <div className="fiori-project-card-metrics fiori-project-card-metrics--panel">
@@ -233,6 +305,24 @@ export function UserCard({
               {user.company || "—"}
             </span>
           </div>
+        </div>
+
+        <div className="fiori-project-card-metrics-h-divider" aria-hidden />
+
+        <div className="fiori-project-card-metric min-w-0">
+          <span className="fiori-project-card-metric-label inline-flex items-center gap-1">
+            <Shield className="w-2.5 h-2.5 shrink-0 opacity-70" aria-hidden />
+            Permissões
+          </span>
+          <span
+            className={cn(
+              "fiori-project-card-metric-value truncate",
+              accessProfileIsCustom && "text-[#0070f2] font-semibold",
+            )}
+            title={accessProfileName}
+          >
+            {accessProfileName}
+          </span>
         </div>
       </div>
 

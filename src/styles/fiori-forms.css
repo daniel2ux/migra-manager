@@ -1152,6 +1152,12 @@
   border-color: #aeb6bf;
 }
 
+.fiori-dialog .fiori-btn-transparent--compact {
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
+}
+
 /* ── Relatório fullscreen (tabela analítica) ── */
 .fiori-dialog .fiori-dialog-back-btn {
   height: 2rem;
@@ -2091,6 +2097,14 @@
   white-space: nowrap;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.fiori-dropdown-menu--table-rows .fiori-status-picker-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.875rem;
+  flex-shrink: 0;
 }
 
 .fiori-dropdown-menu button.fiori-dropdown-menu-item {
@@ -3233,6 +3247,10 @@
 }
 
 /* ── Dependências / chips selecionáveis ── */
+.fiori-dialog .fiori-deps-hint-row {
+  margin-bottom: 0.5rem;
+}
+
 .fiori-dialog .fiori-deps-zone {
   min-height: 2.5rem;
   max-height: 5.625rem;

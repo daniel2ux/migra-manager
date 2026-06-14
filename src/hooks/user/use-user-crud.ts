@@ -10,9 +10,10 @@ interface UseUserCrudProps {
   user: any;
   isMaster: boolean;
   isAdmin: boolean;
+  canChangeAccessProfile?: boolean;
 }
 
-export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
+export function useUserCrud({ user, isMaster, isAdmin, canChangeAccessProfile = false }: UseUserCrudProps) {
   const db = useDb();
   const { toast } = useToast();
 
@@ -50,6 +51,7 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
     newRole: UserProfile["role"],
     reason: string,
     profileName: string,
+    accessProfileId?: string | null,
   ): Promise<boolean> => {
     if (!user || !target || !reason.trim() || !isMaster) return false;
 
@@ -59,7 +61,13 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
       const res = await fetch("/api/admin/change-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUid: target.uid, newRole, reason, callerToken: token }),
+        body: JSON.stringify({
+          targetUid: target.uid,
+          newRole,
+          reason,
+          accessProfileId: accessProfileId ?? null,
+          callerToken: token,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -89,7 +97,10 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
     if (targetIsMaster && !isMaster && !isSelf) return false;
     if (!isAdmin && !isSelf) return false;
 
-    const payload: Partial<UserFormData> & { updatedAt: ReturnType<typeof serverTimestamp> } = {
+    const payload: Partial<UserFormData> & {
+      updatedAt: ReturnType<typeof serverTimestamp>;
+      accessProfileId?: string | null;
+    } = {
       name: editFormData.name?.trim() || selectedUser.name,
       phone: editFormData.phone?.trim() ?? '',
       company: editFormData.company?.trim() ?? '',
@@ -101,6 +112,10 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
       notes: editFormData.notes?.trim() ?? '',
       updatedAt: serverTimestamp(),
     };
+
+    if (canChangeAccessProfile && editFormData.accessProfileId !== undefined) {
+      payload.accessProfileId = editFormData.accessProfileId ?? null;
+    }
 
     try {
       await updateDoc(doc(db, "users", selectedUser.uid), payload);
@@ -252,6 +267,7 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
           company: createFormData.company,
           position: createFormData.position,
           reason: createFormData.reason,
+          accessProfileId: createFormData.accessProfileId ?? null,
           callerToken: token,
         }),
       });

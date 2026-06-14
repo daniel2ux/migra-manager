@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { collection, query, where, doc } from "@/supabase/compat-db-shim";
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { WithId } from "@/supabase";
 import { dedupeDirectoryUsers } from "@/lib/user-directory";
-import { SUPERADMIN_UID } from "@/lib/constants";
+import { useAccessPermissions } from "@/hooks/use-access-permissions";
+import type { PermissionKey } from "@/lib/auth/permissions";
 
 interface Project {
   id: string;
@@ -21,6 +22,7 @@ interface Project {
   lockedByMaster?: boolean;
   lockedByUid?: string;
   lockedByName?: string;
+  executionStatus?: "ATIVO" | "EM_EXECUCAO" | "ENCERRADO";
 }
 
 type ProjectMemberData = {
@@ -40,19 +42,17 @@ interface UseProjectsDataReturn {
   isProfileLoading: boolean;
   isMaster: boolean;
   isAdmin: boolean;
+  can: (key: PermissionKey) => boolean;
   userProjectIds: string[];
   projects: WithId<Project>[] | null;
   isProjectsLoading: boolean;
   allUsers: ProjectMemberRow[] | null;
-  filteredUsers: ProjectMemberRow[];
-  userSearchTerm: string;
-  setUserSearchTerm: (term: string) => void;
+  projectMembers: (ProjectMemberRow & { uid: string })[];
 }
 
 export function useProjectsData(__searchTerm: string): UseProjectsDataReturn {
   const db = useDb();
   const { user } = useUser();
-  const [userSearchTerm, setUserSearchTerm] = useState("");
 
   const userDocRef = useMemoDb(
     () => (user && db ? doc(db, "users", user.uid) : null),
@@ -61,14 +61,8 @@ export function useProjectsData(__searchTerm: string): UseProjectsDataReturn {
   const { data: userProfile, isLoading: isProfileLoading } =
     useDoc<any>(userDocRef);
 
-  const isMaster =
-    userProfile?.isMaster === true ||
-    userProfile?.role?.toLowerCase() === "master" ||
-    user?.uid === SUPERADMIN_UID;
-  const isAdmin =
-    isMaster ||
-    userProfile?.role?.toLowerCase() === "admin" ||
-    user?.uid === SUPERADMIN_UID;
+  const { can, isMaster, isAdmin } = useAccessPermissions(userProfile, user?.uid ?? null);
+
   const userProjectIds = useMemo(
     () => userProfile?.projectIds || [],
     [userProfile],
@@ -91,31 +85,21 @@ export function useProjectsData(__searchTerm: string): UseProjectsDataReturn {
   }, [db]);
   const { data: allUsers } = useCollection<ProjectMemberData>(usersQuery);
 
-  const directoryUsers = useMemo(
+  const projectMembers = useMemo(
     () => dedupeDirectoryUsers((allUsers as ProjectMemberRow[] | null) ?? null, user?.uid),
     [allUsers, user?.uid],
   );
-
-  const filteredUsers = useMemo(() => {
-    const q = userSearchTerm.toLowerCase();
-    return directoryUsers.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q),
-    );
-  }, [directoryUsers, userSearchTerm]);
 
   return {
     userProfile,
     isProfileLoading,
     isMaster,
     isAdmin,
+    can,
     userProjectIds,
     projects: projects as WithId<Project>[] | null,
     isProjectsLoading,
     allUsers: allUsers as ProjectMemberRow[] | null,
-    filteredUsers,
-    userSearchTerm,
-    setUserSearchTerm,
+    projectMembers,
   };
 }

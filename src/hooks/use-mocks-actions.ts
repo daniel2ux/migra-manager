@@ -8,13 +8,16 @@ import { slugify } from "@/lib/formatters";
 import { buildClonedMigrationObjectRecord, buildClonedMockRecord, extractMockPrefix, isMockActive, isMockCargaInProgress, remapDependencyIds, sanitizeUuidList } from "@/lib/mock-utils";
 import { DB_BATCH_SIZE } from "@/lib/constants";
 import type { Mock, MigrationObject, UserProfile } from "@/types/migration";
+import type { PermissionKey } from "@/lib/auth/permissions";
+
+type CanFn = (key: PermissionKey) => boolean;
 
 type ToastFn = ReturnType<typeof useToast>['toast'];
 
 function useMockLocking(
   db: CompatDb | null, 
   user: User | null, 
-  isAdmin: boolean, 
+  can: CanFn,
   projectId: string | null, 
   isMaster: boolean, 
   userProfile: UserProfile | null, 
@@ -22,7 +25,7 @@ function useMockLocking(
 ) {
   return {
     handleToggleLock: useCallback(async (mock: Mock) => {
-      if (!isAdmin || !projectId || !db || !user) return;
+      if (!can("mocks.lock") || !projectId || !db || !user) return;
       if (mock.isLocked && mock.lockedByMaster && mock.lockedByUid !== user.uid) {
         toast({ variant: "destructive", description: `Objeto bloqueado por ${mock.lockedByName}. Contate-o para liberação.` });
         return;
@@ -35,10 +38,10 @@ function useMockLocking(
         isLocked: true, lockedByMaster: isMaster, lockedByUid: user.uid,
         lockedByName: userProfile?.name || user.email || "Usuário"
       }, { merge: true });
-    }, [isAdmin, projectId, db, user, isMaster, userProfile, toast]),
+    }, [can, projectId, db, user, isMaster, userProfile, toast]),
 
     handleForceAcquire: useCallback(async (targetMock: Mock | null) => {
-      if (!isAdmin || !projectId || !targetMock || !db || !user) return;
+      if (!can("mocks.lock") || !projectId || !targetMock || !db || !user) return;
       try {
         await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', targetMock.id), {
           isLocked: true, lockedByMaster: isMaster, lockedByUid: user.uid,
@@ -47,10 +50,10 @@ function useMockLocking(
       } catch {
         toast({ variant: "destructive", description: "FALHA AO FORÇAR LIBERAÇÃO." });
       }
-    }, [isAdmin, projectId, db, user, isMaster, userProfile, toast]),
+    }, [can, projectId, db, user, isMaster, userProfile, toast]),
 
     handleToggleActive: useCallback(async (mock: Mock, activate: boolean) => {
-      if (!isAdmin || !projectId || !db) return;
+      if (!can("mocks.edit") || !projectId || !db) return;
       if (!activate && isMockCargaInProgress(mock)) {
         toast({ variant: "destructive", description: "Não é possível inativar uma mock em execução." });
         return;
@@ -65,13 +68,13 @@ function useMockLocking(
           ? `Mock ${mock.name} reativada.`
           : `Mock ${mock.name} inativada.`,
       });
-    }, [isAdmin, projectId, db, toast]),
+    }, [can, projectId, db, toast]),
   };
 }
 
 function useMockLifecycle(
   db: CompatDb | null, 
-  isAdmin: boolean, 
+  can: CanFn,
   projectId: string | null, 
   toast: ToastFn
 ) {
@@ -89,7 +92,7 @@ function useMockLifecycle(
     mockToRestart, setMockToRestart,
 
     handleToggleLoadStatus: useCallback(async (mock: Mock, activeMocks: Mock[]) => {
-      if (!db || !isAdmin || !projectId) return;
+      if (!db || !can("mocks.edit") || !projectId) return;
       const currentStatus = mock.status || (mock.isRunning ? 'CARGA_EM_ANDAMENTO' : 'PENDENTE');
       if (currentStatus === 'CARGA_EM_ANDAMENTO') { setLoadStatusToConfirm(mock); setIsCargaConfirmOpen(true); return; }
       if (currentStatus === 'CARGA_CONCLUIDA') { setMockToRestart(mock); setIsRestartConfirmOpen(true); return; }
@@ -103,18 +106,18 @@ function useMockLifecycle(
             isRunning: false, status: 'PENDENTE'
           }, { merge: true }));
       } finally { setIsTogglingLoad(null); }
-    }, [db, isAdmin, projectId]),
+    }, [db, can, projectId]),
 
     confirmFinalizeCarga: useCallback(async () => {
-      if (!isAdmin || !projectId || !loadStatusToConfirm || !db) return;
+      if (!can("mocks.edit") || !projectId || !loadStatusToConfirm || !db) return;
       await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', loadStatusToConfirm.id), {
         status: 'CARGA_CONCLUIDA', isRunning: false, updatedAt: serverTimestamp()
       }, { merge: true });
       setIsCargaConfirmOpen(false); setLoadStatusToConfirm(null);
-    }, [isAdmin, projectId, loadStatusToConfirm, db]),
+    }, [can, projectId, loadStatusToConfirm, db]),
 
     handleConfirmRestart: useCallback(async () => {
-      if (!isAdmin || !projectId || !mockToRestart || !db) return;
+      if (!can("mocks.restart") || !projectId || !mockToRestart || !db) return;
       setIsTogglingLoad(mockToRestart.id);
       try {
         await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', mockToRestart.id), {
@@ -122,10 +125,10 @@ function useMockLifecycle(
         }, { merge: true });
         setIsRestartConfirmOpen(false); setMockToRestart(null);
       } finally { setIsTogglingLoad(null); }
-    }, [isAdmin, projectId, mockToRestart, db]),
+    }, [can, projectId, mockToRestart, db]),
 
     handleStatusChange: useCallback(async (mock: Mock, newStatus: string, activeMocks: Mock[]) => {
-      if (!db || !isAdmin || !projectId) return;
+      if (!db || !can("mocks.edit") || !projectId) return;
       const currentStatus = mock.status || (mock.isRunning ? 'CARGA_EM_ANDAMENTO' : 'PENDENTE');
       const targetStatus = newStatus.trim().toUpperCase();
       if (currentStatus === targetStatus) return;
@@ -169,13 +172,13 @@ function useMockLifecycle(
           updatedAt: serverTimestamp(),
         }, { merge: true });
       } finally { setIsTogglingLoad(null); }
-    }, [db, isAdmin, projectId, toast]),
+    }, [db, can, projectId, toast]),
   };
 }
 
 function useMockBulkOps(
   db: CompatDb | null, 
-  isAdmin: boolean, 
+  can: CanFn,
   projectId: string | null, 
   toast: ToastFn
 ) {
@@ -198,17 +201,17 @@ function useMockBulkOps(
     isBulkReseting, setIsBulkReseting,
 
     handleBulkDelete: useCallback(async (selectedMockId: string | null, mocks: Mock[]) => {
-      if (!isAdmin || !projectId || !selectedMockId || selectedMockId === 'all' || !db) return;
+      if (!can("mocks.delete") || !projectId || !selectedMockId || selectedMockId === 'all' || !db) return;
       const mock = mocks?.find(m => m.id === selectedMockId);
       if (mock && (mock.status === 'CARGA_EM_ANDAMENTO' || mock.isRunning)) {
         toast({ variant: "destructive", description: "NÃO É POSSÍVEL EXCLUIR UM MOCK EM EXECUÇÃO." }); return;
       }
       try { await _deleteObjects(selectedMockId!); const { writeBatch, doc } = await import("@/supabase/compat-db-shim"); const b = writeBatch(db); b.delete(doc(db, 'projects', projectId, 'mocks', selectedMockId)); await b.commit(); setIsBulkDeleteConfirmOpen(false); }
       catch { toast({ variant: "destructive", description: "FALHA AO EXCLUIR." }); }
-    }, [isAdmin, projectId, db, toast, _deleteObjects]),
+    }, [can, projectId, db, toast, _deleteObjects]),
 
     handleBulkReset: useCallback(async (selectedMockId: string | null, mocks: Mock[]) => {
-      if (!isAdmin || !projectId || !selectedMockId || selectedMockId === 'all' || !db) return;
+      if (!can("mocks.restart") || !projectId || !selectedMockId || selectedMockId === 'all' || !db) return;
       const mock = mocks?.find(m => m.id === selectedMockId);
       if (mock && (mock.status === 'CARGA_EM_ANDAMENTO' || mock.isRunning)) {
         toast({ variant: "destructive", description: "NÃO É POSSÍVEL REINICIAR UM MOCK EM EXECUÇÃO." }); return;
@@ -223,14 +226,14 @@ function useMockBulkOps(
         }
       } catch { toast({ variant: "destructive", description: "FALHA AO REINICIAR." }); }
       finally { setIsBulkReseting(false); setIsBulkRestartConfirmOpen(false); }
-    }, [isAdmin, projectId, db, toast, _deleteObjects]),
+    }, [can, projectId, db, toast, _deleteObjects]),
   };
 }
 
 function useMockCloneFeature(
   db: CompatDb | null, 
   user: User | null, 
-  isAdmin: boolean, 
+  can: CanFn,
   projectId: string | null, 
   toast: ToastFn
 ) {
@@ -285,7 +288,7 @@ function useMockCloneFeature(
     cloneSourceMock, setCloneSourceMock,
 
     handleConfirmClone: useCallback(async (sourceMock: Mock | null, cloneData: { sequence: string; explanatoryText: string }) => {
-      if (!sourceMock || !isMockActive(sourceMock) || !isAdmin || !projectId || !user || !db) return false;
+      if (!sourceMock || !isMockActive(sourceMock) || !can("mocks.clone") || !projectId || !user || !db) return false;
       try {
         const { collection, getDocs } = await import("@/supabase/compat-db-shim");
         const baseName = extractMockPrefix(sourceMock.name);
@@ -335,7 +338,7 @@ function useMockCloneFeature(
         toast({ variant: "destructive", description: message });
         throw error;
       }
-    }, [isAdmin, projectId, user, db, toast, _cloneObjects]),
+    }, [can, projectId, user, db, toast, _cloneObjects]),
   };
 }
 
@@ -343,18 +346,18 @@ function useMockCloneFeature(
 
 export function useMocksActions(
   projectId: string | null,
-  isAdmin: boolean,
   userProfile: UserProfile | null,
-  isMaster: boolean
+  perms: { can: CanFn; isMaster: boolean },
 ) {
+  const { can, isMaster } = perms;
   const db = useDb();
   const { user } = useUser();
   const { toast } = useToast();
 
-  const locking = useMockLocking(db, user, isAdmin, projectId, isMaster, userProfile, toast);
-  const lifecycle = useMockLifecycle(db, isAdmin, projectId, toast);
-  const bulkOps = useMockBulkOps(db, isAdmin, projectId, toast);
-  const cloneFeature = useMockCloneFeature(db, user, isAdmin, projectId, toast);
+  const locking = useMockLocking(db, user, can, projectId, isMaster, userProfile, toast);
+  const lifecycle = useMockLifecycle(db, can, projectId, toast);
+  const bulkOps = useMockBulkOps(db, can, projectId, toast);
+  const cloneFeature = useMockCloneFeature(db, user, can, projectId, toast);
 
   const [isForceLockOpen, setIsForceLockOpen] = useState(false);
   const [forceLockTarget, setForceLockTarget] = useState<Mock | null>(null);
@@ -400,6 +403,16 @@ export function useMocksActions(
         return;
       }
 
+      const isNew = !editingMock;
+      if (isNew && !can("mocks.create")) {
+        toast({ variant: "destructive", description: "Sem permissão para criar mocks." });
+        return;
+      }
+      if (!isNew && !can("mocks.edit")) {
+        toast({ variant: "destructive", description: "Sem permissão para editar mocks." });
+        return;
+      }
+
       const trimmedPrefix = String(formData.name ?? "").trim();
       const trimmedSequence = String(formData.sequence ?? "").trim();
       if (!trimmedPrefix) {
@@ -407,7 +420,6 @@ export function useMocksActions(
         return;
       }
 
-      const isNew = !editingMock;
       const mockId = editingMock?.id ?? crypto.randomUUID();
       const finalName = trimmedSequence
         ? `${trimmedPrefix.toUpperCase()}-${trimmedSequence}`
@@ -468,6 +480,6 @@ export function useMocksActions(
         const message = error instanceof Error ? error.message : "Falha ao salvar a mock.";
         toast({ variant: "destructive", description: message });
       }
-    }, [db, projectId, user, toast]),
+    }, [db, projectId, user, toast, can]),
   };
 }

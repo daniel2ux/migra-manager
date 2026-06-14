@@ -12,8 +12,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Sparkles, Search, X, Users, Lock } from "lucide-react";
+import { Sparkles, Users, Lock, FolderKanban, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+    ProjectMemberSelectDialog,
+    type ProjectMemberOption,
+} from "@/components/projetos/project-member-select-dialog";
+
+const FIORI_INPUT = "fiori-input shadow-none";
+const FIORI_INPUT_UPPER = `${FIORI_INPUT} uppercase`;
+const FIORI_TEXTAREA = "fiori-textarea shadow-none min-h-[5rem] resize-none";
+
+function fioriInputClass(readonly: boolean, uppercase = false): string {
+    return cn(uppercase ? FIORI_INPUT_UPPER : FIORI_INPUT, readonly && "readable-disabled");
+}
+
+function fioriTextareaClass(readonly: boolean): string {
+    return cn(FIORI_TEXTAREA, readonly && "readable-disabled");
+}
 
 interface ProjectFormDialogProps {
     open: boolean;
@@ -22,13 +38,11 @@ interface ProjectFormDialogProps {
     formData: { name: string; company: string; description: string; isLocked: boolean; memberUids: string[] };
     onFormChange: (data: any) => void;
     onSave: () => void | Promise<void>;
-    filteredUsers: any[];
-    userSearchTerm: string;
-    onUserSearchChange: (term: string) => void;
-    onToggleMember: (uid: string) => void;
+    users: ProjectMemberOption[];
     onAiGenerate: () => void;
     isGenerating: boolean;
-    isAdmin: boolean;
+    canEdit: boolean;
+    canCreate: boolean;
 }
 
 export function ProjectFormDialog({
@@ -38,26 +52,28 @@ export function ProjectFormDialog({
     formData,
     onFormChange,
     onSave,
-    filteredUsers,
-    userSearchTerm,
-    onUserSearchChange,
-    onToggleMember,
+    users,
     onAiGenerate,
     isGenerating,
-    isAdmin,
+    canEdit,
+    canCreate,
 }: ProjectFormDialogProps) {
     const [saving, setSaving] = useState(false);
+    const [isMembersOpen, setIsMembersOpen] = useState(false);
+    const [memberSelectDraft, setMemberSelectDraft] = useState<string[]>([]);
+    const [memberSearchTerm, setMemberSearchTerm] = useState("");
     const isProjectLocked = editingProject?.isLocked ?? false;
 
     const getTitle = () => {
         if (isProjectLocked) return "Projeto bloqueado";
-        if (!editingProject && isAdmin) return "Novo projeto";
-        if (editingProject && isAdmin) return "Configurar projeto";
+        if (!editingProject && canCreate) return "Novo projeto";
+        if (editingProject && canEdit) return "Configurar projeto";
         return "Detalhes do projeto";
     };
 
-    const readonly = !isAdmin || isProjectLocked;
-    const canSave = formData.name.trim().length > 0
+    const readonly = !canEdit || isProjectLocked;
+    const canSave = (editingProject ? canEdit : canCreate)
+        && formData.name.trim().length > 0
         && !(isProjectLocked && formData.isLocked === editingProject?.isLocked);
 
     async function handleSaveClick() {
@@ -70,63 +86,100 @@ export function ProjectFormDialog({
         }
     }
 
+    const selectedMembers = formData.memberUids
+        .map((uid) => users.find((u) => u.uid === uid))
+        .filter(Boolean) as ProjectMemberOption[];
+
+    const handleRemoveMember = (uid: string) => {
+        onFormChange({
+            ...formData,
+            memberUids: formData.memberUids.filter((id) => id !== uid),
+        });
+    };
+
+    const handleSaveMemberSelection = () => {
+        onFormChange({ ...formData, memberUids: memberSelectDraft });
+        setIsMembersOpen(false);
+        setMemberSearchTerm("");
+    };
+
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 variant="fiori"
                 overlayClassName="fiori-dialog-overlay"
                 className="fiori-dialog fiori-dialog--form flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] max-w-2xl flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
             >
-                <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
+                <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
                     <DialogDescription className="sr-only">
                         Formulário de configuração de projeto.
                     </DialogDescription>
-                    <DialogTitle className="fiori-dialog-title">{getTitle()}</DialogTitle>
+                    <div className="fiori-dialog-header-row">
+                        <div className="fiori-dialog-icon shrink-0">
+                            <FolderKanban className="h-4 w-4" aria-hidden />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <DialogTitle className="fiori-dialog-title">{getTitle()}</DialogTitle>
+                            <p className="fiori-dialog-subtitle">
+                                {editingProject
+                                    ? "Dados e membros do projeto"
+                                    : "Cadastro de novo projeto de migração"}
+                            </p>
+                        </div>
+                    </div>
                 </DialogHeader>
 
                 {isProjectLocked && (
-                    <div className="fiori-message-warning shrink-0">
+                    <div className="fiori-message-warning shrink-0 mx-5 mt-4">
                         <Lock className="w-3.5 h-3.5 shrink-0" />
                         <p>Este projeto está bloqueado. Nenhuma informação pode ser alterada.</p>
                     </div>
                 )}
 
-                <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-4">
+                <div className="fiori-dialog-body flex-1 min-h-0 overflow-y-auto">
+                    <section className="fiori-form-section space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="fiori-field-label">Nome</label>
+                        <div className="fiori-form-field">
+                            <label className="fiori-field-label" htmlFor="project-form-name">
+                                Nome
+                            </label>
                             <Input
+                                id="project-form-name"
                                 value={formData.name}
                                 onChange={(e) =>
-                                    onFormChange({ ...formData, name: e.target.value })
+                                    onFormChange({ ...formData, name: e.target.value.toUpperCase() })
                                 }
                                 placeholder="Nome do projeto"
                                 disabled={readonly}
-                                className="fiori-input readable-disabled shadow-none"
+                                className={fioriInputClass(readonly, true)}
                             />
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="fiori-field-label">Empresa</label>
+                        <div className="fiori-form-field">
+                            <label className="fiori-field-label" htmlFor="project-form-company">
+                                Empresa
+                            </label>
                             <Input
+                                id="project-form-company"
                                 value={formData.company}
                                 onChange={(e) =>
-                                    onFormChange({ ...formData, company: e.target.value })
+                                    onFormChange({ ...formData, company: e.target.value.toUpperCase() })
                                 }
                                 placeholder="Nome da empresa"
                                 disabled={readonly}
-                                className="fiori-input readable-disabled shadow-none"
+                                className={fioriInputClass(readonly, true)}
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="fiori-form-field">
                         <div className="flex items-center justify-between gap-2">
-                            <label className="fiori-field-label">
-                                <Sparkles className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />
+                            <label className="fiori-field-label" htmlFor="project-form-description">
+                                <Sparkles className="w-3.5 h-3.5 text-[var(--fiori-brand)]" aria-hidden />
                                 Descrição
                             </label>
-                            {isAdmin && !readonly && (
+                            {canEdit && !readonly && (
                                 <button
                                     type="button"
                                     onClick={onAiGenerate}
@@ -139,97 +192,67 @@ export function ProjectFormDialog({
                             )}
                         </div>
                         <Textarea
+                            id="project-form-description"
                             value={formData.description}
                             onChange={(e) =>
                                 onFormChange({ ...formData, description: e.target.value })
                             }
                             placeholder="Escopo e objetivos do projeto..."
                             disabled={readonly}
-                            className="fiori-textarea readable-disabled shadow-none min-h-[80px] resize-none"
+                            className={fioriTextareaClass(readonly)}
                         />
                     </div>
 
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                            <label className="fiori-field-label">
-                                <Users className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />
+                    <div className="fiori-form-field">
+                        <div className="fiori-deps-hint-row flex items-center justify-between gap-2">
+                            <label className="fiori-field-label m-0 min-w-0 shrink">
+                                <Users className="w-3.5 h-3.5 text-[var(--fiori-brand)]" aria-hidden />
                                 Membros
+                                {formData.memberUids.length > 0 && (
+                                    <span className="ml-2 text-[0.6875rem] font-semibold text-[var(--fiori-brand)]">
+                                        {formData.memberUids.length} selecionado
+                                        {formData.memberUids.length !== 1 ? "s" : ""}
+                                    </span>
+                                )}
                             </label>
-                            {formData.memberUids.length > 0 && (
-                                <span className="ml-auto text-[0.6875rem] font-semibold text-[var(--fiori-brand)]">
-                                    {formData.memberUids.length} selecionado{formData.memberUids.length !== 1 ? "s" : ""}
-                                </span>
+                            {canEdit && !readonly && (
+                                <button
+                                    type="button"
+                                    className="fiori-btn-transparent fiori-btn-transparent--compact shrink-0"
+                                    title="Selecionar membros"
+                                    onClick={() => {
+                                        setMemberSelectDraft(formData.memberUids);
+                                        setIsMembersOpen(true);
+                                    }}
+                                >
+                                    Selecionar
+                                </button>
                             )}
                         </div>
-
-                        {isAdmin && (
-                            <div className="fiori-search-shell">
-                                <Search className="fiori-search-icon" aria-hidden />
-                                <Input
-                                    value={userSearchTerm}
-                                    onChange={(e) => onUserSearchChange(e.target.value)}
-                                    placeholder="Buscar usuário..."
-                                    className="fiori-search-input shadow-none"
-                                />
-                            </div>
-                        )}
-
-                        <div className="fiori-picker-zone">
-                            {filteredUsers.length === 0 ? (
-                                <p className="fiori-field-hint text-center py-2">
-                                    Nenhum usuário encontrado
-                                </p>
-                            ) : (
-                                <div className="flex flex-wrap gap-1.5">
-                                    {filteredUsers.map((user) => {
-                                        const isMember = formData.memberUids.includes(user.uid);
-                                        const isCommitted = user.projectIds && user.projectIds.length > 0;
-
-                                        return (
+                        <div className="fiori-deps-zone">
+                            {selectedMembers.length > 0 ? (
+                                selectedMembers.map((member) => (
+                                    <span key={member.uid} className="fiori-dep-chip">
+                                        {member.name}
+                                        {!readonly && canEdit && (
                                             <button
-                                                key={user.uid}
                                                 type="button"
-                                                onClick={() => isAdmin && onToggleMember(user.uid)}
-                                                disabled={readonly}
-                                                className={cn(
-                                                    "fiori-chip",
-                                                    isMember && "fiori-chip--outline",
-                                                    readonly && "cursor-not-allowed opacity-60"
-                                                )}
+                                                className="fiori-dep-chip-remove"
+                                                aria-label={`Remover ${member.name}`}
+                                                onClick={() => handleRemoveMember(member.uid)}
                                             >
-                                                {user.name}
-                                                {isCommitted && (
-                                                    <span className="text-[#e76500] font-normal">(Alocado)</span>
-                                                )}
+                                                <Trash2 className="w-3 h-3" aria-hidden />
                                             </button>
-                                        );
-                                    })}
-                                </div>
+                                        )}
+                                    </span>
+                                ))
+                            ) : (
+                                <p className="fiori-deps-empty m-0">Nenhum membro selecionado.</p>
                             )}
                         </div>
-
-                        {formData.memberUids.length > 0 && isAdmin && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                                {formData.memberUids.map((uid) => {
-                                    const user = filteredUsers.find((u) => u.uid === uid);
-                                    if (!user) return null;
-                                    return (
-                                        <button
-                                            key={uid}
-                                            type="button"
-                                            onClick={() => onToggleMember(uid)}
-                                            className="fiori-chip fiori-chip--outline gap-1"
-                                        >
-                                            {user.name}
-                                            <X className="w-3 h-3 opacity-80" />
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
                     </div>
 
-                    {isAdmin && (
+                    {canEdit && (
                         <div className="fiori-lock-row">
                             <div>
                                 <label className="fiori-field-label">Bloquear projeto</label>
@@ -249,6 +272,7 @@ export function ProjectFormDialog({
                             />
                         </div>
                     )}
+                    </section>
                 </div>
 
                 <DialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end sm:space-x-0">
@@ -276,5 +300,23 @@ export function ProjectFormDialog({
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <ProjectMemberSelectDialog
+            open={isMembersOpen}
+            onOpenChange={setIsMembersOpen}
+            projectName={formData.name.trim() || editingProject?.name}
+            users={users}
+            selectedUids={memberSelectDraft}
+            searchTerm={memberSearchTerm}
+            onSearchChange={setMemberSearchTerm}
+            onToggleUid={(uid) =>
+                setMemberSelectDraft((prev) =>
+                    prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid],
+                )
+            }
+            onSave={handleSaveMemberSelection}
+            elevated
+        />
+        </>
     );
 }

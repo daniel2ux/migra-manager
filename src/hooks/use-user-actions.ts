@@ -10,6 +10,7 @@ interface UseUserActionsProps {
   user: any;
   isMaster: boolean;
   isAdmin: boolean;
+  canChangeAccessProfile?: boolean;
 }
 
 interface UseUserActionsReturn {
@@ -17,7 +18,13 @@ interface UseUserActionsReturn {
   handleSaveEdit: (selectedUser: UserProfile | null, editFormData: Partial<UserFormData>) => Promise<boolean>;
   handleToggleBlock: (targetUser: UserProfile) => Promise<void>;
   handleOpenRoleDialog: (targetUser: UserProfile) => void;
-  handleChangeRole: (roleDialogTarget: UserProfile | null, roleDialogNewRole: UserProfile["role"], roleDialogReason: string, roleDialogProfileName: string) => Promise<boolean>;
+  handleChangeRole: (
+    roleDialogTarget: UserProfile | null,
+    roleDialogNewRole: UserProfile["role"],
+    roleDialogReason: string,
+    roleDialogProfileName: string,
+    accessProfileId?: string | null,
+  ) => Promise<boolean>;
   handleOpenResetConfirm: (targetUser: UserProfile) => void;
   handleResetPassword: (resetTarget: UserProfile | null) => Promise<ResetPasswordResult | null>;
   handleDeleteUser: (target: UserProfile | null) => Promise<boolean>;
@@ -50,11 +57,11 @@ interface UseUserActionsReturn {
  * - useUserSettings: migrador, fromEmail, signatures
  * - useUserUploads: avatar, signature image
  */
-export function useUserActions({ user, isMaster, isAdmin }: UseUserActionsProps): UseUserActionsReturn {
+export function useUserActions({ user, isMaster, isAdmin, canChangeAccessProfile = false }: UseUserActionsProps): UseUserActionsReturn {
   const db = useDb();
   const storage = useStorage();
 
-  const crud = useUserCrud({ user, isMaster, isAdmin });
+  const crud = useUserCrud({ user, isMaster, isAdmin, canChangeAccessProfile });
   const settings = useUserSettings({ user });
   const uploads = useUserUploads({ user, storage, db });
 

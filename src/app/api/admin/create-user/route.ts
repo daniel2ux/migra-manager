@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { email, name, role, company, position, reason, callerToken } = body;
+    const { email, name, role, company, position, reason, callerToken, accessProfileId } = body;
 
     if (!email || !name || !role || !reason?.trim() || !callerToken) {
       return NextResponse.json(
@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       role,
       company: normalizedCompany || null,
       position: normalizedPosition || null,
+      accessProfileId: accessProfileId ?? null,
       isDisabled: false,
       mustChangePassword: true,
       createdAt: new Date().toISOString(),
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
         targetEmail: normalizedEmail,
         targetName: normalizedName,
         newRole: role,
+        accessProfileId: accessProfileId ?? null,
         reason: reason.trim(),
         callerUid: caller.uid,
         callerEmail: caller.email ?? 'N/A',

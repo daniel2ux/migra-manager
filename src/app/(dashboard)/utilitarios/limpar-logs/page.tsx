@@ -26,7 +26,8 @@ export default function LimparLogsPage() {
   const router = useRouter();
   const isRouterReady = useRouterReady();
   const { projectId } = useActiveProjectId();
-  const { isMaster, isProfileLoading } = useUsersData('');
+  const { can, isProfileLoading } = useUsersData('');
+  const canCleanLogs = can('utilities.clean_logs');
   const { toast } = useToast();
 
   const projectRef = useMemoDb(
@@ -161,7 +162,7 @@ export default function LimparLogsPage() {
     );
   }
 
-  if (!isMaster) {
+  if (!canCleanLogs) {
     return (
       <DashboardShell noPadding>
         <div className="flex flex-col h-full">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { doc, updateDoc, serverTimestamp } from "@/supabase/compat-db-shim";
-import { ref, uploadBytes, getDownloadURL } from "@/supabase/storage-shim";
+import { ref, uploadBytes, getDownloadURL, avatarRef } from "@/supabase/storage-shim";
 import { useToast } from "@/hooks/use-toast";
 import { createFileUploadError } from "@/lib/file-utils";
 
@@ -59,7 +59,7 @@ export function useUserUploads({ user, storage, db }: UseUserUploadsProps) {
       setIsUploadingAvatar(true);
       if (!storage || !db) return false;
 
-      const storageRef = ref(storage, `avatars/${user.uid}`);
+      const storageRef = avatarRef(storage, user.uid, file);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 

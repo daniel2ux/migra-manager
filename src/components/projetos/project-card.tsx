@@ -3,11 +3,18 @@
 import {
   Lock, Unlock, RotateCcw, ExternalLink, Pencil, Trash2,
   FolderOpen, Zap, CheckCircle2,
-  PlayCircle, StopCircle, Loader2
+  PlayCircle, StopCircle, Loader2, ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { dispatchProjectChange } from '@/hooks/use-active-project-id';
 import { useSortable } from '@dnd-kit/sortable';
@@ -16,10 +23,14 @@ import { CSS } from '@dnd-kit/utilities';
 const CARD_TOOLBAR_BTN =
   "fiori-card-toolbar-btn !rounded-[0.375rem] !size-7 min-h-0 min-w-0";
 
+export type ProjectExecutionStatus = "ATIVO" | "EM_EXECUCAO" | "ENCERRADO";
+
 interface ProjectCardProps {
   project: any;
-  isAdmin: boolean;
-  isMaster: boolean;
+  canEdit?: boolean;
+  canLock?: boolean;
+  canDelete?: boolean;
+  canReset?: boolean;
   membersCount: number;
   mocksCount: number;
   hasMocksInProgress?: boolean;
@@ -28,11 +39,37 @@ interface ProjectCardProps {
   onReset: () => void;
   onToggleLock: () => void;
   onToggleStatus?: () => void;
+  onStatusChange?: (status: ProjectExecutionStatus) => void;
   isToggling?: boolean;
   isActive?: boolean;
 }
 
-function getStatusMeta(isLocked: boolean, executionStatus?: string) {
+type StatusMeta = {
+  label: string;
+  labelClass: string;
+  icon: React.ReactNode;
+};
+
+const PROJECT_STATUS_OPTIONS = [
+  { value: "ATIVO", label: "Ativo", dotClass: "fiori-select-status-dot--success" },
+  { value: "EM_EXECUCAO", label: "Em execução", dotClass: "fiori-select-status-dot--warning" },
+  { value: "ENCERRADO", label: "Encerrado", dotClass: "fiori-select-status-dot--neutral" },
+] as const;
+
+function stopCardEvent(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
+export function resolveProjectExecutionStatus(
+  project: { executionStatus?: string },
+  hasMocksInProgress: boolean,
+): ProjectExecutionStatus {
+  const status = project.executionStatus;
+  if (status === "EM_EXECUCAO" || status === "ENCERRADO" || status === "ATIVO") return status;
+  return hasMocksInProgress ? "EM_EXECUCAO" : "ATIVO";
+}
+
+function getStatusMeta(isLocked: boolean, executionStatus: ProjectExecutionStatus): StatusMeta {
   if (isLocked) {
     return {
       label: "Bloqueado",
@@ -64,9 +101,89 @@ function getStatusMeta(isLocked: boolean, executionStatus?: string) {
   };
 }
 
+function CardStatusControl({
+  isLocked,
+  executionStatus,
+  editable,
+  isToggling,
+  onChange,
+}: {
+  isLocked: boolean;
+  executionStatus: ProjectExecutionStatus;
+  editable: boolean;
+  isToggling: boolean;
+  onChange: (status: ProjectExecutionStatus) => void;
+}) {
+  const meta = getStatusMeta(isLocked, executionStatus);
+
+  if (!editable) {
+    return (
+      <div className={cn("fiori-project-card-status-label shrink-0", meta.labelClass)}>
+        {isToggling ? <Loader2 className="w-3 h-3 animate-spin" /> : meta.icon}
+        {meta.label}
+      </div>
+    );
+  }
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "fiori-project-card-status-label fiori-card-meta-editable shrink-0",
+            meta.labelClass,
+          )}
+          onClick={stopCardEvent}
+          onMouseDown={stopCardEvent}
+          disabled={isToggling}
+          aria-label="Alterar status do projeto"
+        >
+          {isToggling ? <Loader2 className="w-3 h-3 animate-spin" /> : meta.icon}
+          {meta.label}
+          <ChevronDown className="w-2.5 h-2.5 opacity-60" aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        side="bottom"
+        sideOffset={4}
+        className="fiori-dropdown-menu fiori-dropdown-menu--table-rows w-40"
+        onClick={stopCardEvent}
+        onCloseAutoFocus={(event) => event.preventDefault()}
+      >
+        <DropdownMenuLabel className="fiori-dropdown-menu-label">Status</DropdownMenuLabel>
+        {PROJECT_STATUS_OPTIONS.map((option) => {
+          const isSelected = executionStatus === option.value;
+          return (
+            <DropdownMenuItem
+              key={option.value}
+              className={cn(
+                "fiori-dropdown-menu-item",
+                isSelected && "fiori-dropdown-menu-item--selected",
+              )}
+              onSelect={() => {
+                if (!isSelected) onChange(option.value);
+              }}
+            >
+              <span className="fiori-status-picker-row-icon" aria-hidden>
+                <span className={cn("fiori-select-status-dot", option.dotClass)} />
+              </span>
+              <span className="fiori-type-picker-row-label">{option.label}</span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function ProjectCard({
   project,
-  isAdmin,
+  canEdit = false,
+  canLock = false,
+  canDelete = false,
+  canReset = false,
   membersCount,
   mocksCount,
   hasMocksInProgress = false,
@@ -75,14 +192,16 @@ export function ProjectCard({
   onReset,
   onToggleLock,
   onToggleStatus,
+  onStatusChange,
   isToggling = false,
   isActive = false,
   onSelect,
 }: ProjectCardProps & { onSelect?: () => void }) {
   const isLocked = project.isLocked;
-  const executionStatus = project.executionStatus || (hasMocksInProgress ? "EM_EXECUCAO" : "ATIVO");
-  const meta = getStatusMeta(isLocked, executionStatus);
+  const executionStatus = resolveProjectExecutionStatus(project, hasMocksInProgress);
   const isExecuting = executionStatus === "EM_EXECUCAO";
+  const canEditStatus = canEdit && !isLocked;
+  const showToolbar = canEdit || canLock || canReset || canDelete;
 
   const {
     attributes,
@@ -132,10 +251,13 @@ export function ProjectCard({
         <span className="fiori-project-card-title truncate min-w-0 flex-1">
           {project.name}
         </span>
-        <div className={cn("fiori-project-card-status-label", meta.labelClass)}>
-          {meta.icon}
-          {meta.label}
-        </div>
+        <CardStatusControl
+          isLocked={isLocked}
+          executionStatus={executionStatus}
+          editable={canEditStatus && !!onStatusChange}
+          isToggling={isToggling}
+          onChange={(status) => onStatusChange?.(status)}
+        />
       </div>
 
       <div className="fiori-project-card-metrics fiori-project-card-metrics--inline">
@@ -163,8 +285,9 @@ export function ProjectCard({
 
       <div className="fiori-card-footer flex items-center justify-between gap-2 mt-auto">
         <div className="fiori-card-toolbar">
-          {isAdmin && (
+          {showToolbar && (
             <>
+              {canEditStatus && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
@@ -173,9 +296,8 @@ export function ProjectCard({
                     className={cn(
                       CARD_TOOLBAR_BTN,
                       isExecuting && "fiori-card-toolbar-btn-active",
-                      isLocked && "opacity-40"
                     )}
-                    disabled={isToggling || isLocked}
+                    disabled={isToggling}
                     onClick={(e) => { e.stopPropagation(); onToggleStatus?.(); }}
                   >
                     {isToggling ? (
@@ -188,10 +310,12 @@ export function ProjectCard({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent variant="fiori">
-                  {isLocked ? "Projeto bloqueado" : isExecuting ? "Concluir execução" : "Iniciar execução"}
+                  {isExecuting ? "Concluir execução" : "Iniciar execução"}
                 </TooltipContent>
               </Tooltip>
+              )}
 
+              {canEdit && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
@@ -208,7 +332,9 @@ export function ProjectCard({
                   {isLocked ? "Projeto bloqueado" : "Editar projeto"}
                 </TooltipContent>
               </Tooltip>
+              )}
 
+              {canLock && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
@@ -228,7 +354,9 @@ export function ProjectCard({
                   {isLocked ? "Desbloquear projeto" : "Bloquear projeto"}
                 </TooltipContent>
               </Tooltip>
+              )}
 
+              {canReset && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
@@ -248,7 +376,9 @@ export function ProjectCard({
                   {isLocked ? "Projeto bloqueado" : "Reiniciar projeto"}
                 </TooltipContent>
               </Tooltip>
+              )}
 
+              {canDelete && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
@@ -269,6 +399,7 @@ export function ProjectCard({
                   {isExecuting ? "Projeto em execução" : isLocked ? "Projeto bloqueado" : "Excluir projeto"}
                 </TooltipContent>
               </Tooltip>
+              )}
             </>
           )}
         </div>

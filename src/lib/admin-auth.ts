@@ -1,4 +1,10 @@
 import { getSupabaseAdmin } from '@/supabase/admin';
+import {
+  verifyCallerPermission as verifyCallerPermissionImpl,
+  type PermissionKey,
+} from '@/lib/auth/caller-permissions';
+
+export type { PermissionKey };
 
 type UserRole = 'master' | 'admin' | 'especialista' | 'membro';
 
@@ -53,4 +59,11 @@ export async function verifyCallerRole(
     const details = err instanceof Error ? err.message : String(err);
     return { error: `FALHA NA VERIFICAÇÃO DO TOKEN: ${details}` };
   }
+}
+
+export async function verifyCallerPermission(
+  token: string,
+  permission: PermissionKey,
+): Promise<VerifyResult> {
+  return verifyCallerPermissionImpl(token, permission);
 }

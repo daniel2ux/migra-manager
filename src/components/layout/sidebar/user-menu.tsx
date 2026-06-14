@@ -5,6 +5,7 @@ import Link from "next/link";
 import { LogOut, ShieldCheck, User, FolderKanban } from "lucide-react";
 import { doc } from "@/supabase/compat-db-shim";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { normalizeAvatarPublicUrl } from "@/lib/storage/avatar-url";
 import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,7 +50,7 @@ export function UserMenu() {
 
     if (!mounted || !user) return null;
 
-    const userPhoto = userProfile?.photoURL || user?.photoURL;
+    const userPhoto = normalizeAvatarPublicUrl(userProfile?.photoURL || user?.photoURL);
     const handleProjectPick = (id: string) => {
         updateActiveProject(id);
         setProjectSwitchOpen(false);

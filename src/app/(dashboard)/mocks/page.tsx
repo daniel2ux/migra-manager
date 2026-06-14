@@ -34,12 +34,19 @@ function MocksContent() {
 
   // Data hook
   const {
-    userProfile, isAdmin, isMaster, mocks, isLoading, masterObjects, projectData, objectsByMock
+    userProfile, isAdmin, isMaster, can, mocks, isLoading, masterObjects, projectData, objectsByMock
   } = useMocksData(projectId);
   const isProjectLocked = !!projectData?.isLocked;
+  const locked = isProjectLocked;
 
-  // Actions hook
-  const mocksActions = useMocksActions(projectId, isAdmin, userProfile, isMaster);
+  const mocksActions = useMocksActions(projectId, userProfile, { can, isMaster });
+
+  const canEdit = can("mocks.edit") && !locked;
+  const canCreate = can("mocks.create") && !locked;
+  const canDelete = can("mocks.delete") && !locked;
+  const canRestart = can("mocks.restart") && !locked;
+  const canLock = can("mocks.lock") && !locked;
+  const canClone = can("mocks.clone") && !locked;
 
   // Edit lock for individual mock editing
   const [editingMock, setEditingMock] = useState<Mock | null>(null);
@@ -116,7 +123,7 @@ function MocksContent() {
       handleOpenDialog(mock, true);
       return;
     }
-    if ((!isAdmin || isProjectLocked) && !viewOnly) return;
+    if ((!canEdit || isProjectLocked) && !viewOnly) return;
     if (mock && !viewOnly) {
       const { acquired, lockedByName: blocker } = await acquireLock(`projects/${projectId}/mocks/${mock.id}`);
       if (!acquired) {
@@ -195,7 +202,9 @@ function MocksContent() {
   return (
     <>
       <MockHeader
-        isAdmin={isAdmin && !isProjectLocked}
+        canCreate={canCreate}
+        canDelete={canDelete}
+        canRestart={canRestart}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         isSearchOpen={isSearchOpen}
@@ -219,8 +228,11 @@ function MocksContent() {
           mocks={filteredMocks}
           selectedMockId={selectedMockId}
           onSelect={(id) => setSelectedMockId(id)}
-          isAdmin={isAdmin && !isProjectLocked}
-          isMaster={isMaster && !isProjectLocked}
+          canEdit={canEdit}
+          canLock={canLock}
+          canClone={canClone}
+          canRestart={canRestart}
+          isMaster={isMaster && !locked}
           isProjectLocked={isProjectLocked}
           currentUserId={user?.uid || ''}
           projectId={projectId}
@@ -269,7 +281,7 @@ function MocksContent() {
         open={open}
         onOpenChange={setOpen}
         isViewOnly={isViewOnly}
-        isAdmin={isAdmin}
+        isAdmin={can("mocks.edit")}
         formData={formData}
         onFormChange={handleFormChange}
         editingMock={editingMock}
@@ -306,7 +318,7 @@ function MocksContent() {
           {!isProjectLocked && !isMockInactive(ctxMenu.mock) && (
             <button onClick={() => mocksActions.handleToggleLock(ctxMenu.mock)} className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 uppercase tracking-widest">Bloquear/Desbloquear</button>
           )}
-          {isAdmin && !isProjectLocked && (
+          {canEdit && !isProjectLocked && (
             <button
               onClick={() => {
                 void mocksActions.handleToggleActive(ctxMenu.mock, isMockInactive(ctxMenu.mock));

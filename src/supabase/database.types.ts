@@ -44,21 +44,27 @@ export type Database = {
       access_profiles: {
         Row: {
           created_at: string
+          description: string
           id: string
+          is_system: boolean
           name: string
           permissions: string[]
           updated_at: string
         }
         Insert: {
           created_at?: string
+          description?: string
           id?: string
+          is_system?: boolean
           name: string
           permissions?: string[]
           updated_at?: string
         }
         Update: {
           created_at?: string
+          description?: string
           id?: string
+          is_system?: boolean
           name?: string
           permissions?: string[]
           updated_at?: string
@@ -666,6 +672,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_profile_id: string | null
           company: string | null
           created_at: string
           department: string | null
@@ -691,6 +698,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_profile_id?: string | null
           company?: string | null
           created_at?: string
           department?: string | null
@@ -716,6 +724,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_profile_id?: string | null
           company?: string | null
           created_at?: string
           department?: string | null

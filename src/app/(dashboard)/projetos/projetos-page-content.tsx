@@ -52,6 +52,8 @@ import {
     ProjectDeleteDialog,
     ProjectResetDialog,
     ProjectLockDialog,
+    resolveProjectExecutionStatus,
+    type ProjectExecutionStatus,
 } from "@/components/projetos";
 
 interface DbTimestamp { seconds: number; nanoseconds: number; }
@@ -97,16 +99,22 @@ export default function ProjetosPageContent() {
     const [memberDataByProject, setMemberDataByProject] = useState<Record<string, any[]>>({});
 
     const {
-        userProfile, isProfileLoading, isMaster, isAdmin, userProjectIds,
-        projects, isProjectsLoading, allUsers, filteredUsers,
-        userSearchTerm, setUserSearchTerm,
+        userProfile, isProfileLoading, isMaster, isAdmin, can, userProjectIds,
+        projects, isProjectsLoading, allUsers, projectMembers,
     } = useProjectsData(searchTerm);
+
+    const canCreate = can("projects.create");
+    const canEdit = can("projects.edit");
+    const canDelete = can("projects.delete");
+    const canLock = can("projects.lock");
+    const canView = can("projects.view");
+    const usePrivilegedMockQuery = isAdmin || canEdit;
 
     const { projectId: activeProjectId, updateActiveProject } = useActiveProjectId();
 
     // Fetch mocks and members for non-admin users
     useEffect(() => {
-        if (!db || isAdmin || !projects || !userProjectIds.length) return;
+        if (!db || usePrivilegedMockQuery || !projects || !userProjectIds.length) return;
         const fetchData = async () => {
             const mocksByProj: Record<string, any[]> = {};
             const membersByProj: Record<string, any[]> = {};
@@ -132,11 +140,11 @@ export default function ProjetosPageContent() {
             setMemberDataByProject(membersByProj);
         };
         fetchData();
-    }, [db, isAdmin, projects, userProjectIds]);
+    }, [db, usePrivilegedMockQuery, projects, userProjectIds]);
 
     // Admin mocks query — nunca usar `in` com array vazio (masters costumam ter projectIds: [])
     const mocksQuery = useMemoDb(() => {
-        if (!db || !user || isProfileLoading || !userProfile || !isAdmin) return null;
+        if (!db || !user || isProfileLoading || !userProfile || !usePrivilegedMockQuery) return null;
         const mocksRef = collectionGroup(db as CompatDb, "mocks");
         const membershipIds = idsForDbIn(projects?.map((p) => p.id));
         const profileIds = idsForDbIn(userProjectIds);
@@ -145,7 +153,7 @@ export default function ProjetosPageContent() {
             return query(mocksRef, limit(500));
         }
         return query(mocksRef, where("projectId", "in", projectIds), limit(500));
-    }, [db, user, isProfileLoading, userProfile, isAdmin, userProjectIds, projects]);
+    }, [db, user, isProfileLoading, userProfile, usePrivilegedMockQuery, userProjectIds, projects]);
     const { data: allMocks } = useCollection<any>(mocksQuery);
 
     const mocksByProject = useMemo(() => {
@@ -244,8 +252,9 @@ export default function ProjetosPageContent() {
     }, [activeProjectId, projects]);
 
     const handleOpenDialog = (project?: Project) => {
-        if (!isAdmin && !project) return;
-        if (project && !isAdmin) { setEditingProject(project); setOpen(true); return; }
+        if (!project && !canCreate) return;
+        if (project && !canView) return;
+        if (project && !canEdit) { setEditingProject(project); setOpen(true); return; }
         setEditingProject(project || null);
         setFormData({
             name: project?.name || "",
@@ -257,23 +266,21 @@ export default function ProjetosPageContent() {
         setOpen(true);
     };
 
-    const handleToggleMember = (uid: string) => {
-        setFormData(prev => ({
-            ...prev,
-            memberUids: prev.memberUids.includes(uid)
-                ? prev.memberUids.filter(id => id !== uid)
-                : [...prev.memberUids, uid],
-        }));
-    };
-
     const handleSave = async () => {
         const trimmedName = formData.name.trim();
-        if (!isAdmin || !trimmedName || !user || !db) {
+        const isEditing = !!editingProject;
+        if (!trimmedName || !user || !db) {
             toast({ variant: "destructive", description: "Ação não permitida ou dados incompletos." });
             return;
         }
-
-        const isEditing = !!editingProject;
+        if (isEditing && !canEdit) {
+            toast({ variant: "destructive", description: "Sem permissão para editar projetos." });
+            return;
+        }
+        if (!isEditing && !canCreate) {
+            toast({ variant: "destructive", description: "Sem permissão para criar projetos." });
+            return;
+        }
         const projectId = editingProject?.id ?? doc(collection(db as CompatDb, "projects")).id;
         const projectRef = doc(db as CompatDb, "projects", projectId);
         const memberProfiles = allUsers
@@ -347,7 +354,7 @@ export default function ProjetosPageContent() {
     };
 
     const handleDeleteProject = (project: Project) => {
-        if (!isAdmin) return;
+        if (!canDelete) return;
         if (project.memberUids && project.memberUids.length > 0) {
             project.memberUids.forEach(uid => {
                 updateDocumentNonBlocking(doc(db as CompatDb, "users", uid), { projectIds: arrayRemove(project.id) });
@@ -359,7 +366,7 @@ export default function ProjetosPageContent() {
     };
 
     const handleResetProject = async (project: Project) => {
-        if (!isAdmin) return;
+        if (!canEdit) return;
         setIsResetting(true);
         try {
             const mocksRef = collection(db as CompatDb, "projects", project.id, "mocks");
@@ -399,7 +406,7 @@ export default function ProjetosPageContent() {
     };
 
     const toggleLock = (project: Project) => {
-        if (!isAdmin) return;
+        if (!canLock) return;
         if (project.isLocked) {
             executeToggleLock(project);
         } else {
@@ -407,15 +414,13 @@ export default function ProjetosPageContent() {
         }
     };
 
-    const toggleStatus = async (project: Project) => {
-        if (!isAdmin) return;
+    const changeProjectStatus = async (project: Project, newStatus: ProjectExecutionStatus) => {
+        if (!canEdit || project.isLocked) return;
         setStatusTogglingId(project.id);
         try {
-            const isExecuting = project.executionStatus === 'EM_EXECUCAO';
-            const nextStatus = isExecuting ? 'ENCERRADO' : 'EM_EXECUCAO';
             const projectRef = doc(db as CompatDb, "projects", project.id);
             await updateDocumentNonBlocking(projectRef, {
-                executionStatus: nextStatus,
+                executionStatus: newStatus,
                 updatedAt: serverTimestamp()
             });
         } catch {
@@ -423,6 +428,12 @@ export default function ProjetosPageContent() {
         } finally {
             setStatusTogglingId(null);
         }
+    };
+
+    const toggleStatus = async (project: Project, hasMocksInProgress: boolean) => {
+        const current = resolveProjectExecutionStatus(project, hasMocksInProgress);
+        const nextStatus: ProjectExecutionStatus = current === 'EM_EXECUCAO' ? 'ENCERRADO' : 'EM_EXECUCAO';
+        await changeProjectStatus(project, nextStatus);
     };
 
     const handleAiGenerate = async () => {
@@ -502,7 +513,7 @@ export default function ProjetosPageContent() {
                                         {isSearchOpen ? "Fechar busca" : "Buscar projetos"}
                                     </TooltipContent>
                                 </Tooltip>
-                                {isAdmin && (
+                                {canCreate && (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button
@@ -544,13 +555,11 @@ export default function ProjetosPageContent() {
                     formData={formData}
                     onFormChange={setFormData}
                     onSave={handleSave}
-                    filteredUsers={filteredUsers}
-                    userSearchTerm={userSearchTerm}
-                    onUserSearchChange={setUserSearchTerm}
-                    onToggleMember={handleToggleMember}
+                    users={projectMembers}
                     onAiGenerate={handleAiGenerate}
                     isGenerating={isGenerating}
-                    isAdmin={isAdmin}
+                    canEdit={canEdit}
+                    canCreate={canCreate}
                 />
 
                 {isProjectsLoading || isProfileLoading ? (
@@ -570,21 +579,25 @@ export default function ProjetosPageContent() {
                                 >
                                     <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 280px))" }}>
                                         {displayedProjects.map((project) => {
-                                            const projectMocks = isAdmin ? (mocksByProject?.[project.id] || []) : (mockDataByProject?.[project.id] || []);
+                                            const projectMocks = usePrivilegedMockQuery ? (mocksByProject?.[project.id] || []) : (mockDataByProject?.[project.id] || []);
                                             const hasMocksInProgress = projectMocks.some((m: any) => m.status === 'CARGA_EM_ANDAMENTO' || m.isRunning);
+                                            const locked = project.isLocked;
                                             return (
                                                 <ProjectCard
                                                     key={project.id}
                                                     project={project}
-                                                    isAdmin={isAdmin}
-                                                    isMaster={isMaster}
+                                                    canEdit={canEdit && !locked}
+                                                    canLock={canLock}
+                                                    canDelete={canDelete}
+                                                    canReset={canEdit}
                                                     membersCount={(project.memberProfiles || memberDataByProject?.[project.id] || []).length}
                                                     mocksCount={projectMocks.length}
                                                     onEdit={() => handleOpenDialog(project)}
                                                     onDelete={() => setProjectToDelete(project)}
                                                     onReset={() => setProjectToReset(project)}
                                                     onToggleLock={() => toggleLock(project)}
-                                                    onToggleStatus={() => toggleStatus(project)}
+                                                    onToggleStatus={() => toggleStatus(project, hasMocksInProgress)}
+                                                    onStatusChange={(status) => changeProjectStatus(project, status)}
                                                     isToggling={statusTogglingId === project.id}
                                                     hasMocksInProgress={hasMocksInProgress}
                                                     isActive={project.id === activeProjectId}
@@ -611,7 +624,7 @@ export default function ProjetosPageContent() {
                     <div className="flex flex-1 flex-col items-center justify-center p-20 text-center space-y-4">
                         <FolderSearch className="w-12 h-12 text-slate-100" />
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Nenhum projeto encontrado.</p>
-                        {isAdmin && <Button onClick={() => handleOpenDialog()} className="rounded-none text-[10px] font-black uppercase tracking-widest"><Plus className="w-3.5 h-3.5 mr-2" />Novo Projeto</Button>}
+                        {canCreate && <Button onClick={() => handleOpenDialog()} className="rounded-none text-[10px] font-black uppercase tracking-widest"><Plus className="w-3.5 h-3.5 mr-2" />Novo Projeto</Button>}
                     </div>
                 )}
 

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body: ChangeRoleRequest = await req.json();
-    const { targetUid, newRole, reason, callerToken } = body;
+    const { targetUid, newRole, reason, callerToken, accessProfileId } = body;
 
     if (!targetUid || !newRole || !reason?.trim() || !callerToken) {
       return NextResponse.json(
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
 
     await targetRef.update({
       role: newRole,
+      accessProfileId: accessProfileId ?? null,
       updatedAt: new Date().toISOString(),
     });
 
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
       targetName: targetData?.name ?? 'N/A',
       previousRole,
       newRole,
+      accessProfileId: accessProfileId ?? null,
       reason: reason.trim(),
       callerUid: caller.uid,
       callerEmail: caller.email ?? 'N/A',

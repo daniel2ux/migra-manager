@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Briefcase, Building2, CalendarDays, Loader2, User, UserCircle } from "lucide-react";
 import {
   Dialog,
@@ -16,6 +16,8 @@ import { Popover, PopoverContent } from "@/components/ui/popover";
 import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 import { Calendar } from "@/components/ui/calendar";
 import type { UserProfile, UserFormData } from "@/types/usuarios";
+import { AccessProfileSelect } from "@/components/usuarios/access-profile-select";
+import { ROLE_LABELS } from "@/types/usuarios";
 import { formatBrazilianPhone } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
@@ -31,11 +33,25 @@ interface EditUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: UserProfile | null;
-  formData: Partial<UserFormData>;
-  onFormDataChange: (data: Partial<UserFormData>) => void;
-  onSave: () => Promise<void>;
+  onSave: (data: Partial<UserFormData>) => Promise<void>;
   canEdit: boolean;
+  canChangeAccessProfile?: boolean;
   isSaving?: boolean;
+}
+
+function initialFormFromUser(user: UserProfile): Partial<UserFormData> {
+  return {
+    name: user.name || "",
+    phone: user.phone || "",
+    company: user.company || "",
+    position: user.position || "",
+    department: user.department || "",
+    manager: user.manager || "",
+    startDate: user.startDate || "",
+    endDate: user.endDate || "",
+    notes: user.notes || "",
+    accessProfileId: user.accessProfileId ?? null,
+  };
 }
 
 const EMPTY_FORM: UserFormData = {
@@ -48,14 +64,19 @@ const EMPTY_FORM: UserFormData = {
   startDate: "",
   endDate: "",
   notes: "",
+  accessProfileId: null,
 };
 
 function getField<T extends keyof UserFormData>(
   formData: Partial<UserFormData>,
   user: UserProfile | null,
   field: T,
-): string {
-  return formData[field] ?? user?.[field] ?? EMPTY_FORM[field];
+): UserFormData[T] {
+  const fallback = user?.[field as keyof UserProfile];
+  const fromForm = formData[field];
+  if (fromForm !== undefined) return fromForm as UserFormData[T];
+  if (fallback !== undefined) return fallback as UserFormData[T];
+  return EMPTY_FORM[field];
 }
 
 function parseISODate(value: string): Date | undefined {
@@ -208,25 +229,33 @@ export function EditUserDialog({
   open,
   onOpenChange,
   user,
-  formData,
-  onFormDataChange,
   onSave,
   canEdit,
+  canChangeAccessProfile = false,
   isSaving = false,
 }: EditUserDialogProps) {
+  const [formData, setFormData] = useState<Partial<UserFormData>>({});
   const [startCalOpen, setStartCalOpen] = useState(false);
   const [endCalOpen, setEndCalOpen] = useState(false);
   const readonly = !canEdit;
+  const userId = user?.uid ?? null;
+  const lastInitUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) {
       setStartCalOpen(false);
       setEndCalOpen(false);
+      lastInitUserIdRef.current = null;
+      return;
     }
-  }, [open]);
+    if (!userId || !user) return;
+    if (lastInitUserIdRef.current === userId) return;
+    lastInitUserIdRef.current = userId;
+    setFormData(initialFormFromUser(user));
+  }, [open, userId]);
 
   const updateField = <T extends keyof UserFormData>(field: T, value: UserFormData[T]) => {
-    onFormDataChange({ ...formData, [field]: value });
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleDateInput = (field: "startDate" | "endDate", raw: string) => {
@@ -269,6 +298,36 @@ export function EditUserDialog({
         </DialogHeader>
 
         <div className="fiori-dialog-body">
+          <section className="fiori-form-section mb-4">
+            <h3 className="fiori-section-title">
+              <Briefcase className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Acesso e permissões
+            </h3>
+            <div className="space-y-3">
+              <div className="fiori-form-field">
+                <label className="fiori-field-label">Perfil de sistema</label>
+                <Input
+                  value={ROLE_LABELS[user?.role ?? "membro"] ?? user?.role ?? "—"}
+                  disabled
+                  className={fioriFieldClass(true)}
+                />
+              </div>
+              <div className="fiori-form-field">
+                <label className="fiori-field-label" htmlFor="edit-user-access-profile">
+                  Perfil de permissões
+                </label>
+                <AccessProfileSelect
+                  id="edit-user-access-profile"
+                  value={formData.accessProfileId ?? user?.accessProfileId ?? null}
+                  onChange={(id) => updateField("accessProfileId", id)}
+                  role={user?.role}
+                  isMaster={user?.isMaster}
+                  disabled={!canChangeAccessProfile}
+                />
+              </div>
+            </div>
+          </section>
+
           <section className="fiori-form-section">
             <h3 className="fiori-section-title">
               <UserCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -427,7 +486,7 @@ export function EditUserDialog({
           {canEdit && (
             <button
               type="button"
-              onClick={onSave}
+              onClick={() => onSave(formData)}
               disabled={isSaving}
               className="fiori-btn-emphasized inline-flex items-center gap-1.5"
             >

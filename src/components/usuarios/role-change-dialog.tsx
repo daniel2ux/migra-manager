@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import type { UserProfile } from "@/types/usuarios";
+import { AccessProfileSelect } from "@/components/usuarios/access-profile-select";
 
 interface RoleChangeDialogProps {
   open: boolean;
@@ -25,6 +26,8 @@ interface RoleChangeDialogProps {
   targetUser: UserProfile | null;
   newRole: UserProfile["role"];
   onRoleChange: (role: UserProfile["role"]) => void;
+  accessProfileId: string | null | undefined;
+  onAccessProfileChange: (id: string | null) => void;
   reason: string;
   onReasonChange: (reason: string) => void;
   profileName: string;
@@ -46,6 +49,8 @@ export function RoleChangeDialog({
   targetUser,
   newRole,
   onRoleChange,
+  accessProfileId,
+  onAccessProfileChange,
   reason,
   onReasonChange,
   profileName,
@@ -83,7 +88,7 @@ export function RoleChangeDialog({
           <section className="fiori-form-section space-y-4">
             <div className="space-y-1.5">
               <label className="fiori-field-label" htmlFor="role-change-profile">
-                Novo perfil de acesso
+                Perfil de sistema (role)
               </label>
               <Select
                 value={newRole}
@@ -100,6 +105,19 @@ export function RoleChangeDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="fiori-field-label" htmlFor="role-change-access-profile">
+                Perfil de permissões
+              </label>
+              <AccessProfileSelect
+                id="role-change-access-profile"
+                value={accessProfileId}
+                onChange={onAccessProfileChange}
+                role={newRole}
+                isMaster={newRole === "master"}
+              />
             </div>
 
             <div className="space-y-1.5">

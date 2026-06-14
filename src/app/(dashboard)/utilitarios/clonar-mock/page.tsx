@@ -30,14 +30,13 @@ export default function ClonarMockPage() {
   const router = useRouter();
   const isRouterReady = useRouterReady();
   const { toast } = useToast();
-  const { isAdmin, isMaster, isProfileLoading, currentUserProfile } = useUsersData("");
+  const { isProfileLoading, currentUserProfile, can, isMaster } = useUsersData("");
 
   const { mocks, isLoading, projectData, objectsByMock } = useMocksData(projectId);
   const mocksActions = useMocksActions(
     projectId,
-    isAdmin,
     currentUserProfile as UserProfile | null,
-    isMaster,
+    { can, isMaster },
   );
   const isProjectLocked = !!projectData?.isLocked;
 
@@ -79,7 +78,7 @@ export default function ClonarMockPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!can("utilities.clone_mock") && !can("mocks.clone")) {
     return (
       <DashboardShell noPadding>
         <div className="flex flex-col h-full">

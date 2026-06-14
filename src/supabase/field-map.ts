@@ -1,7 +1,9 @@
 const TO_SNAKE: Record<string, string> = {
   uid: 'id',
   isMaster: 'is_master',
+  isSystem: 'is_system',
   isDisabled: 'is_disabled',
+  accessProfileId: 'access_profile_id',
   mustChangePassword: 'must_change_password',
   migradorName: 'migrador_name',
   fromEmail: 'from_email',
@@ -15,6 +17,7 @@ const TO_SNAKE: Record<string, string> = {
   lockedByMaster: 'locked_by_master',
   lockedByUid: 'locked_by_uid',
   lockedByName: 'locked_by_name',
+  executionStatus: 'execution_status',
   ownerId: 'owner_id',
   projectId: 'project_id',
   mockId: 'mock_id',

@@ -9,8 +9,13 @@ interface MockTableProps {
   mocks: Mock[];
   selectedMockId: string;
   onSelect: (id: string) => void;
-  isAdmin: boolean;
-  isMaster: boolean;
+  canEdit?: boolean;
+  canLock?: boolean;
+  canClone?: boolean;
+  canRestart?: boolean;
+  /** @deprecated use canEdit/canLock/canClone/canRestart */
+  isAdmin?: boolean;
+  isMaster?: boolean;
   isProjectLocked?: boolean;
   currentUserId: string;
   projectId: string | null;
@@ -35,7 +40,9 @@ export interface MockTableHandle {
 
 export const MockTable = forwardRef<MockTableHandle, MockTableProps>(
   ({
-    mocks, selectedMockId, onSelect, isAdmin, isMaster, isProjectLocked = false, currentUserId: _currentUserId, projectId,
+    mocks, selectedMockId, onSelect,
+    canEdit, canLock, canClone, canRestart,
+    isAdmin, isMaster, isProjectLocked = false, currentUserId: _currentUserId, projectId,
     isTogglingLoad, isDeleting, objectsByMock, catalogObjectCount = 0, onToggleLock, onToggleLoadStatus,
     onClone, onEdit, onView, onToggleActive, onStatusChange, onContextMenu
   }, ref) => {
@@ -83,6 +90,10 @@ export const MockTable = forwardRef<MockTableHandle, MockTableProps>(
             mock={mock}
             isSelected={selectedMockId === mock.id}
             onSelect={onSelect}
+            canEdit={canEdit ?? isAdmin}
+            canLock={canLock ?? isAdmin}
+            canClone={canClone ?? isAdmin}
+            canRestart={canRestart ?? isAdmin}
             isAdmin={isAdmin}
             isMaster={isMaster}
             isProjectLocked={isProjectLocked}

@@ -16,7 +16,11 @@ const PAGE_TOOLBAR_BTN =
   "fiori-toolbar-btn !rounded-[0.375rem] !size-8 min-h-0 min-w-0";
 
 interface MockHeaderProps {
-  isAdmin: boolean;
+  canCreate?: boolean;
+  canDelete?: boolean;
+  canRestart?: boolean;
+  /** @deprecated use canCreate/canDelete/canRestart */
+  isAdmin?: boolean;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   isSearchOpen: boolean;
@@ -35,11 +39,18 @@ interface MockHeaderProps {
 }
 
 export function MockHeader({
-  isAdmin, searchTerm, setSearchTerm, isSearchOpen, setIsSearchOpen,
+  canCreate = false,
+  canDelete = false,
+  canRestart = false,
+  isAdmin,
+  searchTerm, setSearchTerm, isSearchOpen, setIsSearchOpen,
   onAddMock, onBulkDelete, onBulkRestart, selectedMockId, _filteredCount,
   empresa, projectName, mockName,
   showInactive = false, onToggleShowInactive, inactiveCount = 0,
 }: MockHeaderProps) {
+  const showCreate = canCreate || !!isAdmin;
+  const showDelete = canDelete || !!isAdmin;
+  const showRestart = canRestart || !!isAdmin;
   const isAll = selectedMockId === 'all';
 
   const actions = (
@@ -110,10 +121,11 @@ export function MockHeader({
           </Tooltip>
         )}
 
-        {isAdmin && (
+        {(showCreate || showDelete || showRestart) && (
           <>
             {!isAll && (
               <>
+                {showRestart && (
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <Button
@@ -130,7 +142,9 @@ export function MockHeader({
                     Reiniciar selecionado
                   </TooltipContent>
                 </Tooltip>
+                )}
 
+                {showDelete && (
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <Button
@@ -147,9 +161,11 @@ export function MockHeader({
                     Excluir selecionado
                   </TooltipContent>
                 </Tooltip>
+                )}
               </>
             )}
 
+            {showCreate && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <Button
@@ -166,6 +182,7 @@ export function MockHeader({
                 Nova janela
               </TooltipContent>
             </Tooltip>
+            )}
           </>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/supabase/admin';
-import { verifyCallerRole } from '@/lib/admin-auth';
+import { verifyCallerPermission } from '@/lib/admin-auth';
 import { purgeInactiveMocks } from '@/lib/admin/purge-inactive-mocks';
 
 export const maxDuration = 300;
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const verification = await verifyCallerRole(callerToken, ['master']);
+    const verification = await verifyCallerPermission(callerToken, 'utilities.clean_catalog');
     if (verification.error || !verification.decoded) {
       return NextResponse.json({ error: verification.error ?? 'Não autorizado.' }, { status: 403 });
     }

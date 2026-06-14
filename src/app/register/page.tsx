@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc, serverTimestamp, type CompatDb } from '@/supabase/compat-db-shim';
-import { ref, uploadBytes, getDownloadURL, type CompatStorage } from '@/supabase/storage-shim';
+import { ref, uploadBytes, getDownloadURL, avatarRef, type CompatStorage } from '@/supabase/storage-shim';
 import Link from 'next/link';
 import { useDb, useUser, useDoc, useMemoDb, useStorage } from '@/supabase';
 import { Camera, X } from 'lucide-react';
@@ -145,7 +145,7 @@ export default function RegisterPage() {
 
         let photoURL = "";
         if (photoFile) {
-          const storageRef = ref(storage as CompatStorage, `avatars/${newUserUid}`);
+          const storageRef = avatarRef(storage as CompatStorage, newUserUid, photoFile);
           await uploadBytes(storageRef, photoFile);
           photoURL = await getDownloadURL(storageRef);
         }

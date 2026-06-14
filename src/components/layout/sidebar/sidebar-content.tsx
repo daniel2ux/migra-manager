@@ -24,6 +24,7 @@ import { useSignOut } from "./use-sidebar-projects";
 import { SidebarProjectSwitcher } from "./sidebar-project-switcher";
 import { SidebarAccountSection } from "./sidebar-account-section";
 import { HorizontalNavDropdownMenu, SidebarNavLink, SidebarNavGroup } from "./sidebar-nav";
+import { useCurrentUserPermissions } from "@/hooks/use-current-user-permissions";
 
 /**
  * SidebarContent — Adaptado para suportar Horizontal e Vertical.
@@ -47,11 +48,8 @@ export const SidebarContent = React.memo(function SidebarContent({
     const { user, isUserLoading } = useUser();
     const handleSignOut = useSignOut();
 
-    const userDocRef = useMemoDb(
-        () => (user && db && !isUserLoading ? doc(db, "users", user.uid) : null),
-        [db, user, isUserLoading],
-    );
-    const { data: userProfile, isLoading: profileLoadingSidebar } = useDoc<any>(userDocRef);
+    const { userProfile, isProfileLoading: profileLoadingSidebar, can, isAdmin } =
+        useCurrentUserPermissions();
 
     const { projectId: persistedProjectId } = useActiveProjectId();
 
@@ -76,12 +74,9 @@ export const SidebarContent = React.memo(function SidebarContent({
     }, [db, effectiveProjectId]);
     const { data: projectData } = useDoc<any>(projectDocRef);
 
-    const isMaster = userProfile?.isMaster === true || userProfile?.role?.toLowerCase() === "master";
-    const isAdmin = isMaster || userProfile?.role?.toLowerCase() === "admin";
-
     const menuItems = useMemo(
-        () => buildMenuItems(isAdmin, isMaster),
-        [isAdmin, isMaster],
+        () => buildMenuItems(can),
+        [can],
     );
 
     const activeId = findActiveMenuItemId(menuItems, pathname);

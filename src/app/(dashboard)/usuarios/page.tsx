@@ -27,6 +27,7 @@ import {
   EmailSignaturesDialog,
 } from "@/components/usuarios";
 import { useUsersData, useUserPermissions } from "@/hooks/use-users-data";
+import { useAccessProfileOptions } from "@/hooks/use-access-profile-options";
 import { useUserActions } from "@/hooks/use-user-actions";
 
 const PAGE_TOOLBAR_BTN =
@@ -53,13 +54,13 @@ export default function UsuariosPage() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isReadOnlyDialog, setIsReadOnlyDialog] = useState(false);
-  const [editFormData, setEditFormData] = useState<Partial<UserFormData>>({});
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [roleDialogTarget, setRoleDialogTarget] = useState<UserProfile | null>(null);
   const [roleDialogNewRole, setRoleDialogNewRole] = useState<UserProfile["role"]>("membro");
   const [roleDialogReason, setRoleDialogReason] = useState("");
   const [roleDialogProfileName, setRoleDialogProfileName] = useState("");
+  const [roleDialogAccessProfileId, setRoleDialogAccessProfileId] = useState<string | null>(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [resetTarget, setResetTarget] = useState<UserProfile | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -83,18 +84,22 @@ export default function UsuariosPage() {
     filteredUsers,
     isMaster,
     isAdmin,
+    can,
     refreshUsers,
   } = useUsersData(searchTerm);
+
+  const { profiles: accessProfiles } = useAccessProfileOptions();
 
   const { canEditSelectedUser } = useUserPermissions(
     selectedUser,
     user?.uid,
-    isMaster,
-    isAdmin,
+    can,
   );
 
+  const canChangeAccessProfile = can("users.change_role");
+
   // Actions hook
-  const actions = useUserActions({ user, isMaster, isAdmin });
+  const actions = useUserActions({ user, isMaster, isAdmin, canChangeAccessProfile });
 
   // Safety: if services are not yet available, show loader
   if (!areServicesAvailable || !db || !storage) {
@@ -127,39 +132,17 @@ export default function UsuariosPage() {
   const handleEditUser = (userToEdit: UserProfile) => {
     setIsReadOnlyDialog(false);
     setSelectedUser(userToEdit);
-    setEditFormData({
-      name: userToEdit.name || "",
-      phone: userToEdit.phone || "",
-      company: userToEdit.company || "",
-      position: userToEdit.position || "",
-      department: userToEdit.department || "",
-      manager: userToEdit.manager || "",
-      startDate: userToEdit.startDate || "",
-      endDate: userToEdit.endDate || "",
-      notes: userToEdit.notes || "",
-    });
     setIsEditDialogOpen(true);
   };
 
   const handleViewUser = (userToView: UserProfile) => {
     setIsReadOnlyDialog(true);
     setSelectedUser(userToView);
-    setEditFormData({
-      name: userToView.name || "",
-      phone: userToView.phone || "",
-      company: userToView.company || "",
-      position: userToView.position || "",
-      department: userToView.department || "",
-      manager: userToView.manager || "",
-      startDate: userToView.startDate || "",
-      endDate: userToView.endDate || "",
-      notes: userToView.notes || "",
-    });
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEdit = async () => {
-    const success = await actions.handleSaveEdit(selectedUser, editFormData);
+  const handleSaveEdit = async (formData: Partial<UserFormData>) => {
+    const success = await actions.handleSaveEdit(selectedUser, formData);
     if (success) setIsEditDialogOpen(false);
   };
 
@@ -168,6 +151,7 @@ export default function UsuariosPage() {
     setRoleDialogNewRole(targetUser.role);
     setRoleDialogReason("");
     setRoleDialogProfileName(targetUser.position || "");
+    setRoleDialogAccessProfileId(targetUser.accessProfileId ?? null);
     setIsRoleDialogOpen(true);
   };
 
@@ -177,6 +161,7 @@ export default function UsuariosPage() {
       roleDialogNewRole,
       roleDialogReason,
       roleDialogProfileName,
+      roleDialogAccessProfileId,
     );
     if (success) setIsRoleDialogOpen(false);
   };
@@ -354,6 +339,7 @@ export default function UsuariosPage() {
                     <UserCard
                       key={u.uid}
                       user={u}
+                      accessProfiles={accessProfiles}
                       isMe={user?.uid === u.uid}
                       isMaster={isMaster}
                       isAdmin={isAdmin}
@@ -392,10 +378,9 @@ export default function UsuariosPage() {
             if (!open) setIsReadOnlyDialog(false);
           }}
           user={selectedUser}
-          formData={editFormData}
-          onFormDataChange={setEditFormData}
           onSave={handleSaveEdit}
           canEdit={!isReadOnlyDialog && canEditSelectedUser}
+          canChangeAccessProfile={canChangeAccessProfile && !isReadOnlyDialog}
           isSaving={false}
         />
 
@@ -416,6 +401,8 @@ export default function UsuariosPage() {
           onReasonChange={setRoleDialogReason}
           profileName={roleDialogProfileName}
           onProfileNameChange={setRoleDialogProfileName}
+          accessProfileId={roleDialogAccessProfileId}
+          onAccessProfileChange={setRoleDialogAccessProfileId}
           onSubmit={handleChangeRole}
           isChanging={actions.isChangingRole}
         />

@@ -16,7 +16,10 @@ export interface UserProfile {
   startDate?: string;
   endDate?: string;
   notes?: string;
+  projectIds?: string[];
+  projectOrder?: string[];
   isMaster?: boolean;
+  accessProfileId?: string | null;
   migradorName?: string;
   fromEmail?: string;
   emailSignatures?: EmailSignature[];
@@ -39,6 +42,7 @@ export interface UserFormData {
   startDate: string;
   endDate: string;
   notes: string;
+  accessProfileId?: string | null;
 }
 
 export interface CreateUserData {
@@ -48,6 +52,7 @@ export interface CreateUserData {
   company: string;
   position: string;
   reason: string;
+  accessProfileId?: string | null;
 }
 
 export interface ResetPasswordResult {

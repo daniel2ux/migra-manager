@@ -34,8 +34,13 @@ interface MockCardProps {
   mock: Mock;
   isSelected: boolean;
   onSelect: (id: string) => void;
-  isAdmin: boolean;
-  isMaster: boolean;
+  canEdit?: boolean;
+  canLock?: boolean;
+  canClone?: boolean;
+  canRestart?: boolean;
+  /** @deprecated use canEdit/canLock/canClone/canRestart */
+  isAdmin?: boolean;
+  isMaster?: boolean;
   isProjectLocked?: boolean;
   currentUserId: string;
   projectId: string | null;
@@ -157,7 +162,7 @@ function CardStatusControl({
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
@@ -179,8 +184,9 @@ function CardStatusControl({
         align="end"
         side="bottom"
         sideOffset={4}
-        className="fiori-dropdown-menu w-44"
+        className="fiori-dropdown-menu fiori-dropdown-menu--table-rows w-40"
         onClick={stopCardEvent}
+        onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <DropdownMenuLabel className="fiori-dropdown-menu-label">Status</DropdownMenuLabel>
         {MOCK_STATUS_OPTIONS.map((option) => {
@@ -196,11 +202,10 @@ function CardStatusControl({
                 if (!isSelected) onChange(option.value);
               }}
             >
-              <span
-                className={cn("fiori-select-status-dot", option.dotClass)}
-                aria-hidden
-              />
-              {option.label}
+              <span className="fiori-status-picker-row-icon" aria-hidden>
+                <span className={cn("fiori-select-status-dot", option.dotClass)} />
+              </span>
+              <span className="fiori-type-picker-row-label">{option.label}</span>
             </DropdownMenuItem>
           );
         })}
@@ -211,9 +216,20 @@ function CardStatusControl({
 
 export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentUserId' | 'onDelete'>>(
   ({
-    mock, isSelected, onSelect, isAdmin, isMaster: _isMaster, isProjectLocked = false, projectId,
+    mock, isSelected, onSelect,
+    canEdit: canEditProp,
+    canLock: canLockProp,
+    canClone: canCloneProp,
+    canRestart: canRestartProp,
+    isAdmin,
+    isMaster: _isMaster,
+    isProjectLocked = false, projectId,
     isTogglingLoad, objects = [], catalogObjectCount = 0, onToggleLock, onToggleLoadStatus, onClone, onEdit, onView, onToggleActive, onStatusChange, onContextMenu
   }, ref) => {
+    const canEdit = canEditProp ?? !!isAdmin;
+    const canLock = canLockProp ?? !!isAdmin;
+    const canClone = canCloneProp ?? !!isAdmin;
+    const canRestart = canRestartProp ?? canEdit;
     const cardRef = useRef<HTMLDivElement>(null);
     const { setSelection } = useSelection();
     const router = useRouter();
@@ -249,7 +265,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
     const showOpenPadlock = mockSelfLocked || isProjectLocked;
     const isCargaInProgress = isMockCargaInProgress(mock);
     const isDone = isMockConcluida(mock);
-    const canEditStatus = isAdmin && !isProjectLocked && !isInactive && (isCargaInProgress || !isMockLocked(mock));
+    const canEditStatus = canEdit && !isProjectLocked && !isInactive && (isCargaInProgress || !isMockLocked(mock));
     const isTogglingStatus = isTogglingLoad === mock.id;
 
     const totalDurationMs = calculateMockTotalDuration(mock, objects);
@@ -365,7 +381,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
                   </TooltipTrigger>
                   <TooltipContent variant="fiori">Visualizar janela</TooltipContent>
                 </Tooltip>
-                {isAdmin && !isProjectLocked && (
+                {canEdit && !isProjectLocked && (
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
                       <Button
@@ -387,7 +403,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
               </>
             ) : (
               <>
-            {isAdmin && (
+            {(canEdit || (isDone && canRestart)) && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
@@ -398,7 +414,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
                       isCargaInProgress && "fiori-card-toolbar-btn-active",
                       isLocked && "opacity-40"
                     )}
-                    disabled={isTogglingLoad === mock.id || isLocked}
+                    disabled={isTogglingLoad === mock.id || isLocked || (isDone && !canRestart) || (!isDone && !canEdit)}
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelect(mock.id);
@@ -428,6 +444,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
               </Tooltip>
             )}
 
+            {canLock && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <Button
@@ -471,7 +488,9 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
                       : "Bloquear ou desbloquear"}
               </TooltipContent>
             </Tooltip>
+            )}
 
+            {canClone && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <Button
@@ -499,6 +518,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
                     : "Clonar janela"}
               </TooltipContent>
             </Tooltip>
+            )}
 
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
@@ -511,7 +531,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
                     e.stopPropagation();
                     onSelect(mock.id);
                     if (!isCargaInProgress) {
-                      if (isLocked) onView(mock);
+                      if (isLocked || !canEdit) onView(mock);
                       else onEdit(mock);
                     }
                   }}
@@ -528,7 +548,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
               </TooltipContent>
             </Tooltip>
 
-            {isAdmin && !isProjectLocked && (
+            {canEdit && !isProjectLocked && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button

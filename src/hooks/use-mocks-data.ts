@@ -5,12 +5,15 @@ import { collection, collectionGroup, doc, query, where } from "@/supabase/compa
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { Mock, Project } from "@/types/migration";
 import { filterActiveMocks } from "@/lib/mock-utils";
+import { useAccessPermissions } from "@/hooks/use-access-permissions";
+import type { PermissionKey } from "@/lib/auth/permissions";
 
 interface UseMocksDataReturn {
   userProfile: any;
   isProfileLoading: boolean;
   isMaster: boolean;
   isAdmin: boolean;
+  can: (key: PermissionKey) => boolean;
   userProjectIds: string[];
   hasAccess: boolean;
   projectData: Project | null;
@@ -31,12 +34,12 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<any>(userDocRef);
 
-  const isMaster =
-    userProfile?.role?.toLowerCase() === "master" ||
-    userProfile?.isMaster === true;
-  const isAdmin = isMaster || userProfile?.role?.toLowerCase() === "admin";
+  const { can, isMaster, isAdmin } = useAccessPermissions(userProfile, user?.uid ?? null);
+
   const userProjectIds = userProfile?.projectIds || [];
-  const hasAccess = isAdmin || (projectId && userProjectIds.includes(projectId));
+  const hasAccess =
+    can("mocks.view") &&
+    (isAdmin || (projectId && userProjectIds.includes(projectId)));
 
   const projectDocRef = useMemoDb(() => {
     if (!db || !projectId) return null;
@@ -45,8 +48,8 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
   const { data: projectData } = useDoc<Project>(projectDocRef);
 
   const masterObjectsQuery = useMemoDb(
-    () => (db ? collection(db, "masterObjects") : null),
-    [db],
+    () => (db && can("master_catalog.view") ? collection(db, "masterObjects") : null),
+    [db, can],
   );
   const { data: masterObjects } = useCollection<any>(masterObjectsQuery);
 
@@ -59,9 +62,9 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
   const { data: mocks, isLoading } = useCollection<Mock>(mocksQuery);
 
   const migrationObjectsQuery = useMemoDb(() => {
-    if (!db || !projectId || !hasAccess) return null;
+    if (!db || !projectId || !hasAccess || !can("objects.view")) return null;
     return query(collectionGroup(db, "migrationObjects"), where("projectId", "==", projectId));
-  }, [db, projectId, hasAccess]);
+  }, [db, projectId, hasAccess, can]);
 
   const { data: allMigrationObjects } = useCollection<any>(migrationObjectsQuery);
 
@@ -71,7 +74,6 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
     const map: Record<string, any[]> = {};
     for (let i = 0; i < allMigrationObjects.length; i++) {
       const obj = allMigrationObjects[i];
-      // Filtra estritamente objetos do projeto atual (campo ou path)
       const objectProjectId = obj.projectId || obj.__path?.split("/")[1];
       if (!objectProjectId || objectProjectId !== projectId) continue;
 
@@ -90,6 +92,7 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
     isProfileLoading,
     isMaster,
     isAdmin,
+    can,
     userProjectIds,
     hasAccess,
     projectData,

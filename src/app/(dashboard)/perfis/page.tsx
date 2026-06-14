@@ -5,39 +5,46 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Shield, ShieldAlert, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { PerfisManager, PerfisManagerRef } from "@/components/configuracoes/perfis-manager";
-import { useDb, useUser, useDoc, useMemoDb } from "@/supabase";
-import { doc } from "@/supabase/compat-db-shim";
+import { useCurrentUserPermissions } from "@/hooks/use-current-user-permissions";
+
+const PAGE_TOOLBAR_ICON_BTN =
+  "fiori-toolbar-btn !rounded-[0.375rem] !size-8 min-h-0 min-w-0";
 
 export default function PerfisPage() {
-  const db = useDb();
-  const { user } = useUser();
   const managerRef = useRef<PerfisManagerRef>(null);
+  const { isProfileLoading, can } = useCurrentUserPermissions();
 
-  const userDocRef = useMemoDb(
-    () => (user && db ? doc(db, "users", user.uid) : null),
-    [db, user]
-  );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<any>(userDocRef);
+  const canManageProfiles = can("access_profiles.manage");
 
-  const isMaster = userProfile?.role === "master";
-
-  if (!isProfileLoading && !isMaster) {
+  if (!isProfileLoading && !canManageProfiles) {
     return (
       <DashboardShell noPadding>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col flex-1 min-h-[calc(100dvh-4rem)]">
           <PageHeader
-            title="GERENCIAR PERFIS"
-            subtitle="Acesso Restrito"
-            icon={<Shield className="w-5 h-5 text-white" />}
+            variant="fiori"
+            title="Perfis de acesso"
+            subtitle="Acesso restrito"
+            icon={<Shield className="w-5 h-5" aria-hidden />}
             backHref="/configuracoes"
           />
-          <div className="flex-1 flex items-center justify-center p-12">
-            <div className="flex items-start gap-3 bg-red-50 border border-red-200 p-5 max-w-md w-full">
-              <ShieldAlert className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+          <div className="flex flex-1 items-center justify-center p-8">
+            <div
+              role="alert"
+              className="flex max-w-md w-full items-start gap-3 rounded border border-[#fecaca] bg-[#fef2f2] p-4"
+            >
+              <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-[#bb0000]" aria-hidden />
               <div>
-                <p className="text-[11px] font-black text-red-700 uppercase tracking-widest">Acesso Restrito</p>
-                <p className="text-[10px] text-red-600 mt-1">Esta página está disponível apenas para o perfil Master.</p>
+                <p className="text-sm font-semibold text-[#32363a]">Acesso restrito</p>
+                <p className="mt-1 text-xs text-[#6a6d70]">
+                  Você não possui permissão para gerenciar perfis de acesso.
+                </p>
               </div>
             </div>
           </div>
@@ -48,31 +55,40 @@ export default function PerfisPage() {
 
   return (
     <DashboardShell noPadding>
-      <div className="flex flex-col w-full min-h-screen bg-slate-50/30">
+      <div className="relative flex h-[calc(100dvh-4rem)] min-h-0 w-full flex-col overflow-hidden">
         <PageHeader
-          title="GERENCIAR PERFIS"
-          subtitle="Gestão de perfis e acessos"
-          icon={<Shield className="w-5 h-5 text-white" />}
+          variant="fiori"
+          title="Perfis de acesso"
+          subtitle="Gestão de perfis e permissões"
+          icon={<Shield className="w-5 h-5" aria-hidden />}
           backHref="/configuracoes"
           actions={
-            <div className="flex items-center gap-1.5 pt-1">
-              <div className="flex items-center gap-1 p-1">
-                {isMaster && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => managerRef.current?.openNewProfile()}
-                    className="h-8 rounded-none transition-all text-slate-500 hover:text-SkyBlue-600 hover:bg-slate-200 text-[10px] font-bold uppercase tracking-widest gap-1.5 px-3"
-                    title="Novo Perfil"
-                  >
-                    <Plus className="w-4 h-4" /> NOVO PERFIL
-                  </Button>
-                )}
-              </div>
-            </div>
+            canManageProfiles ? (
+              <TooltipProvider delayDuration={0}>
+                <div className="fiori-toolbar">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => managerRef.current?.openNewProfile()}
+                        className={PAGE_TOOLBAR_ICON_BTN}
+                        aria-label="Novo perfil"
+                      >
+                        <Plus className="w-4 h-4" aria-hidden />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" variant="fiori">
+                      Novo perfil
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            ) : undefined
           }
         />
 
-        <div className="w-full flex-1 flex flex-col items-stretch min-h-0 bg-white">
+        <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white">
           <PerfisManager ref={managerRef} />
         </div>
       </div>
