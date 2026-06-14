@@ -7,6 +7,7 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -26,64 +27,87 @@ export function ProjectPickerDialog({
 }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="dashboard-no-rounded flex max-h-[min(560px,calc(100dvh-80px))] flex-col gap-2 border-slate-200 sm:max-w-md [&>button.absolute]:hidden">
-                <DialogHeader className="shrink-0 text-left">
-                    <DialogTitle className="text-lg font-black uppercase tracking-tight text-slate-900">
-                        Alterar projeto
-                    </DialogTitle>
-                    <DialogDescription className="text-sm text-slate-600">
-                        Você está vinculado a mais de um projeto. Selecione o contexto em que deseja trabalhar.
-                    </DialogDescription>
+            <DialogContent
+                overlayClassName="fiori-dialog-overlay"
+                className="fiori-dialog fiori-project-picker-dialog fiori-project-picker-dialog--switch !flex p-0 flex-col gap-0 overflow-hidden border-none bg-white shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden"
+            >
+                <DialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
+                    <div className="fiori-dialog-header-row">
+                        <div className="fiori-dialog-header-main">
+                            <div className="fiori-dialog-icon shrink-0">
+                                <FolderKanban className="w-5 h-5" aria-hidden />
+                            </div>
+                            <div className="min-w-0">
+                                <DialogTitle className="fiori-dialog-title">
+                                    Alterar projeto
+                                </DialogTitle>
+                                <DialogDescription className="fiori-dialog-subtitle">
+                                    Você está vinculado a mais de um projeto. Selecione o contexto em que deseja trabalhar.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </div>
                 </DialogHeader>
-                <ul className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pb-2">
-                    {sortedProjects.map((p) => {
-                        const isCurrent = currentPid === p.id;
-                        return (
-                            <li key={p.id}>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    aria-current={isCurrent ? "true" : undefined}
-                                    className={cn(
-                                        "h-auto w-full justify-start gap-3 rounded-none px-4 py-3 text-left transition-colors",
-                                        isCurrent
-                                            ? "border-2 border-SkyBlue-500 bg-SkyBlue-50 text-slate-900 shadow-sm ring-1 ring-SkyBlue-500/15"
-                                            : "border border-slate-200 hover:border-SkyBlue-300 hover:bg-SkyBlue-50/50",
-                                    )}
-                                    onClick={() => onPick(p.id)}
-                                >
-                                    <span
-                                        className={cn(
-                                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
-                                            isCurrent
-                                                ? "bg-SkyBlue-200/90 text-SkyBlue-900"
-                                                : "bg-slate-100 text-SkyBlue-600",
-                                        )}
-                                    >
-                                        <FolderKanban className="h-4 w-4" aria-hidden />
-                                    </span>
-                                    <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
-                                        <span className="truncate text-[11px] font-black uppercase tracking-tight text-slate-900">
-                                            {p.name || p.id}
-                                        </span>
-                                        {!!String(p.company || "").trim() && (
-                                            <span className="truncate text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                                                {p.company}
+
+                <div className="fiori-project-picker-body">
+                    <p className="fiori-dialog-info fiori-project-picker-info">
+                        O escopo das telas (mocks, objetos, relatórios) seguirá o projeto escolhido até você alterar novamente.
+                    </p>
+
+                    <div className="fiori-project-picker-list custom-scrollbar">
+                        <ul className="fiori-project-picker-items">
+                            {sortedProjects.map((p) => {
+                                const isCurrent = currentPid === p.id;
+                                return (
+                                    <li key={p.id}>
+                                        <button
+                                            type="button"
+                                            aria-current={isCurrent ? "true" : undefined}
+                                            className={cn(
+                                                "fiori-project-picker-row",
+                                                isCurrent && "fiori-project-picker-row--current",
+                                            )}
+                                            onClick={() => onPick(p.id)}
+                                        >
+                                            <FolderKanban
+                                                className="fiori-project-picker-row-icon"
+                                                aria-hidden
+                                            />
+                                            <span className="fiori-project-picker-row-text">
+                                                <span className="fiori-project-picker-row-name">
+                                                    {p.name || p.id}
+                                                </span>
+                                                {!!String(p.company || "").trim() && (
+                                                    <span className="fiori-project-picker-row-meta">
+                                                        {p.company}
+                                                    </span>
+                                                )}
                                             </span>
-                                        )}
-                                    </span>
-                                    {isCurrent ? (
-                                        <Check
-                                            className="h-5 w-5 shrink-0 text-SkyBlue-600"
-                                            strokeWidth={2.5}
-                                            aria-hidden
-                                        />
-                                    ) : null}
-                                </Button>
-                            </li>
-                        );
-                    })}
-                </ul>
+                                            {isCurrent ? (
+                                                <Check
+                                                    className="fiori-project-picker-row-check"
+                                                    strokeWidth={2.5}
+                                                    aria-hidden
+                                                />
+                                            ) : null}
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                </div>
+
+                <DialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end sm:space-x-0">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="fiori-btn-transparent w-full shadow-none sm:w-auto sm:min-w-[7rem]"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Cancelar
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
