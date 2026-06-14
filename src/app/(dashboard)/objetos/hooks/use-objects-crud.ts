@@ -263,6 +263,9 @@ function useQuickCreate(
   canRegisterObjects = false,
 ) {
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const registerNameInput = useCallback((el: HTMLInputElement | null) => {
+    nameInputRef.current = el;
+  }, []);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
 
   const handleSave = async (e?: React.FormEvent, stayOpen = false, patch?: Partial<ObjectFormData>) => {
@@ -430,7 +433,7 @@ function useQuickCreate(
     setTimeout(() => nameInputRef.current?.focus(), 0);
   };
 
-  return { isQuickCreateOpen, setIsQuickCreateOpen, nameInputRef, handleSave };
+  return { isQuickCreateOpen, setIsQuickCreateOpen, registerNameInput, handleSave };
 }
 
 // ── Sub-hook: Edit dialog ─────────────────────────────────────────────────
@@ -858,7 +861,7 @@ export function useObjectsCRUD(deps: UseObjectsCRUDDeps) {
     isQuickCreateOpen: quick.isQuickCreateOpen, setIsQuickCreateOpen: quick.setIsQuickCreateOpen,
     isForceLockOpen: edit.isForceLockOpen, setIsForceLockOpen: edit.setIsForceLockOpen,
     forceLockTarget: edit.forceLockTarget, forceLockBlockerName: edit.forceLockBlockerName,
-    nameInputRef: quick.nameInputRef,
+    registerNameInput: quick.registerNameInput,
     editSaveError: edit.editSaveError, clearEditSaveError: edit.clearEditSaveError,
     handleSaveQuick: quick.handleSave, handleSaveEdit: edit.handleSave, handleDelete,
     handlePatchMaster,

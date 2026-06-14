@@ -320,7 +320,7 @@ export const DashboardCard = memo(({
                         tabIndex={0}
                         onClick={handleCardClick}
                         className={cn(
-                            "fiori-dashboard-object-card group relative transition-all duration-300 hover:scale-[1.03] hover:z-10 overflow-hidden cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-SkyBlue-500 focus-visible:ring-offset-2",
+                            "fiori-dashboard-object-card group relative transition-colors duration-300 overflow-hidden cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-SkyBlue-500 focus-visible:ring-offset-2",
                             isSelected && "card-static-border z-10",
                         )}
                     >

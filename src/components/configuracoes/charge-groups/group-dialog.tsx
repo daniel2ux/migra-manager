@@ -21,6 +21,7 @@ export function ChargeGroupDialog({
   initial,
   suggestedCreateName = "G1",
   suggestedCreateOrder = 1,
+  closeAfterCreate = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -28,6 +29,8 @@ export function ChargeGroupDialog({
   initial?: ChargeGroup | null;
   suggestedCreateName?: string;
   suggestedCreateOrder?: number;
+  /** Fecha após criar (ex.: picker inline no card). */
+  closeAfterCreate?: boolean;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -54,7 +57,7 @@ export function ChargeGroupDialog({
         description: description.trim(),
         displayOrder,
       });
-      if (initial) {
+      if (initial || closeAfterCreate) {
         onClose();
         return;
       }

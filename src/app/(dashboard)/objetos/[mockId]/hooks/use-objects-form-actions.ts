@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { doc, serverTimestamp, collection, setDoc, type CompatDb } from '@/supabase/compat-db-shim';
 import type { User } from '@/supabase/auth-shim';
 import {
@@ -278,9 +278,11 @@ export function useObjectsFormActions({
     }
   };
 
-  const handleToggleMasterSelection = (id: string) => {
-    setSelectedMasterIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
+  const handleToggleMasterSelection = useCallback((id: string) => {
+    setSelectedMasterIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
+  }, []);
 
   const _handleToggleDependency = (id: string) => {
     setFormData(prev => {
@@ -462,25 +464,25 @@ export function useObjectsFormActions({
     setQuickOpen(true);
   };
 
-  const handleSaveQuick = () => {
+  const handleSaveQuick = (data: QuickFormData) => {
     if (!isAdmin || isEffectiveLocked || !quickEditObject || !projectId || !mockId || !db) {
       if (!projectId || !mockId) toast({ variant: 'destructive', description: 'Erro: Projeto ou Mock não identificados.' });
       return;
     }
     const objectRef = doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', quickEditObject.id);
-    const targetRecordsCount = Math.max(0, quickFormData.targetRecordsCount);
-    const errorRecordsCount = Math.max(0, quickFormData.errorRecordsCount);
+    const targetRecordsCount = Math.max(0, data.targetRecordsCount);
+    const errorRecordsCount = Math.max(0, data.errorRecordsCount);
     const processedRecordsCount = Math.max(0, targetRecordsCount - errorRecordsCount);
 
     let durationMs = 0;
-    if (quickFormData.chargeStartTime && quickFormData.chargeEndTime) {
-      const start = new Date(quickFormData.chargeStartTime).getTime();
-      const end = new Date(quickFormData.chargeEndTime).getTime();
+    if (data.chargeStartTime && data.chargeEndTime) {
+      const start = new Date(data.chargeStartTime).getTime();
+      const end = new Date(data.chargeEndTime).getTime();
       if (!isNaN(start) && !isNaN(end) && end >= start) durationMs = Math.max(1, end - start);
     }
 
     setDocumentNonBlocking(objectRef, {
-      ...quickFormData,
+      ...data,
       targetRecordsCount,
       errorRecordsCount,
       processedRecordsCount,

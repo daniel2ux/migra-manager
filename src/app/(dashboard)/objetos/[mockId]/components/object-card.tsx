@@ -94,7 +94,7 @@ export function ObjectCard({
             onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, obj); }}
             className={cn(
                 "fiori-migration-object-card border border-slate-200 flex flex-col gap-0 transition-all duration-300 group cursor-default relative overflow-hidden select-none",
-                isSelected ? "bg-SkyBlue-50/60 border-SkyBlue-400" : isInProgress ? "bg-orange-50/20 hover:border-slate-400 hover:scale-[1.05] hover:z-10" : "bg-white hover:border-slate-400 hover:scale-[1.05] hover:z-10",
+                isSelected ? "bg-SkyBlue-50/60 border-SkyBlue-400" : isInProgress ? "bg-orange-50/20 hover:border-slate-400" : "bg-white hover:border-slate-400",
                 "shadow-xs hover:shadow-xl"
             )}
         >
@@ -254,7 +254,13 @@ export function ObjectCard({
                         {successPct === 100 && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
                         <span className={cn(
                             "text-[12px] font-black font-mono tracking-tighter leading-none",
-                            successPct === 100 ? "text-emerald-600" : successPct >= 50 ? "text-amber-600" : "text-red-600"
+                            successPct === 0
+                                ? "text-slate-400"
+                                : successPct === 100
+                                  ? "text-emerald-600"
+                                  : successPct >= 50
+                                    ? "text-amber-600"
+                                    : "text-red-600",
                         )}>
                             {formatPercentage(successPct, 'success', hasErrors)}%
                         </span>
@@ -285,7 +291,7 @@ export function ObjectCard({
                     </div>
                     <div className="flex flex-col items-end leading-none">
                         <span className="text-[6.5px] font-black uppercase tracking-widest text-slate-400">Registros</span>
-                        <span className="fiori-migration-object-card-stat-value fiori-migration-object-card-stat-value--end text-[10px] font-black text-slate-700 tabular-nums mt-0.5">{formatNumber(obj.migratedRecordsCount || 0)}</span>
+                        <span className="fiori-migration-object-card-stat-value text-[10px] font-black text-slate-700 tabular-nums mt-0.5">{formatNumber(obj.migratedRecordsCount || 0)}</span>
                     </div>
                 </div>
             </div>

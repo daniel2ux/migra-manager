@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from 'react';
-import { doc, serverTimestamp, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
+import { doc, serverTimestamp, updateDoc, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
 import {
   parseSequence,
   formatSequence,
@@ -44,6 +44,28 @@ interface UseObjectsReorderDeps {
   isAdmin: boolean;
   sequenceStore: CatalogSequenceStore;
   refetchObjects?: () => void;
+  /** Atualização otimista imediata da grade (antes da persistência). */
+  onReorderPreview?: (payload: ReorderPreviewPayload) => void;
+  onReorderRollback?: () => void;
+  /** Seleciona e rola até o card reposicionado. */
+  onReorderMoved?: (objectId: string) => void;
+}
+
+export type ReorderPreviewPayload = {
+  chargeOrders: Map<string, string>;
+  /** Ordem dos ids na lista filtrada exibida — evita re-sort completo na UI. */
+  visibleOrder?: string[];
+  /** Ids persistidos no banco — usados para saber quando limpar o preview. */
+  changedIds?: string[];
+};
+
+function notifyReorderMoved(
+  objectId: string,
+  opts: PerformReorderOptions | undefined,
+  onReorderMoved: ((objectId: string) => void) | undefined,
+) {
+  opts?.onMoved?.(objectId);
+  onReorderMoved?.(objectId);
 }
 
 export type PerformReorderOptions = {
@@ -51,6 +73,36 @@ export type PerformReorderOptions = {
   orderedList?: MasterObject[];
   onMoved?: (objectId: string) => void;
 };
+
+function buildCommittedChargeOrderMap(reordered: MasterObject[]): Map<string, string> {
+  const map = new Map<string, string>();
+  reordered.forEach((obj, idx) => {
+    map.set(obj.id, formatSequence(idx + 1, 0));
+  });
+  return map;
+}
+
+function buildChangedChargeOrderMap(reordered: MasterObject[]): Map<string, string> {
+  const map = new Map<string, string>();
+  reordered.forEach((obj, idx) => {
+    const newSeq = formatSequence(idx + 1, 0);
+    if (String(obj.chargeOrder) !== newSeq) {
+      map.set(obj.id, newSeq);
+    }
+  });
+  return map;
+}
+
+function buildReorderPreviewPayload(
+  reordered: MasterObject[],
+  visibleOrder?: string[],
+): ReorderPreviewPayload {
+  return {
+    chargeOrders: buildCommittedChargeOrderMap(reordered),
+    visibleOrder,
+    changedIds: [...buildChangedChargeOrderMap(reordered).keys()],
+  };
+}
 
 type ReorderInsert =
   | { mode: 'before'; anchorId: string }
@@ -159,27 +211,31 @@ async function commitContiguousSequenceRenumber(
   reordered: MasterObject[],
   toast: (opts: { variant?: string; description: string }) => void,
   errorMessage: string,
-  opts?: { forceRenumber?: boolean },
 ): Promise<boolean> {
-  const batch = writeBatch(db);
-  let updateCount = 0;
-  const forceRenumber = opts?.forceRenumber ?? false;
+  const updates: Array<{
+    ref: NonNullable<ReturnType<typeof sequenceDoc>>;
+    chargeOrder: string;
+  }> = [];
 
   reordered.forEach((obj, idx) => {
     const newSeq = formatSequence(idx + 1, 0);
-    if (!forceRenumber && String(obj.chargeOrder) === newSeq) return;
+    if (String(obj.chargeOrder) === newSeq) return;
     const ref = sequenceDoc(db, sequenceStore, obj);
     if (!ref) {
       console.error('[performReorder] documento não resolvido', obj.id, obj.name);
       return;
     }
-    batch.update(ref as any, { chargeOrder: newSeq, updatedAt: serverTimestamp() });
-    updateCount++;
+    updates.push({ ref, chargeOrder: newSeq });
   });
 
-  if (updateCount === 0) return true;
+  if (updates.length === 0) return true;
+
   try {
-    await batch.commit();
+    await Promise.all(
+      updates.map(({ ref, chargeOrder }) =>
+        updateDoc(ref, { chargeOrder, updatedAt: serverTimestamp() }),
+      ),
+    );
     return true;
   } catch (err) {
     console.error('[performReorder] falha ao gravar sequência', err);
@@ -247,6 +303,9 @@ export function useObjectsReorder({
   isAdmin: _isAdmin,
   sequenceStore,
   refetchObjects,
+  onReorderPreview,
+  onReorderRollback,
+  onReorderMoved,
 }: UseObjectsReorderDeps) {
   const selectNext = useSelectNext();
   const parallel = useParallelSelect(objects);
@@ -277,17 +336,36 @@ export function useObjectsReorder({
             : { mode: 'atOrder', targetOrder },
         );
 
+    const preview = buildReorderPreviewPayload(
+      reordered,
+      useListPosition
+        ? buildContiguousSequenceOrderByListPosition(
+            opts!.orderedList!,
+            movingObject,
+            targetOrder,
+          ).map((row) => row.id)
+        : undefined,
+    );
+
+    if (preview.changedIds?.length === 0) {
+      notifyReorderMoved(movingObject.id, opts, onReorderMoved);
+      return true;
+    }
+
+    onReorderPreview?.(preview);
+    notifyReorderMoved(movingObject.id, opts, onReorderMoved);
+
     const ok = await commitContiguousSequenceRenumber(
       db,
       sequenceStore,
       reordered,
       toast,
       'ERRO AO REORDENAR OBJETOS NO BANCO.',
-      { forceRenumber: useListPosition },
     );
     if (ok) {
       refetchObjects?.();
-      opts?.onMoved?.(movingObject.id);
+    } else {
+      onReorderRollback?.();
     }
     return ok;
   };
@@ -326,16 +404,27 @@ export function useObjectsReorder({
     selectNext.setIsSelectNextOpen(false);
     selectNext.setSelectNextTargetObject(null);
 
+    const preview = buildReorderPreviewPayload(reordered);
+
+    if (preview.changedIds?.length === 0) {
+      notifyReorderMoved(selectedObj.id, undefined, onReorderMoved);
+      return;
+    }
+
+    onReorderPreview?.(preview);
+    notifyReorderMoved(selectedObj.id, undefined, onReorderMoved);
+
     const ok = await commitContiguousSequenceRenumber(
       db,
       sequenceStore,
       reordered,
       toast,
       'ERRO AO REORDENAR OBJETOS.',
-      { forceRenumber: true },
     );
     if (ok) {
       refetchObjects?.();
+    } else {
+      onReorderRollback?.();
     }
   };
 

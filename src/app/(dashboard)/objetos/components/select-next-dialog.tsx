@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -51,6 +52,30 @@ export function SelectNextDialog({
   timerRef,
   displayChargeOrderById,
 }: SelectNextDialogProps) {
+  const localSearchRef = useRef<HTMLInputElement>(null);
+
+  const mergeSearchRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      localSearchRef.current = node;
+      if (searchRef) {
+        (searchRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
+      }
+    },
+    [searchRef],
+  );
+
+  const focusSearchField = useCallback(() => {
+    localSearchRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const handleDialogOpenAutoFocus = useCallback(
+    (event: Event) => {
+      event.preventDefault();
+      requestAnimationFrame(focusSearchField);
+    },
+    [focusSearchField],
+  );
+
   const candidates = objects
     .filter((o) => {
       if (o.id === targetObject?.id) return false;
@@ -79,6 +104,7 @@ export function SelectNextDialog({
         open={open}
         overlayClassName="fiori-dialog-overlay"
         className="fiori-dialog sm:max-w-[480px] h-[min(92vh,640px)] flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0 !rounded-[var(--fiori-radius)]"
+        onOpenAutoFocus={handleDialogOpenAutoFocus}
       >
         <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
           <div className="flex items-start gap-3">
@@ -103,7 +129,7 @@ export function SelectNextDialog({
               type="search"
               placeholder="Buscar objeto..."
               className="fiori-search-input uppercase"
-              ref={searchRef}
+              ref={mergeSearchRef}
               defaultValue=""
               onChange={(e) => {
                 const val = e.target.value.toUpperCase();

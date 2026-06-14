@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -77,6 +77,24 @@ interface QuickFormData {
   parallelPeerIds?: string[];
 }
 
+interface LocalFormDraft {
+  type: string;
+  status: string;
+  activityGroupIds: string[];
+  dependencyIds: string[];
+  parallelPeerIds: string[];
+}
+
+function emptyLocalFormDraft(quickFormData: QuickFormData): LocalFormDraft {
+  return {
+    type: quickFormData.type || DEFAULT_MASTER_OBJECT_TYPE,
+    status: quickFormData.status || "ATIVO",
+    activityGroupIds: quickFormData.activityGroupIds ?? [],
+    dependencyIds: quickFormData.dependencyIds ?? [],
+    parallelPeerIds: quickFormData.parallelPeerIds ?? [],
+  };
+}
+
 interface ActivityGroup {
   id: string;
   name: string;
@@ -93,7 +111,7 @@ interface QuickCreateObjectDialogProps {
   onFormChange: (patch: Partial<QuickFormData>) => void;
   onSave: (e?: React.FormEvent, keepOpen?: boolean, patch?: Partial<QuickFormData>) => void;
   catalogObjects: MasterObject[];
-  nameInputRef?: React.RefObject<HTMLInputElement | null>;
+  onNameInputMount?: (el: HTMLInputElement | null) => void;
 }
 
 function parseExternalDependencies(text: string): string[] {
@@ -112,8 +130,9 @@ export function QuickCreateObjectDialog({
   onFormChange,
   onSave,
   catalogObjects,
-  nameInputRef,
+  onNameInputMount,
 }: QuickCreateObjectDialogProps) {
+  const [formDraft, setFormDraft] = useState<LocalFormDraft>(() => emptyLocalFormDraft(quickFormData));
   const [externalDepsDraft, setExternalDepsDraft] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [descriptionDraft, setDescriptionDraft] = useState("");
@@ -123,36 +142,86 @@ export function QuickCreateObjectDialog({
   const [depSelectDraft, setDepSelectDraft] = useState<string[]>([]);
   const [parallelSearchTerm, setParallelSearchTerm] = useState("");
   const [depSearchTerm, setDepSearchTerm] = useState("");
+  const [pickerTargetId, setPickerTargetId] = useState(QUICK_CREATE_DRAFT_ID);
+  const localNameRef = useRef<HTMLInputElement>(null);
+  /** Evita fechar o cadastro quando um diálogo filho (deps/paralelo) está sendo fechado. */
+  const suppressParentCloseRef = useRef(false);
+  const lastSyncedParentKeyRef = useRef<string | null>(null);
 
-  const dependencyIds = quickFormData.dependencyIds ?? [];
-  const normalizedName = nameDraft.trim().toUpperCase();
-  const selfInCatalog = normalizedName
-    ? catalogObjects.find((o) => o.name === normalizedName)
-    : undefined;
+  const patchFormDraft = useCallback((patch: Partial<LocalFormDraft>) => {
+    setFormDraft((prev) => ({ ...prev, ...patch }));
+  }, []);
 
-  const draftTarget: MasterObject = {
-    id: selfInCatalog?.id ?? QUICK_CREATE_DRAFT_ID,
-    name: normalizedName || "Novo objeto",
-    dependencyIds,
+  const mergeNameRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      localNameRef.current = node;
+      onNameInputMount?.(node);
+    },
+    [onNameInputMount],
+  );
+
+  const focusNameField = useCallback(() => {
+    localNameRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const handleDialogOpenAutoFocus = useCallback(
+    (event: Event) => {
+      event.preventDefault();
+      requestAnimationFrame(focusNameField);
+    },
+    [focusNameField],
+  );
+
+  const nestedPickerOpen = isDepsOpen || isParallelOpen;
+
+  const handleParentOpenChange = (next: boolean) => {
+    if (!next && (nestedPickerOpen || suppressParentCloseRef.current)) return;
+    onOpenChange(next);
   };
+
+  const blockOutsideWhileNested = (event: Event) => {
+    if (nestedPickerOpen) event.preventDefault();
+  };
+
+  const catalogById = useMemo(() => {
+    const map = new Map<string, MasterObject>();
+    for (const object of catalogObjects) map.set(object.id, object);
+    return map;
+  }, [catalogObjects]);
+
+  const catalogByName = useMemo(() => {
+    const map = new Map<string, MasterObject>();
+    for (const object of catalogObjects) map.set(object.name, object);
+    return map;
+  }, [catalogObjects]);
+
+  const dependencyIds = formDraft.dependencyIds;
 
   const parallelPeerIds = useMemo(
     () =>
       expandParallelPeerIds(
         catalogObjects,
-        quickFormData.parallelPeerIds ?? [],
-        draftTarget.id,
+        formDraft.parallelPeerIds,
+        QUICK_CREATE_DRAFT_ID,
       ),
-    [catalogObjects, quickFormData.parallelPeerIds, draftTarget.id],
+    [catalogObjects, formDraft.parallelPeerIds],
   );
 
-  const linkedDepObjects = dependencyIds
-    .map((id) => catalogObjects.find((o) => o.id === id))
-    .filter(Boolean) as MasterObject[];
+  const linkedDepObjects = useMemo(
+    () =>
+      dependencyIds
+        .map((id) => catalogById.get(id))
+        .filter(Boolean) as MasterObject[],
+    [dependencyIds, catalogById],
+  );
 
-  const linkedParallelObjects = parallelPeerIds
-    .map((id) => catalogObjects.find((o) => o.id === id))
-    .filter(Boolean) as MasterObject[];
+  const linkedParallelObjects = useMemo(
+    () =>
+      parallelPeerIds
+        .map((id) => catalogById.get(id))
+        .filter(Boolean) as MasterObject[],
+    [parallelPeerIds, catalogById],
+  );
 
   const suggestedChargeOrder = useMemo(
     () => computeNextChargeOrderAfterLastCard(catalogObjects),
@@ -164,8 +233,24 @@ export function QuickCreateObjectDialog({
     [catalogObjects],
   );
 
+  const pickerDraftTarget = useMemo(
+    (): MasterObject => ({
+      id: pickerTargetId,
+      name: nameDraft.trim().toUpperCase() || "Novo objeto",
+      dependencyIds,
+    }),
+    [pickerTargetId, nameDraft, dependencyIds],
+  );
+
+  const resolvePickerTargetId = useCallback(() => {
+    const normalizedName = nameDraft.trim().toUpperCase();
+    return normalizedName
+      ? catalogByName.get(normalizedName)?.id ?? QUICK_CREATE_DRAFT_ID
+      : QUICK_CREATE_DRAFT_ID;
+  }, [nameDraft, catalogByName]);
+
   const handleToggleDepPeer = (objectId: string) => {
-    if (objectId === draftTarget.id) return;
+    if (objectId === pickerTargetId) return;
     setDepSelectDraft((current) =>
       current.includes(objectId)
         ? current.filter((id) => id !== objectId)
@@ -174,18 +259,22 @@ export function QuickCreateObjectDialog({
   };
 
   const handleSaveDepSelection = () => {
-    onFormChange({ dependencyIds: depSelectDraft });
+    suppressParentCloseRef.current = true;
+    patchFormDraft({ dependencyIds: depSelectDraft });
     setIsDepsOpen(false);
+    window.setTimeout(() => {
+      suppressParentCloseRef.current = false;
+    }, 0);
   };
 
   const handleRemoveDependency = (objectId: string) => {
-    onFormChange({
+    patchFormDraft({
       dependencyIds: dependencyIds.filter((id) => id !== objectId),
     });
   };
 
   const handleToggleParallelPeer = (objectId: string) => {
-    if (objectId === draftTarget.id) return;
+    if (objectId === pickerTargetId) return;
     setParallelSelectDraft((current) => {
       if (current.includes(objectId)) {
         return current.filter((id) => id !== objectId);
@@ -193,88 +282,103 @@ export function QuickCreateObjectDialog({
       return expandParallelPeerIds(
         catalogObjects,
         [...current, objectId],
-        draftTarget.id,
+        pickerTargetId,
       );
     });
   };
 
   const handleSaveParallelSelection = () => {
+    suppressParentCloseRef.current = true;
     const expanded = expandParallelPeerIds(
       catalogObjects,
       parallelSelectDraft,
-      draftTarget.id,
+      pickerTargetId,
     );
-    onFormChange({ parallelPeerIds: expanded });
+    patchFormDraft({ parallelPeerIds: expanded });
     setIsParallelOpen(false);
+    window.setTimeout(() => {
+      suppressParentCloseRef.current = false;
+    }, 0);
   };
 
-  const quickFormSyncKey = useMemo(
+  const parentSnapshotKey = useMemo(
     () =>
       JSON.stringify({
         name: quickFormData.name ?? "",
         description: quickFormData.description ?? "",
         externalDependencies: quickFormData.externalDependencies ?? [],
+        type: quickFormData.type ?? DEFAULT_MASTER_OBJECT_TYPE,
+        status: quickFormData.status ?? "ATIVO",
+        activityGroupIds: quickFormData.activityGroupIds ?? [],
+        dependencyIds: quickFormData.dependencyIds ?? [],
         parallelPeerIds: quickFormData.parallelPeerIds ?? [],
       }),
     [
       quickFormData.name,
       quickFormData.description,
       quickFormData.externalDependencies,
+      quickFormData.type,
+      quickFormData.status,
+      quickFormData.activityGroupIds,
+      quickFormData.dependencyIds,
       quickFormData.parallelPeerIds,
     ],
   );
 
   useEffect(() => {
-    if (!open) return;
-    const parsed = JSON.parse(quickFormSyncKey) as {
-      name: string;
-      description: string;
-      externalDependencies: string[];
-      parallelPeerIds: string[];
-    };
-    setNameDraft(parsed.name);
-    setDescriptionDraft(parsed.description);
-    setExternalDepsDraft(parsed.externalDependencies.join("\n"));
-    setParallelSelectDraft(parsed.parallelPeerIds);
-  }, [open, quickFormSyncKey]);
+    if (!open) {
+      lastSyncedParentKeyRef.current = null;
+      return;
+    }
+    if (lastSyncedParentKeyRef.current === parentSnapshotKey) return;
+    lastSyncedParentKeyRef.current = parentSnapshotKey;
+    setFormDraft(emptyLocalFormDraft(quickFormData));
+    setNameDraft(quickFormData.name ?? "");
+    setDescriptionDraft(quickFormData.description ?? "");
+    setExternalDepsDraft((quickFormData.externalDependencies ?? []).join("\n"));
+  }, [open, parentSnapshotKey, quickFormData]);
 
-  const buildTextPatch = useCallback(
-    () => ({
-      name: nameDraft.trim().toUpperCase(),
-      chargeGroup: suggestedChargeGroup,
-      description: descriptionDraft.toUpperCase(),
-    }),
-    [nameDraft, suggestedChargeGroup, descriptionDraft],
-  );
-
-  const flushExternalDependencies = useCallback(() => {
-    onFormChange({ externalDependencies: parseExternalDependencies(externalDepsDraft) });
-  }, [externalDepsDraft, onFormChange]);
+  const buildSavePatch = useCallback((): Partial<QuickFormData> => ({
+    name: nameDraft.trim().toUpperCase(),
+    chargeGroup: suggestedChargeGroup,
+    description: descriptionDraft.toUpperCase(),
+    externalDependencies: parseExternalDependencies(externalDepsDraft),
+    type: formDraft.type,
+    status: formDraft.status,
+    activityGroupIds: formDraft.activityGroupIds,
+    dependencyIds: formDraft.dependencyIds,
+    parallelPeerIds: formDraft.parallelPeerIds,
+  }), [
+    nameDraft,
+    suggestedChargeGroup,
+    descriptionDraft,
+    externalDepsDraft,
+    formDraft,
+  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
-    const externalDependencies = parseExternalDependencies(externalDepsDraft);
-    const textPatch = buildTextPatch();
-    const patch = { ...textPatch, externalDependencies, dependencyIds, parallelPeerIds };
+    const patch = buildSavePatch();
     onFormChange(patch);
     onSave(e, false, patch);
   };
 
   const handleSaveAndContinue = () => {
-    const externalDependencies = parseExternalDependencies(externalDepsDraft);
-    const textPatch = buildTextPatch();
-    const patch = { ...textPatch, externalDependencies, dependencyIds, parallelPeerIds };
+    const patch = buildSavePatch();
     onFormChange(patch);
     onSave(undefined, true, patch);
   };
 
   return (
     <>
-    <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
+    <Dialog preserveDashboardScroll open={open} onOpenChange={handleParentOpenChange}>
       <TooltipProvider delayDuration={200}>
       <DialogContent
         open={open}
         variant="fiori"
         className="fiori-dialog fiori-dialog--form fiori-dialog--mock-form fiori-dialog--object-master-form flex h-[min(92vh,620px)] w-[calc(100vw-1rem)] max-w-[500px] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
+        onOpenAutoFocus={handleDialogOpenAutoFocus}
+        onInteractOutside={blockOutsideWhileNested}
+        onPointerDownOutside={blockOutsideWhileNested}
       >
         <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
           <DialogDescription className="sr-only">
@@ -299,7 +403,7 @@ export function QuickCreateObjectDialog({
                   <label className="fiori-field-label">Nome do objeto</label>
                   <Input
                     type="text"
-                    ref={nameInputRef}
+                    ref={mergeNameRef}
                     placeholder="Ex.: PARCEIRO"
                     value={nameDraft}
                     onChange={(e) => setNameDraft(e.target.value.toUpperCase())}
@@ -337,8 +441,8 @@ export function QuickCreateObjectDialog({
                     Tipo do objeto
                   </label>
                   <Select
-                    value={quickFormData.type || DEFAULT_MASTER_OBJECT_TYPE}
-                    onValueChange={(value) => onFormChange({ type: value })}
+                    value={formDraft.type}
+                    onValueChange={(value) => patchFormDraft({ type: value })}
                   >
                     <SelectTrigger className="fiori-select-trigger shadow-none">
                       <SelectValue placeholder="Selecione o tipo" />
@@ -359,14 +463,14 @@ export function QuickCreateObjectDialog({
                 <div className="sm:col-span-4 space-y-1">
                   <label className="fiori-field-label">Status</label>
                   <Select
-                    value={quickFormData.status || "ATIVO"}
-                    onValueChange={(value) => onFormChange({ status: value })}
+                    value={formDraft.status}
+                    onValueChange={(value) => patchFormDraft({ status: value })}
                   >
                     <SelectTrigger className="fiori-select-trigger fiori-select-trigger--status shadow-none">
                       <span
                         className={cn(
                           "fiori-select-status-dot",
-                          STATUS_DOT_CLASS[quickFormData.status || "ATIVO"],
+                          STATUS_DOT_CLASS[formDraft.status],
                         )}
                         aria-hidden
                       />
@@ -402,7 +506,7 @@ export function QuickCreateObjectDialog({
                 </p>
                 <div className="fiori-activity-chip-zone">
                   {activityGroups.map((g) => {
-                    const selectedIds = quickFormData.activityGroupIds ?? [];
+                    const selectedIds = formDraft.activityGroupIds;
                     const isSelected = selectedIds.includes(g.id);
                     return (
                       <ActivityGroupChipTooltip key={g.id} group={g}>
@@ -412,7 +516,7 @@ export function QuickCreateObjectDialog({
                             const ids = isSelected
                               ? selectedIds.filter((id) => id !== g.id)
                               : [...selectedIds, g.id];
-                            onFormChange({ activityGroupIds: ids });
+                            patchFormDraft({ activityGroupIds: ids });
                           }}
                           className={cn(
                             "fiori-chip",
@@ -456,6 +560,7 @@ export function QuickCreateObjectDialog({
                   className="fiori-btn-transparent fiori-btn-transparent--compact shrink-0"
                   title="Selecionar dependências"
                   onClick={() => {
+                    setPickerTargetId(resolvePickerTargetId());
                     setDepSelectDraft(dependencyIds);
                     setIsDepsOpen(true);
                   }}
@@ -498,6 +603,7 @@ export function QuickCreateObjectDialog({
                   className="fiori-btn-transparent fiori-btn-transparent--compact shrink-0"
                   title="Selecionar objetos em paralelo"
                   onClick={() => {
+                    setPickerTargetId(resolvePickerTargetId());
                     setParallelSelectDraft(parallelPeerIds);
                     setIsParallelOpen(true);
                   }}
@@ -529,7 +635,6 @@ export function QuickCreateObjectDialog({
                 rows={4}
                 value={externalDepsDraft}
                 onChange={(e) => setExternalDepsDraft(e.target.value.toUpperCase())}
-                onBlur={flushExternalDependencies}
               />
               <p className="fiori-field-hint mt-1">
                 Objetos que devem ser executados antes deste, um por linha.
@@ -545,7 +650,7 @@ export function QuickCreateObjectDialog({
           </form>
         </div>
         <DialogFooter className="fiori-dialog-footer shrink-0 justify-between gap-2 sm:justify-between sm:space-x-0">
-          <button type="button" onClick={() => onOpenChange(false)} className="fiori-btn-ghost">
+          <button type="button" onClick={() => handleParentOpenChange(false)} className="fiori-btn-ghost">
             Fechar
           </button>
           <div className="flex flex-wrap items-center justify-end gap-2">
@@ -565,13 +670,20 @@ export function QuickCreateObjectDialog({
       </TooltipProvider>
     </Dialog>
 
+    {isDepsOpen ? (
     <DependencyMapperDialog
       open={isDepsOpen}
       onOpenChange={(next) => {
+        if (!next) suppressParentCloseRef.current = true;
         setIsDepsOpen(next);
-        if (!next) setDepSearchTerm("");
+        if (!next) {
+          setDepSearchTerm("");
+          window.setTimeout(() => {
+            suppressParentCloseRef.current = false;
+          }, 0);
+        }
       }}
-      targetObject={draftTarget}
+      targetObject={pickerDraftTarget}
       objects={catalogObjects}
       selectedIds={depSelectDraft}
       searchTerm={depSearchTerm}
@@ -580,20 +692,30 @@ export function QuickCreateObjectDialog({
       onSave={handleSaveDepSelection}
       elevated
     />
+    ) : null}
+    {isParallelOpen ? (
     <ParallelSelectDialog
       open={isParallelOpen}
       onOpenChange={(next) => {
+        if (!next) suppressParentCloseRef.current = true;
         setIsParallelOpen(next);
-        if (!next) setParallelSearchTerm("");
+        if (!next) {
+          setParallelSearchTerm("");
+          window.setTimeout(() => {
+            suppressParentCloseRef.current = false;
+          }, 0);
+        }
       }}
-      targetObject={draftTarget}
+      targetObject={pickerDraftTarget}
       objects={catalogObjects}
       selectedIds={parallelSelectDraft}
       searchTerm={parallelSearchTerm}
       onSearchChange={setParallelSearchTerm}
       onToggleId={handleToggleParallelPeer}
       onSave={handleSaveParallelSelection}
+      elevated
     />
+    ) : null}
     </>
   );
 }

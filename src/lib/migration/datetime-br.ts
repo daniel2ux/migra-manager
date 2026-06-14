@@ -52,6 +52,26 @@ export function formatBrazilianDateTime(isoOrBr: string): string {
   }).format(parsed);
 }
 
+/** Máscara progressiva durante digitação: `dd/mm/aaaa, hh:mm:ss`. */
+export function formatBrazilianDateTimeInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 14);
+  if (!digits.length) return "";
+
+  const dd = digits.slice(0, 2);
+  const mm = digits.slice(2, 4);
+  const yyyy = digits.slice(4, 8);
+  const hh = digits.slice(8, 10);
+  const mi = digits.slice(10, 12);
+  const ss = digits.slice(12, 14);
+
+  if (digits.length <= 2) return dd;
+  if (digits.length <= 4) return `${dd}/${mm}`;
+  if (digits.length <= 8) return `${dd}/${mm}/${yyyy}`;
+  if (digits.length <= 10) return `${dd}/${mm}/${yyyy}, ${hh}`;
+  if (digits.length <= 12) return `${dd}/${mm}/${yyyy}, ${hh}:${mi}`;
+  return `${dd}/${mm}/${yyyy}, ${hh}:${mi}:${ss}`;
+}
+
 /** ISO local com segundos (sem timezone Z), usado no CompatDb/formulários. */
 export function toIsoLocalSeconds(date: Date): string {
   const yyyy = date.getFullYear();

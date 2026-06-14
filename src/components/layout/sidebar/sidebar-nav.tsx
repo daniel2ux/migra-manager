@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -18,8 +17,6 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { SheetClose } from "@/components/ui/sheet";
-import { safeRouterPush } from "@/lib/navigation/safe-router";
 import { buildSidebarHref } from "@/lib/navigation/sidebar-href";
 import {
     type SidebarMenuItem,
@@ -47,7 +44,6 @@ export function HorizontalNavDropdownMenu({
     effectiveProjectId: string | null;
     onNavItemClick?: () => void;
 }) {
-    const router = useRouter();
     const [open, setOpen] = useState(false);
     const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -105,27 +101,32 @@ export function HorizontalNavDropdownMenu({
                             pathname === sub.href ||
                             pathname.startsWith(`${sub.href}/`);
 
+                        const href = buildSidebarHref(
+                            sub.href,
+                            effectiveProjectId,
+                            ("skipParams" in sub ? sub.skipParams : undefined) ?? item.skipParams,
+                        );
+
                         return (
                             <DropdownMenuItem
                                 key={sub.href}
+                                asChild
                                 className={cn(
                                     "fiori-dropdown-menu-item",
                                     isSubActive && "fiori-dropdown-menu-item--active",
                                 )}
-                                onSelect={() => {
-                                    onNavItemClick?.();
-                                    safeRouterPush(
-                                        router,
-                                        buildSidebarHref(
-                                            sub.href,
-                                            effectiveProjectId,
-                                            ("skipParams" in sub ? sub.skipParams : undefined) ??
-                                                item.skipParams,
-                                        ),
-                                    );
-                                }}
                             >
-                                {formatSubNavLabel(sub.label)}
+                                <Link
+                                    href={href}
+                                    onPointerDown={cancelScheduledClose}
+                                    onClick={() => {
+                                        cancelScheduledClose();
+                                        setOpen(false);
+                                        onNavItemClick?.();
+                                    }}
+                                >
+                                    {formatSubNavLabel(sub.label)}
+                                </Link>
                             </DropdownMenuItem>
                         );
                     })}
@@ -150,29 +151,15 @@ export function SidebarNavLink({
     className?: string;
     children: React.ReactNode;
 }) {
-    const router = useRouter();
     const resolvedHref = buildSidebarHref(href, projectId, skipParams);
     const closesMobileSheet = !!onNavItemClick;
 
-    const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const handleClick = () => {
         if (!closesMobileSheet) return;
-        e.preventDefault();
-        try {
-            router.push(resolvedHref);
-        } catch (error) {
-            if (
-                error instanceof Error &&
-                error.message.includes("Router action dispatched before initialization")
-            ) {
-                safeRouterPush(router, resolvedHref);
-            } else {
-                throw error;
-            }
-        }
-        onNavItemClick?.();
+        window.requestAnimationFrame(() => onNavItemClick?.());
     };
 
-    const link = (
+    return (
         <Link
             href={resolvedHref}
             onClick={closesMobileSheet ? handleClick : undefined}
@@ -181,12 +168,6 @@ export function SidebarNavLink({
             {children}
         </Link>
     );
-
-    if (closesMobileSheet) {
-        return <SheetClose asChild>{link}</SheetClose>;
-    }
-
-    return link;
 }
 
 export function SidebarNavGroup({

@@ -161,7 +161,11 @@ function applyFilters(
       if (c.op === 'array-contains') {
         q = q.contains(col, [c.value]);
       } else if (c.op === '==') {
-        q = q.eq(col, c.value);
+        if (c.value === null || c.value === undefined) {
+          q = q.is(col, null);
+        } else {
+          q = q.eq(col, c.value);
+        }
       } else if (c.op === 'in') {
         q = q.in(col, c.value as string[]);
       }
@@ -380,7 +384,7 @@ export function writeBatch(_db: SupabaseDb): WriteBatch {
       return batch;
     },
     async commit() {
-      for (const op of ops) await op();
+      await Promise.all(ops.map((op) => op()));
     },
   };
   return batch;

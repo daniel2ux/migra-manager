@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { useMemoDb, useCollection, useDb, useUser, useDoc } from '@/supabase';
-import { collection, doc, collectionGroup, query, where, getDocs, orderBy, serverTimestamp, updateDoc, type CompatDb } from '@/supabase/compat-db-shim';
+import { collection, doc, collectionGroup, query, where, getDocs, orderBy, serverTimestamp, updateDoc, addDoc, type CompatDb } from '@/supabase/compat-db-shim';
 import type { User } from '@/supabase/auth-shim';
 import type { MigrationObject, UserProfile } from '@/types/migration';
 import { useToast } from '@/hooks/use-toast';
@@ -32,15 +33,25 @@ import {
   suggestMasterCatalogExportFilename,
 } from '@/lib/migration/master-catalog-export';
 import { projectAllowsMasterObjectRegistration } from '@/lib/migration/company-sync';
-import { masterObjectsQueryForProject } from '@/lib/migration/master-objects-query';
+import { masterObjectsQueryForProject, masterObjectsLegacyUnscopedQuery, mergeMasterCatalogRows } from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { computeSuggestedNextChargeOrder } from '@/lib/migration/master-catalog-charge-reflow';
+import {
+  findChargeGroupNameConflict,
+  isChargeGroupNameDuplicateError,
+  throwChargeGroupNameConflict,
+} from '@/lib/migration/charge-group-sync';
+import {
+  nextAvailableDisplayOrder,
+  suggestedChargeGroupName,
+} from '@/components/configuracoes/charge-groups/constants';
 import { buildGestaoRowsFromMockMigrations } from '@/lib/migration/gestao-sequence';
 import { useObjectsMockSync } from './use-objects-mock-sync';
 import { useObjectsImport } from './use-objects-import';
 import {
   useObjectsReorder,
   type CatalogSequenceStore,
+  type ReorderPreviewPayload,
 } from './use-objects-reorder';
 import { useObjectsCRUD } from './use-objects-crud';
 
@@ -96,7 +107,28 @@ function useObjectsQueries(
     if (scoped) return masterObjectsQueryForProject(db, scoped);
     return collection(db, 'masterObjects');
   }, [db, user, isProfileLoading, scoped]);
-  const { data: objects, isLoading, refetch: refetchObjects } = useCollection<MasterObject>(objectsQuery);
+
+  const legacyObjectsQuery = useMemoDb(() => {
+    if (!db || !user || isProfileLoading || !scoped || !isAdmin) return null;
+    return masterObjectsLegacyUnscopedQuery(db);
+  }, [db, user, isProfileLoading, scoped, isAdmin]);
+
+  const { data: projectObjects, isLoading: isProjectObjectsLoading, refetch: refetchProjectObjects } =
+    useCollection<MasterObject>(objectsQuery);
+  const { data: legacyObjects, isLoading: isLegacyObjectsLoading, refetch: refetchLegacyObjects } =
+    useCollection<MasterObject>(legacyObjectsQuery);
+
+  const objects = useMemo(
+    () => mergeMasterCatalogRows(projectObjects, legacyObjects),
+    [projectObjects, legacyObjects],
+  );
+
+  const refetchMasterCatalog = useCallback(() => {
+    refetchProjectObjects();
+    if (scoped && isAdmin) refetchLegacyObjects();
+  }, [refetchProjectObjects, refetchLegacyObjects, scoped, isAdmin]);
+
+  const isLoading = isProjectObjectsLoading || (Boolean(scoped && isAdmin) && isLegacyObjectsLoading);
 
   const projectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading || !hasUserProfile) return null;
@@ -127,7 +159,14 @@ function useObjectsQueries(
   const { data: allMigrationObjects, isLoading: isMigrationObjectsLoading } =
     useCollection<MigrationObject>(migrationObjectsQuery);
 
-  return { objects, isLoading, refetchObjects, allProjects, allMigrationObjects, isMigrationObjectsLoading };
+  return {
+    objects,
+    isLoading,
+    refetchMasterCatalog,
+    allProjects,
+    allMigrationObjects,
+    isMigrationObjectsLoading,
+  };
 }
 
 /** Nomes normalizados que aparecem em mais de um documento em `masterObjects` (catálogo). */
@@ -212,6 +251,26 @@ function filterMastersByDisplayFilters(
   });
 }
 
+function applyVisibleOrderToList(
+  rows: MasterObject[],
+  visibleOrder: readonly string[],
+): MasterObject[] {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const seen = new Set<string>();
+  const ordered: MasterObject[] = [];
+  for (const id of visibleOrder) {
+    const row = byId.get(id);
+    if (row) {
+      ordered.push(row);
+      seen.add(id);
+    }
+  }
+  for (const row of rows) {
+    if (!seen.has(row.id)) ordered.push(row);
+  }
+  return ordered;
+}
+
 function sortMastersGestao(rows: MasterObject[], sortMode: string): MasterObject[] {
   return [...rows].sort((a, b) => {
     if (sortMode === 'EXECUTION') {
@@ -280,6 +339,9 @@ export function useObjectsPage() {
   const [activityGroups, setActivityGroups] = useState<ActivityGroup[]>([]);
   const [chargeGroups, setChargeGroups] = useState<ChargeGroup[]>([]);
   const [activityGroupFilter, setActivityGroupFilter] = useState<string>('ALL');
+  /** Preview instantâneo da grade após reordenar (antes do refetch). */
+  const [reorderPreview, setReorderPreview] = useState<ReorderPreviewPayload | null>(null);
+  const refetchSequenceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Dialog state
   const [isDependenciesOpen, setIsDependenciesOpen] = useState(false);
@@ -339,9 +401,68 @@ export function useObjectsPage() {
     return collection(db, 'projects', selectedProjectId, 'mocks', mockSync.selectedMockId, 'migrationObjects');
   }, [db, selectedProjectId, mockSync.selectedMockId]);
 
-  const { data: migrationsInSelectedMock, isLoading: migrationsInMockLoading } = useCollection<MigrationObject>(migrationsInMockQuery);
+  const {
+    data: migrationsInSelectedMock,
+    isLoading: migrationsInMockLoading,
+    refetch: refetchMigrationsInMock,
+  } = useCollection<MigrationObject>(migrationsInMockQuery);
 
   const mockScopedSequences = !!(selectedProjectId && mockSync.selectedMockId);
+
+  const refetchSequenceData = useCallback(() => {
+    queries.refetchMasterCatalog();
+    if (mockScopedSequences && !auth.isAdmin) {
+      refetchMigrationsInMock();
+    }
+  }, [queries.refetchMasterCatalog, mockScopedSequences, auth.isAdmin, refetchMigrationsInMock]);
+
+  const scheduleSequenceRefetch = useCallback(() => {
+    if (refetchSequenceTimerRef.current) {
+      clearTimeout(refetchSequenceTimerRef.current);
+    }
+    refetchSequenceTimerRef.current = setTimeout(() => {
+      refetchSequenceData();
+      refetchSequenceTimerRef.current = undefined;
+    }, 2500);
+  }, [refetchSequenceData]);
+
+  const applyReorderPreview = useCallback((payload: ReorderPreviewPayload) => {
+    flushSync(() => {
+      setReorderPreview(payload);
+    });
+  }, []);
+
+  const rollbackReorderPreview = useCallback(() => {
+    setReorderPreview(null);
+  }, []);
+
+  const selectRepositionedCard = useCallback((objectId: string) => {
+    setSelectedCardId(objectId);
+    const scrollToCard = () => {
+      document
+        .getElementById(`obj-card-${objectId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToCard);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!reorderPreview?.changedIds?.length) return;
+    const catalog = queries.objects ?? [];
+    if (!catalog.length) return;
+
+    const allSynced = reorderPreview.changedIds.every((id) => {
+      const expected = reorderPreview.chargeOrders.get(id);
+      const row = catalog.find((object) => object.id === id);
+      return expected != null && row != null && String(row.chargeOrder) === expected;
+    });
+
+    if (allSynced) {
+      setReorderPreview(null);
+    }
+  }, [queries.objects, migrationsInSelectedMock, reorderPreview]);
 
   const catalogScopeFiltered = useMemo(() => {
     const masters = queries.objects;
@@ -371,31 +492,42 @@ export function useObjectsPage() {
   const sequenceContextRows = useMemo(() => {
     const allMasters = queries.objects ?? [];
 
+    let rows: MasterObject[];
+
     if (auth.isAdmin) {
-      if (!mockScopedSequences) return allMasters;
-      return mergeMockSequencesOntoScopedMasters(
-        allMasters,
+      if (!mockScopedSequences) {
+        rows = allMasters;
+      } else {
+        rows = mergeMockSequencesOntoScopedMasters(
+          allMasters,
+          migrationsInSelectedMock ?? undefined,
+          Boolean(migrationsInSelectedMock?.length),
+          { overlayChargeSequence: false },
+        );
+      }
+    } else if (mockScopedSequences) {
+      if (migrationsInSelectedMock === null || !queries.objects) {
+        rows = [];
+      } else {
+        const fromMock = buildGestaoRowsFromMockMigrations(
+          migrationsInSelectedMock,
+          queries.objects,
+        );
+        rows = fromMock.length > 0 ? fromMock : projectUsageFiltered;
+      }
+    } else {
+      rows = mergeMockSequencesOntoScopedMasters(
+        catalogScopeFiltered,
         migrationsInSelectedMock ?? undefined,
-        Boolean(migrationsInSelectedMock?.length),
-        { overlayChargeSequence: false },
+        false,
       );
     }
 
-    if (mockScopedSequences) {
-      if (migrationsInSelectedMock === null || !queries.objects) return [];
-      const fromMock = buildGestaoRowsFromMockMigrations(
-        migrationsInSelectedMock,
-        queries.objects,
-      );
-      if (fromMock.length > 0) return fromMock;
-      return projectUsageFiltered;
-    }
-
-    return mergeMockSequencesOntoScopedMasters(
-      catalogScopeFiltered,
-      migrationsInSelectedMock ?? undefined,
-      false,
-    );
+    if (!reorderPreview?.chargeOrders.size) return rows;
+    return rows.map((row) => {
+      const chargeOrder = reorderPreview.chargeOrders.get(row.id);
+      return chargeOrder != null ? { ...row, chargeOrder } : row;
+    });
   }, [
     auth.isAdmin,
     mockScopedSequences,
@@ -403,7 +535,11 @@ export function useObjectsPage() {
     queries.objects,
     catalogScopeFiltered,
     projectUsageFiltered,
+    reorderPreview,
   ]);
+
+  /** Catálogo completo do projeto para pickers (dependências, paralelos, cadastro). */
+  const catalogPickerRows = useMemo(() => queries.objects ?? [], [queries.objects]);
 
   const precedenceMap = useMemo(
     () => buildPrecedenceMap((queries.objects || []) as MasterObject[]),
@@ -423,8 +559,23 @@ export function useObjectsPage() {
       activityGroupFilter,
       configuredChargeGroupById,
     );
-    return sortMastersGestao(filtered, sortMode);
-  }, [sequenceContextRows, searchTerm, sortMode, statusFilter, activityGroupFilter, configuredChargeGroupById]);
+    let sorted = sortMastersGestao(filtered, sortMode);
+    if (
+      reorderPreview?.visibleOrder?.length &&
+      sortMode === 'EXECUTION'
+    ) {
+      sorted = applyVisibleOrderToList(sorted, reorderPreview.visibleOrder);
+    }
+    return sorted;
+  }, [
+    sequenceContextRows,
+    searchTerm,
+    sortMode,
+    statusFilter,
+    activityGroupFilter,
+    configuredChargeGroupById,
+    reorderPreview,
+  ]);
 
   const duplicateMasterNameKeys = useMemo(
     () => computeDuplicateMasterNameKeys(queries.objects ?? undefined),
@@ -501,19 +652,64 @@ export function useObjectsPage() {
     sortMode,
     isAdmin: auth.isAdmin,
     sequenceStore,
-    refetchObjects: queries.refetchObjects,
+    refetchObjects: scheduleSequenceRefetch,
+    onReorderPreview: applyReorderPreview,
+    onReorderRollback: rollbackReorderPreview,
+    onReorderMoved: selectRepositionedCard,
   });
 
+  const hasActiveFilters =
+    searchTerm !== '' || statusFilter !== 'ALL' || activityGroupFilter !== 'ALL';
+
   const displayChargeOrderById = useMemo(() => {
-    if (sortMode !== 'EXECUTION') return undefined;
+    if (sortMode !== 'EXECUTION' || hasActiveFilters) return undefined;
     return buildListPositionChargeOrderMap(sortedFilteredObjects);
-  }, [sortMode, sortedFilteredObjects]);
+  }, [sortMode, sortedFilteredObjects, hasActiveFilters]);
 
   const refetchChargeGroups = useCallback(async () => {
     if (!db) return;
     const snap = await getDocs(query(collection(db, 'chargeGroups'), orderBy('name')));
     setChargeGroups(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ChargeGroup, 'id'>) })));
   }, [db]);
+
+  const chargeGroupCreateSuggestions = useMemo(
+    () => ({
+      name: suggestedChargeGroupName(chargeGroups),
+      order: nextAvailableDisplayOrder(chargeGroups),
+    }),
+    [chargeGroups],
+  );
+
+  const handleCreateChargeGroup = useCallback(
+    async (
+      data: Omit<ChargeGroup, 'id' | 'objectIds' | 'createdAt' | 'updatedAt' | 'createdBy'>,
+    ): Promise<string> => {
+      if (!db || !auth.user) {
+        throw new Error('Sessão ou banco indisponível.');
+      }
+      if (findChargeGroupNameConflict(chargeGroups, data.name)) {
+        throwChargeGroupNameConflict(data.name);
+      }
+      try {
+        const createdRef = await addDoc(collection(db, 'chargeGroups'), {
+          ...data,
+          objectIds: [],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: auth.user.uid,
+        });
+        await refetchChargeGroups();
+        toast({ description: `GRUPO ${data.name} CRIADO.` });
+        return createdRef.id;
+      } catch (err) {
+        if (isChargeGroupNameDuplicateError(err)) {
+          throwChargeGroupNameConflict(data.name);
+        }
+        throw err;
+      }
+    },
+    [db, auth.user, chargeGroups, refetchChargeGroups, toast],
+  );
 
   const crud = useObjectsCRUD({
     db, user: auth.user, objects: queries.objects, sequenceContextRows, isAdmin: auth.isAdmin,
@@ -522,7 +718,7 @@ export function useObjectsPage() {
     quickFormData, setQuickFormData, editFormData, setEditFormData,
     usageMap, extractChargeOrderDisplay, performReorder: reorder.performReorder,
     editingObject, setEditingObject,
-    refetchObjects: queries.refetchObjects,
+    refetchObjects: refetchSequenceData,
     refetchChargeGroups,
     chargeGroups,
     displayChargeOrderById,
@@ -532,7 +728,6 @@ export function useObjectsPage() {
   });
 
   // Derived flags
-  const hasActiveFilters = searchTerm !== '' || statusFilter !== 'ALL' || activityGroupFilter !== 'ALL';
   const anyDialogOpen = crud.isQuickCreateOpen || importHook.isImportOpen || isDependenciesOpen ||
     reorder.isSelectNextOpen || reorder.isParallelSelectOpen || crud.isForceLockOpen || isPrecedenceOpen;
 
@@ -574,7 +769,7 @@ export function useObjectsPage() {
       setDependencyTargetObject((prev) =>
         prev?.id === targetId ? { ...prev, dependencyIds: dependencySelectedIds } : prev,
       );
-      queries.refetchObjects?.();
+      refetchSequenceData();
       setIsDependenciesOpen(false);
     } catch (err) {
       console.error('[handleSaveDependencySelect]', err);
@@ -633,12 +828,13 @@ export function useObjectsPage() {
     isAdminOrMaster: auth.isAdminOrMaster,
     isLockedByOther,
     lockedByName,
-    usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject,
+    usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, catalogPickerRows,
     canRegisterObjects, objectCatalogBlockedReason,
     displayChargeOrderById,
     searchTerm, setSearchTerm, sortMode, statusFilter, setStatusFilter,
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode, selectedCardId, setSelectedCardId,
     activityGroups, activityGroupFilter, setActivityGroupFilter, chargeGroups, configuredChargeGroupById, hasActiveFilters,
+    chargeGroupCreateSuggestions, handleCreateChargeGroup,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,
     dependencySelectedIds, setDependencySelectedIds, dependencyTargetObject,
     isPrecedenceOpen, setIsPrecedenceOpen, precedenceObject, setPrecedenceObject, precedenceMode,

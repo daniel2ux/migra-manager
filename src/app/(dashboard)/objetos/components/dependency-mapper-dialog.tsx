@@ -13,6 +13,7 @@ import {
   compareObjectNames,
   normalizeSeqForDisplay,
   resolveDisplayChargeOrder,
+  sortWithSelectedIdsFirst,
 } from "@/lib/migration/sequence-utils";
 import { cn } from "@/lib/utils";
 
@@ -68,14 +69,16 @@ export function DependencyMapperDialog({
     }
   };
 
-  const filteredObjects = objects
-    .filter((o) =>
+  const filteredObjects = sortWithSelectedIdsFirst(
+    objects.filter((o) =>
       o.id !== targetObject?.id &&
       (searchTerm === "" ||
         o.name.toUpperCase().includes(searchTerm) ||
         (o.description || "").toUpperCase().includes(searchTerm)),
-    )
-    .sort(compareObjectNames);
+    ),
+    selectedIds,
+    compareObjectNames,
+  );
 
   return (
     <Dialog preserveDashboardScroll open={open} onOpenChange={handleClose}>
@@ -189,6 +192,7 @@ export function DependencyMapperDialog({
 
         <DialogFooter className="fiori-dialog-footer shrink-0 flex gap-2">
           <Button
+            type="button"
             variant="outline"
             className="fiori-btn-transparent flex-1 shadow-none"
             onClick={() => handleClose(false)}
@@ -196,8 +200,13 @@ export function DependencyMapperDialog({
             Cancelar
           </Button>
           <Button
+            type="button"
             className="fiori-btn-emphasized flex-1 shadow-none"
-            onClick={onSave}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSave();
+            }}
           >
             {selectedIds.length === 0 ? "Remover dependências" : "Salvar dependências"}
           </Button>

@@ -84,7 +84,6 @@ function ObjetosContent() {
     setQuickOpen,
         quickEditObject,
     quickFormData,
-    setQuickFormData,
     commentDialogOpen,
     setCommentDialogOpen,
         commentTargetObject,
@@ -321,7 +320,6 @@ function ObjetosContent() {
                         onOpenChange={setQuickOpen}
                         quickEditObject={quickEditObject}
                         quickFormData={quickFormData}
-                        onFormChange={setQuickFormData}
                         onSave={handleSaveQuick}
             empresa={page.headerEmpresa}
             projectName={page.headerProjectName}

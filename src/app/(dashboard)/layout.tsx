@@ -103,6 +103,10 @@ export default function DashboardLayout({
         return () => window.removeEventListener(PROJECT_CHANGED_EVENT, onProjectChanged);
     }, []);
 
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [pathname]);
+
     return (
         <DashboardShell noPadding>
             <div className="h-dvh bg-slate-50/50 flex flex-col overflow-hidden dashboard-no-rounded relative">

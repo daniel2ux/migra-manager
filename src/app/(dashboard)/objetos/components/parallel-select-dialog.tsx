@@ -13,6 +13,7 @@ import {
   compareObjectNames,
   normalizeSeqForDisplay,
   resolveDisplayChargeOrder,
+  sortWithSelectedIdsFirst,
 } from "@/lib/migration/sequence-utils";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,8 @@ interface ParallelSelectDialogProps {
   timerRef?: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
   /** Sequência exibida nos cards (posição na grade), quando diferente do valor salvo. */
   displayChargeOrderById?: ReadonlyMap<string, string>;
+  /** Abre acima de outro diálogo (ex.: cadastro rápido). */
+  elevated?: boolean;
 }
 
 export function ParallelSelectDialog({
@@ -54,6 +57,7 @@ export function ParallelSelectDialog({
   searchRef,
   timerRef,
   displayChargeOrderById,
+  elevated = false,
 }: ParallelSelectDialogProps) {
   const handleClose = (val: boolean) => {
     onOpenChange(val);
@@ -65,21 +69,26 @@ export function ParallelSelectDialog({
     }
   };
 
-  const filteredObjects = objects
-    .filter(o =>
+  const filteredObjects = sortWithSelectedIdsFirst(
+    objects.filter(o =>
       o.id !== targetObject?.id &&
       (searchTerm === "" ||
         o.name.toUpperCase().includes(searchTerm) ||
         (o.description || "").toUpperCase().includes(searchTerm))
-    )
-    .sort(compareObjectNames);
+    ),
+    selectedIds,
+    compareObjectNames,
+  );
 
   return (
     <Dialog preserveDashboardScroll open={open} onOpenChange={handleClose}>
       <DialogContent
         open={open}
-        overlayClassName="fiori-dialog-overlay"
-        className="fiori-dialog sm:max-w-[500px] h-[min(92vh,640px)] flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0 !rounded-[var(--fiori-radius)]"
+        overlayClassName={cn("fiori-dialog-overlay", elevated && "z-[220]")}
+        className={cn(
+          "fiori-dialog sm:max-w-[500px] h-[min(92vh,640px)] flex flex-col p-0 border-none shadow-lg overflow-hidden bg-white gap-0 !rounded-[var(--fiori-radius)]",
+          elevated && "z-[230]",
+        )}
       >
         <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
           <div className="flex items-start gap-3">
@@ -183,6 +192,7 @@ export function ParallelSelectDialog({
 
         <DialogFooter className="fiori-dialog-footer shrink-0 flex gap-2">
           <Button
+            type="button"
             variant="outline"
             className="fiori-btn-transparent flex-1 shadow-none"
             onClick={() => handleClose(false)}
@@ -190,8 +200,13 @@ export function ParallelSelectDialog({
             Cancelar
           </Button>
           <Button
+            type="button"
             className="fiori-btn-emphasized flex-1 shadow-none"
-            onClick={onSave}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onSave();
+            }}
           >
             {selectedIds.length === 0 ? "Remover paralelismo" : "Salvar grupo"}
           </Button>

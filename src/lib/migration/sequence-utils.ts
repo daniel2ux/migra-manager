@@ -110,6 +110,25 @@ export function compareObjectNames(
   });
 }
 
+/** Selecionados no topo (ordem de `selectedIds`); demais itens pelo comparador informado. */
+export function sortWithSelectedIdsFirst<T>(
+  objects: readonly T[],
+  selectedIds: readonly string[],
+  compareRest: (a: T, b: T) => number,
+  getId: (item: T) => string = (item) => (item as { id: string }).id,
+): T[] {
+  const rank = new Map(selectedIds.map((id, index) => [id, index]));
+  return [...objects].sort((a, b) => {
+    const aRank = rank.get(getId(a));
+    const bRank = rank.get(getId(b));
+    const aSelected = aRank !== undefined;
+    const bSelected = bRank !== undefined;
+    if (aSelected && bSelected) return aRank - bRank;
+    if (aSelected !== bSelected) return aSelected ? -1 : 1;
+    return compareRest(a, b);
+  });
+}
+
 export function compareChargeSequenceGridOrder(a: ChargeSequenceSortFields, b: ChargeSequenceSortFields): number {
   const seqCmp = compareSequences(a.chargeOrder ?? "", b.chargeOrder ?? "");
   if (seqCmp !== 0) return seqCmp;

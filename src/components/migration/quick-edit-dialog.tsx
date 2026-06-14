@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import * as FocusScope from "@radix-ui/react-focus-scope";
 import {
     Dialog,
     DialogContent,
@@ -11,21 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Loader2, CalendarDays, Zap, Database, Timer } from "lucide-react";
+import { Loader2, Zap, Database, Timer } from "lucide-react";
 import { FioriDialogContextFields } from "@/components/ui/fiori-dialog-context-fields";
-import { Popover, PopoverContent } from "@/components/ui/popover";
-import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
-import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ptBR } from "date-fns/locale";
-import { formatNumber, unformatNumber } from "@/lib/migration/format-utils";
-import {
-    formatBrazilianDateTime,
-    parseBrazilianLocalDateTime,
-    toIsoLocalSeconds,
-} from "@/lib/migration/datetime-br";
+import { formatNumber, unformatNumber, formatNumberInput } from "@/lib/migration/format-utils";
 import { cn } from "@/lib/utils";
+import {
+    QuickEditDateTimeField,
+    type QuickEditDateTimeFieldHandle,
+} from "@/components/migration/quick-edit-datetime-field";
 
 export interface QuickFormData {
     chargeStartTime: string;
@@ -63,9 +57,9 @@ type DashboardQuickEditProps = BaseQuickEditProps & {
 
 type MockQuickEditProps = BaseQuickEditProps & {
     mode: "mock";
+    /** Valores iniciais ao abrir o diálogo (não precisa atualizar durante a digitação). */
     quickFormData: QuickFormData;
-    onFormChange: (data: QuickFormData) => void;
-    onSave: () => void;
+    onSave: (data: QuickFormData) => void;
 };
 
 export type QuickEditDialogProps = DashboardQuickEditProps | MockQuickEditProps;
@@ -75,6 +69,30 @@ function getCurrentLocalISO() {
     const offset = now.getTimezoneOffset() * 60000;
     const localNow = new Date(now.getTime() - offset);
     return localNow.toISOString().slice(0, 16);
+}
+
+function buildInitialFormData(
+    quickEditObject: QuickEditObject,
+    mockSeed?: QuickFormData,
+): QuickFormData {
+    if (mockSeed) return { ...mockSeed };
+
+    const now = getCurrentLocalISO();
+    const initialStart = quickEditObject.chargeStartTime || now;
+    const initialEnd = quickEditObject.chargeEndTime || "";
+    const initialTarget = quickEditObject.targetRecordsCount || 0;
+    const initialError = quickEditObject.errorRecordsCount || 0;
+    let initialProcessed = quickEditObject.processedRecordsCount || 0;
+    if (initialProcessed === 0 && initialTarget > 0) {
+        initialProcessed = initialTarget;
+    }
+    return {
+        targetRecordsCount: initialTarget,
+        processedRecordsCount: initialProcessed,
+        errorRecordsCount: initialError,
+        chargeStartTime: initialStart,
+        chargeEndTime: initialEnd,
+    };
 }
 
 export function QuickEditDialog(props: QuickEditDialogProps) {
@@ -89,6 +107,7 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
 
     const isMock = props.mode === "mock";
     const readOnly = !isMock && (props.readOnly ?? false);
+    const wasOpenRef = useRef(false);
 
     const [formData, setFormData] = useState<QuickFormData>({
         targetRecordsCount: 0,
@@ -98,127 +117,50 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
         chargeEndTime: "",
     });
 
-    const activeData = isMock ? props.quickFormData : formData;
-    const setActiveData = isMock
-        ? (props as MockQuickEditProps).onFormChange
-        : (data: QuickFormData) => setFormData(data);
-
     const [targetStr, setTargetStr] = useState("");
     const [processedStr, setProcessedStr] = useState("");
     const [errorStr, setErrorStr] = useState("");
-    const [chargeStartDraft, setChargeStartDraft] = useState("");
-    const [chargeEndDraft, setChargeEndDraft] = useState("");
     const [isSaving, setIsSaving] = useState(false);
-
-    const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")), []);
-    const minuteSecondOptions = useMemo(() => Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")), []);
-
-    const startDate = parseBrazilianLocalDateTime(activeData.chargeStartTime);
-    const endDate = parseBrazilianLocalDateTime(activeData.chargeEndTime);
-    const startValid = !!startDate && !Number.isNaN(startDate.getTime());
-    const endValid = !!endDate && !Number.isNaN(endDate.getTime());
-
-    const updateDatePart = (key: "chargeStartTime" | "chargeEndTime", date: Date | undefined) => {
-        if (!date) return;
-        const current = parseBrazilianLocalDateTime(activeData[key]) ?? new Date();
-        const merged = new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate(),
-            current.getHours(),
-            current.getMinutes(),
-            current.getSeconds()
-        );
-        const iso = toIsoLocalSeconds(merged);
-        const br = formatBrazilianDateTime(iso);
-        setActiveData({ ...activeData, [key]: iso });
-        if (key === "chargeStartTime") setChargeStartDraft(br);
-        else setChargeEndDraft(br);
-    };
-
-    const updateTimePart = (key: "chargeStartTime" | "chargeEndTime", part: "hour" | "minute" | "second", value: string) => {
-        const base = parseBrazilianLocalDateTime(activeData[key]) ?? new Date();
-        const h = part === "hour" ? Number(value) : base.getHours();
-        const m = part === "minute" ? Number(value) : base.getMinutes();
-        const s = part === "second" ? Number(value) : base.getSeconds();
-        const merged = new Date(base.getFullYear(), base.getMonth(), base.getDate(), h, m, s);
-        const iso = toIsoLocalSeconds(merged);
-        const br = formatBrazilianDateTime(iso);
-        setActiveData({ ...activeData, [key]: iso });
-        if (key === "chargeStartTime") setChargeStartDraft(br);
-        else setChargeEndDraft(br);
-    };
-
-    const commitChargeInput = (key: "chargeStartTime" | "chargeEndTime", draft: string) => {
-        const trimmed = draft.trim();
-        const currentIso = activeData[key];
-        const revert = () => {
-            const s = formatBrazilianDateTime(currentIso);
-            if (key === "chargeStartTime") setChargeStartDraft(s);
-            else setChargeEndDraft(s);
-        };
-        if (!trimmed) {
-            revert();
-            return;
-        }
-        const parsed = parseBrazilianLocalDateTime(trimmed);
-        if (!parsed || Number.isNaN(parsed.getTime())) {
-            revert();
-            return;
-        }
-        const iso = toIsoLocalSeconds(parsed);
-        const br = formatBrazilianDateTime(iso);
-        setActiveData({ ...activeData, [key]: iso });
-        if (key === "chargeStartTime") setChargeStartDraft(br);
-        else setChargeEndDraft(br);
-    };
+    const firstFieldRef = useRef<HTMLInputElement>(null);
+    const chargeStartFieldRef = useRef<QuickEditDateTimeFieldHandle>(null);
+    const chargeEndFieldRef = useRef<QuickEditDateTimeFieldHandle>(null);
 
     useEffect(() => {
-        if (!open || !quickEditObject || isMock) return;
-        const now = getCurrentLocalISO();
-        const initialStart = quickEditObject.chargeStartTime || now;
-        const initialEnd = quickEditObject.chargeEndTime || "";
-        const initialTarget = quickEditObject.targetRecordsCount || 0;
-        const initialError = quickEditObject.errorRecordsCount || 0;
-        let initialProcessed = quickEditObject.processedRecordsCount || 0;
-        if (initialProcessed === 0 && initialTarget > 0) {
-            initialProcessed = initialTarget;
+        if (!open) {
+            wasOpenRef.current = false;
+            return;
         }
-        const initialData: QuickFormData = {
-            targetRecordsCount: initialTarget,
-            processedRecordsCount: initialProcessed,
-            errorRecordsCount: initialError,
-            chargeStartTime: initialStart,
-            chargeEndTime: initialEnd,
-        };
+        if (wasOpenRef.current || !quickEditObject) return;
+        wasOpenRef.current = true;
+
+        const mockSeed = isMock ? (props as MockQuickEditProps).quickFormData : undefined;
+        const initialData = buildInitialFormData(quickEditObject, mockSeed);
+
         setFormData(initialData);
         setTargetStr(formatNumber(initialData.targetRecordsCount));
         setProcessedStr(formatNumber(initialData.processedRecordsCount));
         setErrorStr(formatNumber(initialData.errorRecordsCount));
-        setChargeStartDraft(formatBrazilianDateTime(initialData.chargeStartTime));
-        setChargeEndDraft(formatBrazilianDateTime(initialData.chargeEndTime));
         setIsSaving(false);
+        // quickFormData lido só na abertura; omitido das deps de propósito
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, quickEditObject, isMock]);
 
-    useEffect(() => {
-        if (!open || !isMock) return;
-        setTargetStr(formatNumber(activeData.targetRecordsCount));
-        setErrorStr(formatNumber(activeData.errorRecordsCount));
-        setChargeStartDraft(formatBrazilianDateTime(activeData.chargeStartTime));
-        setChargeEndDraft(formatBrazilianDateTime(activeData.chargeEndTime));
-    }, [
-        open,
-        isMock,
-        activeData.targetRecordsCount,
-        activeData.errorRecordsCount,
-        activeData.chargeStartTime,
-        activeData.chargeEndTime,
-    ]);
+    const patchFormData = useCallback((patch: Partial<QuickFormData>) => {
+        setFormData((prev) => ({ ...prev, ...patch }));
+    }, []);
+
+    const handleChargeStartIsoChange = useCallback(
+        (iso: string) => patchFormData({ chargeStartTime: iso }),
+        [patchFormData],
+    );
+    const handleChargeEndIsoChange = useCallback(
+        (iso: string) => patchFormData({ chargeEndTime: iso }),
+        [patchFormData],
+    );
 
     const handleDashboardNumberChange = (val: string, field: "target" | "processed" | "error") => {
-        const digits = val.replace(/\D/g, "");
-        const formatted = formatNumber(parseInt(digits || "0", 10));
-        const numVal = unformatNumber(formatted);
+        const formatted = formatNumberInput(val);
+        const numVal = formatted ? unformatNumber(formatted) : 0;
 
         setFormData((prev) => {
             let nextTarget = prev.targetRecordsCount;
@@ -234,14 +176,12 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                 nextError = numVal;
                 setErrorStr(formatted);
             } else if (field === "processed") {
-                const rawDigits = val.replace(/\D/g, "");
-                if (rawDigits === "") {
+                if (!formatted) {
                     setProcessedStr("");
                     nextProcessed = 0;
                 } else {
-                    const formattedProc = formatNumber(parseInt(rawDigits, 10));
-                    nextProcessed = unformatNumber(formattedProc);
-                    setProcessedStr(formattedProc);
+                    nextProcessed = numVal;
+                    setProcessedStr(formatted);
                 }
             }
 
@@ -255,23 +195,28 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
     };
 
     const handleMockNumberChange = (val: string, field: "target" | "error") => {
+        const formatted = formatNumberInput(val);
+        const numVal = formatted ? unformatNumber(formatted) : 0;
+
         if (field === "target") {
-            setTargetStr(val);
-            const target = Math.max(0, unformatNumber(val));
-            const errorCount = Math.max(0, activeData.errorRecordsCount);
-            setActiveData({
-                ...activeData,
-                targetRecordsCount: target,
-                processedRecordsCount: Math.max(0, target - errorCount),
+            setTargetStr(formatted);
+            setFormData((prev) => {
+                const errorCount = Math.max(0, prev.errorRecordsCount);
+                return {
+                    ...prev,
+                    targetRecordsCount: numVal,
+                    processedRecordsCount: Math.max(0, numVal - errorCount),
+                };
             });
         } else {
-            setErrorStr(val);
-            const errorCount = Math.max(0, unformatNumber(val));
-            const target = Math.max(0, activeData.targetRecordsCount);
-            setActiveData({
-                ...activeData,
-                errorRecordsCount: errorCount,
-                processedRecordsCount: Math.max(0, target - errorCount),
+            setErrorStr(formatted);
+            setFormData((prev) => {
+                const target = Math.max(0, prev.targetRecordsCount);
+                return {
+                    ...prev,
+                    errorRecordsCount: numVal,
+                    processedRecordsCount: Math.max(0, target - numVal),
+                };
             });
         }
     };
@@ -280,31 +225,35 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
         if (field === "target") {
             const target = Math.max(0, unformatNumber(targetStr));
             setTargetStr(formatNumber(target));
-            const errorCount = Math.max(0, activeData.errorRecordsCount);
-            setActiveData({
-                ...activeData,
-                targetRecordsCount: target,
-                processedRecordsCount: Math.max(0, target - errorCount),
+            setFormData((prev) => {
+                const errorCount = Math.max(0, prev.errorRecordsCount);
+                return {
+                    ...prev,
+                    targetRecordsCount: target,
+                    processedRecordsCount: Math.max(0, target - errorCount),
+                };
             });
         } else {
             const errorCount = Math.max(0, unformatNumber(errorStr));
             setErrorStr(formatNumber(errorCount));
-            const target = Math.max(0, activeData.targetRecordsCount);
-            setActiveData({
-                ...activeData,
-                errorRecordsCount: errorCount,
-                processedRecordsCount: Math.max(0, target - errorCount),
+            setFormData((prev) => {
+                const target = Math.max(0, prev.targetRecordsCount);
+                return {
+                    ...prev,
+                    errorRecordsCount: errorCount,
+                    processedRecordsCount: Math.max(0, target - errorCount),
+                };
             });
         }
     };
 
-    const successValue = Math.max(0, activeData.processedRecordsCount - activeData.errorRecordsCount);
-    const computedCarregada = Math.max(0, activeData.targetRecordsCount - activeData.errorRecordsCount);
+    const successValue = Math.max(0, formData.processedRecordsCount - formData.errorRecordsCount);
+    const computedCarregada = Math.max(0, formData.targetRecordsCount - formData.errorRecordsCount);
 
     const getDurationDisplay = () => {
-        if (!activeData.chargeStartTime || !activeData.chargeEndTime) return "00H 00M 00S";
-        const start = new Date(activeData.chargeStartTime).getTime();
-        const end = new Date(activeData.chargeEndTime).getTime();
+        if (!formData.chargeStartTime || !formData.chargeEndTime) return "00H 00M 00S";
+        const start = new Date(formData.chargeStartTime).getTime();
+        const end = new Date(formData.chargeEndTime).getTime();
         if (isNaN(start) || isNaN(end) || end < start) return "00H 00M 00S";
         const diff = end - start;
         const h = Math.floor(diff / 3600000);
@@ -313,112 +262,51 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
         return `${h.toString().padStart(2, "0")}H ${m.toString().padStart(2, "0")}M ${s.toString().padStart(2, "0")}S`;
     };
 
+    const collectFormDataForSave = (): QuickFormData => ({
+        ...formData,
+        chargeStartTime: chargeStartFieldRef.current?.commit() ?? formData.chargeStartTime,
+        chargeEndTime: chargeEndFieldRef.current?.commit() ?? formData.chargeEndTime,
+    });
+
     const onSave = async () => {
+        const data = collectFormDataForSave();
+        setFormData(data);
+
         if (isMock) {
-            props.onSave();
+            props.onSave(data);
             return;
         }
         if (!props.handleSaveQuick) return;
         setIsSaving(true);
         try {
-            await props.handleSaveQuick(formData);
+            await props.handleSaveQuick(data);
         } catch (err) {
             console.error("Erro no dialog ao salvar:", err);
             setIsSaving(false);
         }
     };
 
-    const renderDateTimeField = (
-        key: "chargeStartTime" | "chargeEndTime",
-        label: string,
-        draft: string,
-        setDraft: (v: string) => void,
-        date: Date | null,
-        valid: boolean,
-        stackLayout: boolean
-    ) => (
-        <div className={stackLayout ? "space-y-1.5" : "space-y-1.5"}>
-            <label className="fiori-field-label">
-                <Clock className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
-                {label}
-            </label>
-            <div className="flex gap-2">
-                <Input
-                    type="text"
-                    disabled={readOnly}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onBlur={() => commitChargeInput(key, draft)}
-                    placeholder="dd/mm/aaaa hh:mm:ss"
-                    autoComplete="off"
-                    aria-label={`Data e hora de ${label.toLowerCase()} da carga`}
-                    className="fiori-input fiori-input-datetime flex-1 font-mono tabular-nums shadow-none"
-                />
-                <Popover>
-                    <FioriPopoverIconButtonHint
-                        hint={`Abrir calendário — ${label.toLowerCase()} da carga`}
-                        disabled={readOnly}
-                        className="fiori-icon-btn fiori-icon-btn-bordered"
-                        onMouseDown={(e) => e.preventDefault()}
-                    >
-                        <CalendarDays className="h-4 w-4" />
-                    </FioriPopoverIconButtonHint>
-                    <PopoverContent variant="fiori" className="w-auto max-h-[85vh] overflow-y-auto p-3" align="start">
-                        <div className="space-y-3">
-                            <Calendar
-                                mode="single"
-                                selected={valid && date ? date : undefined}
-                                onSelect={(d) => updateDatePart(key, d)}
-                                locale={ptBR}
-                                initialFocus
-                            />
-                            <div className="grid grid-cols-3 gap-2">
-                                <Select
-                                    value={String((valid && date ? date : new Date()).getHours()).padStart(2, "0")}
-                                    onValueChange={(v) => updateTimePart(key, "hour", v)}
-                                >
-                                    <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                    <SelectContent side="top" className="fiori-select-content max-h-40">
-                                        {hourOptions.map((h) => <SelectItem key={h} value={h} className="fiori-select-item">{h}h</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select
-                                    value={String((valid && date ? date : new Date()).getMinutes()).padStart(2, "0")}
-                                    onValueChange={(v) => updateTimePart(key, "minute", v)}
-                                >
-                                    <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                    <SelectContent side="top" className="fiori-select-content max-h-40">
-                                        {minuteSecondOptions.map((m) => <SelectItem key={m} value={m} className="fiori-select-item">{m}m</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select
-                                    value={String((valid && date ? date : new Date()).getSeconds()).padStart(2, "0")}
-                                    onValueChange={(v) => updateTimePart(key, "second", v)}
-                                >
-                                    <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                    <SelectContent side="top" className="fiori-select-content max-h-40">
-                                        {minuteSecondOptions.map((s) => <SelectItem key={s} value={s} className="fiori-select-item">{s}s</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </PopoverContent>
-                </Popover>
-            </div>
-        </div>
-    );
-
     return (
         <Dialog preserveDashboardScroll open={open} onOpenChange={(v) => !isSaving && onOpenChange(v)}>
             <DialogContent
                 open={open}
+                onOpenAutoFocus={(e) => {
+                    e.preventDefault();
+                    requestAnimationFrame(() => {
+                        firstFieldRef.current?.focus({ preventScroll: true });
+                    });
+                }}
+                onCloseAutoFocus={(e) => {
+                    e.preventDefault();
+                }}
                 className={cn(
-                    "fiori-dialog !flex w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden",
+                    "fiori-dialog fiori-dialog--quick-edit-form !flex w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden",
                     isMock
-                        ? "h-[min(92vh,640px)] max-w-4xl"
-                        : "h-[min(36rem,calc(100dvh-2rem))] max-w-lg",
+                        ? "max-h-[min(92vh,32rem)] max-w-2xl"
+                        : "h-[min(34rem,calc(100dvh-2rem))] max-w-lg",
                 )}
             >
+                <FocusScope.Root trapped={open} loop className="flex min-h-0 flex-1 flex-col">
                 <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
                     <DialogDescription className="sr-only">
                         {readOnly
@@ -445,54 +333,68 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                     </div>
                 </DialogHeader>
 
-                <ScrollArea className="min-h-0 flex-1">
-                    <div className="space-y-4 px-5 py-4">
-                        <div>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="fiori-quick-edit-form-body">
+                        <section className="fiori-quick-edit-section">
                             <h3 className="fiori-section-title">
-                                <Timer className="h-3.5 w-3.5" />
+                                <Timer className="h-3 w-3" />
                                 Monitoramento da carga
                             </h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                {renderDateTimeField("chargeStartTime", "Início", chargeStartDraft, setChargeStartDraft, startDate, startValid, isMock)}
-                                {renderDateTimeField("chargeEndTime", "Término", chargeEndDraft, setChargeEndDraft, endDate, endValid, isMock)}
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <QuickEditDateTimeField
+                                    ref={chargeStartFieldRef}
+                                    label="Início"
+                                    isoValue={formData.chargeStartTime}
+                                    onIsoChange={handleChargeStartIsoChange}
+                                    readOnly={readOnly}
+                                    inputRef={firstFieldRef}
+                                    inputId="quick-edit-charge-start"
+                                />
+                                <QuickEditDateTimeField
+                                    ref={chargeEndFieldRef}
+                                    label="Término"
+                                    isoValue={formData.chargeEndTime}
+                                    onIsoChange={handleChargeEndIsoChange}
+                                    readOnly={readOnly}
+                                />
                             </div>
-                        </div>
+                        </section>
 
-                        <div>
+                        <section className="fiori-quick-edit-section">
                             <h3 className="fiori-section-title">
-                                <Database className="h-3.5 w-3.5" />
+                                <Database className="h-3 w-3" />
                                 Quantidades
                             </h3>
                             {isMock ? (
-                                <>
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <div className="space-y-1.5">
-                                            <label className="fiori-field-label">Qtd. target</label>
-                                            <Input
-                                                type="text"
-                                                value={targetStr}
-                                                onChange={(e) => handleMockNumberChange(e.target.value, "target")}
-                                                onBlur={() => handleMockBlur("target")}
-                                                className="fiori-input tabular-nums shadow-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <label className="fiori-field-label">
-                                                Qtd. carregada
-                                                <span className="font-normal text-[var(--fiori-label)]"> (Target − Erro)</span>
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                readOnly
-                                                tabIndex={-1}
-                                                value={formatNumber(computedCarregada)}
-                                                title="Calculado automaticamente: Qtd. Target − Qtd. Erro"
-                                                aria-label="Quantidade carregada, igual a Target menos Erro"
-                                                className="fiori-input tabular-nums bg-[#f5f6f7] shadow-none"
-                                            />
-                                        </div>
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                    <div className="fiori-quick-edit-field">
+                                        <label className="fiori-field-label">Qtd. target</label>
+                                        <Input
+                                            type="text"
+                                            value={targetStr}
+                                            onChange={(e) => handleMockNumberChange(e.target.value, "target")}
+                                            onBlur={() => handleMockBlur("target")}
+                                            className="fiori-input tabular-nums shadow-none"
+                                        />
                                     </div>
-                                    <div className="mt-3 space-y-1.5">
+                                    <div className="fiori-quick-edit-field">
+                                        <label
+                                            className="fiori-field-label"
+                                            title="Calculado: Target − Erro"
+                                        >
+                                            Qtd. carregada
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            readOnly
+                                            tabIndex={-1}
+                                            value={formatNumber(computedCarregada)}
+                                            title="Calculado automaticamente: Qtd. Target − Qtd. Erro"
+                                            aria-label="Quantidade carregada, igual a Target menos Erro"
+                                            className="fiori-input tabular-nums bg-[#f5f6f7] shadow-none"
+                                        />
+                                    </div>
+                                    <div className="fiori-quick-edit-field">
                                         <label className="fiori-field-label">Qtd. erro</label>
                                         <Input
                                             type="text"
@@ -502,11 +404,11 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                             className="fiori-input fiori-input-error tabular-nums shadow-none"
                                         />
                                     </div>
-                                </>
+                                </div>
                             ) : (
                                 <>
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <div className="space-y-1.5">
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        <div className="fiori-quick-edit-field">
                                             <label className="fiori-field-label">Total target</label>
                                             <Input
                                                 type="text"
@@ -517,7 +419,7 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                                 className="fiori-input tabular-nums shadow-none"
                                             />
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="fiori-quick-edit-field">
                                             <label className="fiori-field-label">Total processado</label>
                                             <Input
                                                 type="text"
@@ -546,8 +448,8 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                             />
                                         </div>
                                     </div>
-                                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                        <div className="space-y-1.5">
+                                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                        <div className="fiori-quick-edit-field">
                                             <label className="fiori-field-label">Sucesso (auto)</label>
                                             <Input
                                                 type="text"
@@ -557,7 +459,7 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                                 className="fiori-input fiori-input-success tabular-nums shadow-none"
                                             />
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="fiori-quick-edit-field">
                                             <label className="fiori-field-label">Total erro</label>
                                             <Input
                                                 type="text"
@@ -568,7 +470,7 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                                 className="fiori-input fiori-input-error tabular-nums shadow-none"
                                             />
                                         </div>
-                                        <div className="space-y-1.5">
+                                        <div className="fiori-quick-edit-field">
                                             <label className="fiori-field-label">Duração</label>
                                             <Input
                                                 type="text"
@@ -581,16 +483,16 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                     </div>
                                 </>
                             )}
-                        </div>
+                        </section>
 
                         {!isMock && (
-                            <div className="border-t border-[var(--fiori-border-light)] pt-4">
+                            <section className="fiori-quick-edit-section">
                                 <h3 className="fiori-section-title">
-                                    <Clock className="h-3.5 w-3.5" />
+                                    <Timer className="h-3 w-3" />
                                     Histórico do ciclo anterior
                                 </h3>
-                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div className="space-y-1.5">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <div className="fiori-quick-edit-field">
                                         <label className="fiori-field-label">Volume anterior</label>
                                         <Input
                                             type="text"
@@ -600,7 +502,7 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                             className="fiori-input tabular-nums bg-[#f5f6f7] shadow-none"
                                         />
                                     </div>
-                                    <div className="space-y-1.5">
+                                    <div className="fiori-quick-edit-field">
                                         <label className="fiori-field-label">Duração anterior</label>
                                         <Input
                                             type="text"
@@ -611,10 +513,10 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                                         />
                                     </div>
                                 </div>
-                            </div>
+                            </section>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
 
                 <DialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end">
                     <Button
@@ -644,7 +546,9 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                         </Button>
                     )}
                 </DialogFooter>
+                </FocusScope.Root>
             </DialogContent>
         </Dialog>
     );
 }
+

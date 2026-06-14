@@ -15,6 +15,7 @@ import {
     StopCircle,
     Layers,
     ChevronDown,
+    Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +44,7 @@ import { MASTER_OBJECT_TYPE_OPTIONS } from "@/lib/migration/master-object-type";
 import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
 import type { ChargeGroup } from "@/types/charge-group";
+import { ChargeGroupDialog } from "@/components/configuracoes/charge-groups/group-dialog";
 
 const CARD_TOOLBAR_BTN =
     "fiori-card-toolbar-btn !rounded-[0.375rem] !size-7 min-h-0 min-w-0";
@@ -129,6 +131,12 @@ interface MigrationObjectCardProps {
     selectedChargeGroupId?: string | null;
     /** Somente Governança (admin) ou Master — altera grupo de carga inline no card. */
     onChargeGroupChange?: (obj: MasterObject, groupId: string | null) => void;
+    /** Cria grupo de carga a partir do picker do card. */
+    onCreateChargeGroup?: (
+        data: Omit<ChargeGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">,
+    ) => Promise<string>;
+    suggestedChargeGroupName?: string;
+    suggestedChargeGroupOrder?: number;
     /** Governança ou Master — altera tipo inline no card. */
     onTypeChange?: (obj: MasterObject, type: string) => void;
 }
@@ -209,7 +217,7 @@ function CardChargeOrderMetric({
             >
                 <PopoverAnchor asChild>
                     <span
-                        className="fiori-migration-object-card-metric-value fiori-migration-object-card-metric-value--hover-zoom"
+                        className="fiori-migration-object-card-metric-value"
                         onClick={startEdit}
                         onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
@@ -539,15 +547,26 @@ function CardChargeGroupControl({
     selectedGroupId,
     allChargeGroups,
     editable,
+    canCreate,
+    suggestedCreateName = "G1",
+    suggestedCreateOrder = 1,
     onChange,
+    onCreateChargeGroup,
 }: {
     displayLabel: string;
     selectedGroupId: string | null;
     allChargeGroups: ChargeGroup[];
     editable: boolean;
+    canCreate?: boolean;
+    suggestedCreateName?: string;
+    suggestedCreateOrder?: number;
     onChange: (groupId: string | null) => void;
+    onCreateChargeGroup?: (
+        data: Omit<ChargeGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">,
+    ) => Promise<string>;
 }) {
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const sortedGroups = [...allChargeGroups].sort(
         (a, b) =>
             (a.displayOrder ?? 0) - (b.displayOrder ?? 0) ||
@@ -559,24 +578,30 @@ function CardChargeGroupControl({
         setPickerOpen(false);
     };
 
+    const returnToPicker = () => {
+        setCreateDialogOpen(false);
+        setPickerOpen(true);
+    };
+
+    const pickerEnabled = editable && (allChargeGroups.length > 0 || canCreate);
+
     const metricClassName = cn(
         "fiori-migration-object-card-metric",
         !displayLabel && "opacity-40",
-        editable && allChargeGroups.length > 0 && "fiori-migration-object-card-metric--editable",
+        pickerEnabled && "fiori-migration-object-card-metric--editable",
     );
 
     const valueContent = (
         <span
             className={cn(
                 "fiori-migration-object-card-metric-value",
-                editable && allChargeGroups.length > 0 && "fiori-migration-object-card-metric-value--hover-zoom",
             )}
         >
             {displayLabel || "—"}
         </span>
     );
 
-    if (!editable || allChargeGroups.length === 0) {
+    if (!pickerEnabled) {
         return (
             <div className={metricClassName}>
                 <span className="fiori-migration-object-card-metric-label">Grupo</span>
@@ -584,6 +609,20 @@ function CardChargeGroupControl({
             </div>
         );
     }
+
+    const openCreateDialog = () => {
+        setPickerOpen(false);
+        setCreateDialogOpen(true);
+    };
+
+    const handleSaveNewGroup = async (
+        data: Omit<ChargeGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">,
+    ) => {
+        if (!onCreateChargeGroup) return;
+        const newId = await onCreateChargeGroup(data);
+        onChange(newId);
+        setPickerOpen(true);
+    };
 
     return (
         <div className={metricClassName}>
@@ -650,8 +689,30 @@ function CardChargeGroupControl({
                             );
                         })}
                     </div>
+                    {canCreate && onCreateChargeGroup && (
+                        <div className="fiori-charge-group-picker-footer">
+                            <button
+                                type="button"
+                                className="fiori-charge-group-picker-create"
+                                onClick={openCreateDialog}
+                            >
+                                <Plus className="h-3.5 w-3.5" aria-hidden />
+                                Novo grupo
+                            </button>
+                        </div>
+                    )}
                 </PopoverContent>
             </Popover>
+            {canCreate && onCreateChargeGroup && (
+                <ChargeGroupDialog
+                    open={createDialogOpen}
+                    onClose={returnToPicker}
+                    onSave={handleSaveNewGroup}
+                    suggestedCreateName={suggestedCreateName}
+                    suggestedCreateOrder={suggestedCreateOrder}
+                    closeAfterCreate
+                />
+            )}
         </div>
     );
 }
@@ -690,6 +751,9 @@ export function MigrationObjectCard({
     allChargeGroups = [],
     selectedChargeGroupId = null,
     onChargeGroupChange,
+    onCreateChargeGroup,
+    suggestedChargeGroupName = "G1",
+    suggestedChargeGroupOrder = 1,
     onTypeChange,
 }: MigrationObjectCardProps) {
     const chargeOrderLabel = normalizeSeqForDisplay(displayChargeOrder ?? obj.chargeOrder);
@@ -725,7 +789,7 @@ export function MigrationObjectCard({
             tabIndex={0}
             onClick={() => onSelect?.(obj.id)}
             className={cn(
-                "fiori-migration-object-card group relative border border-slate-200 hover:border-slate-400 transition-all duration-300 hover:scale-[1.03] hover:z-10 overflow-hidden bg-white p-2.5 flex flex-col gap-2 h-full min-h-0 select-none",
+                "fiori-migration-object-card group relative border border-slate-200 hover:border-slate-400 transition-colors duration-300 overflow-hidden bg-white p-2.5 flex flex-col gap-2 h-full min-h-0 select-none",
                 isSelected ? "card-static-border z-10" : "",
                 isAdmin && isExecutionSort ? "cursor-move" : "cursor-pointer",
                 isNormalDragging && "fiori-migration-object-card--dragging opacity-30 border-slate-200 grayscale scale-95 cursor-grabbing",
@@ -877,7 +941,11 @@ export function MigrationObjectCard({
                         selectedGroupId={selectedChargeGroupId}
                         allChargeGroups={allChargeGroups}
                         editable={canEditChargeGroup}
+                        canCreate={canEditChargeGroup && !!onCreateChargeGroup}
+                        suggestedCreateName={suggestedChargeGroupName}
+                        suggestedCreateOrder={suggestedChargeGroupOrder}
                         onChange={(groupId) => onChargeGroupChange?.(obj, groupId)}
+                        onCreateChargeGroup={onCreateChargeGroup}
                     />
 
                     <div className="fiori-migration-object-card-metric-divider" role="separator" aria-hidden />

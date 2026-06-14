@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, memo, useCallback } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Check, Clock, Database, History, Loader2, Search, Timer, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatNumber, unformatNumber, formatDurationInput } from "@/lib/migration/format-utils";
+import { formatNumber, unformatNumber, formatDurationInput, formatNumberInput } from "@/lib/migration/format-utils";
 import type { MigrationObject } from "@/types/migration";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ptBR } from "date-fns/locale";
 import {
   formatBrazilianDateTime,
+  formatBrazilianDateTimeInput,
   parseBrazilianLocalDateTime,
   toIsoLocalSeconds,
 } from "@/lib/migration/datetime-br";
@@ -78,6 +79,86 @@ interface MigrationObjectFormDialogProps {
   mockName?: string;
 }
 
+const MasterPickerRow = memo(function MasterPickerRow({
+  object,
+  isSelected,
+  onToggle,
+}: {
+  object: MasterObject;
+  isSelected: boolean;
+  onToggle: (id: string) => void;
+}) {
+  const handleClick = useCallback(() => onToggle(object.id), [object.id, onToggle]);
+
+  return (
+    <button
+      type="button"
+      className={cn("fiori-object-row", isSelected && "fiori-object-row-selected")}
+      onClick={handleClick}
+    >
+      <div
+        className={cn(
+          "fiori-object-row-checkbox",
+          isSelected && "fiori-object-row-checkbox-checked",
+        )}
+        aria-hidden
+      >
+        {isSelected && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
+      </div>
+      <div className="fiori-object-row-body min-w-0 flex-1">
+        <span className="fiori-object-row-name">{object.name}</span>
+      </div>
+      {object.chargeGroup ? (
+        <span className={cn("fiori-seq-badge", isSelected && "fiori-seq-badge-selected")}>
+          {object.chargeGroup}
+        </span>
+      ) : null}
+    </button>
+  );
+});
+
+const MasterObjectPickerList = memo(function MasterObjectPickerList({
+  objects,
+  selectedIds,
+  onToggle,
+}: {
+  objects: MasterObject[];
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+}) {
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  const objectsById = useMemo(
+    () => new Map(objects.map((mo) => [mo.id, mo])),
+    [objects],
+  );
+
+  const { selectedObjects, availableObjects } = useMemo(() => {
+    const selected: MasterObject[] = [];
+    for (const id of selectedIds) {
+      const mo = objectsById.get(id);
+      if (mo) selected.push(mo);
+    }
+    const available = objects.filter((mo) => !selectedIdSet.has(mo.id));
+    return { selectedObjects: selected, availableObjects: available };
+  }, [objects, selectedIds, selectedIdSet, objectsById]);
+
+  return (
+    <div className="fiori-object-list fiori-object-list--compact">
+      {selectedObjects.length > 0 ? (
+        <div className="fiori-master-picker-selected">
+          {selectedObjects.map((mo) => (
+            <MasterPickerRow key={mo.id} object={mo} isSelected onToggle={onToggle} />
+          ))}
+        </div>
+      ) : null}
+      {availableObjects.map((mo) => (
+        <MasterPickerRow key={mo.id} object={mo} isSelected={false} onToggle={onToggle} />
+      ))}
+    </div>
+  );
+});
+
 export function MigrationObjectFormDialog({
   open,
   onOpenChange,
@@ -118,6 +199,8 @@ export function MigrationObjectFormDialog({
       setChargeEndCalOpen(false);
     }
   }, [open]);
+
+  const selectedMasterIdSet = useMemo(() => new Set(selectedMasterIds), [selectedMasterIds]);
 
   const parseLocalDateTime = (value: string) => parseBrazilianLocalDateTime(value);
 
@@ -200,7 +283,7 @@ export function MigrationObjectFormDialog({
         <Clock className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
         {label}
       </label>
-      <div className="flex gap-2">
+      <div className="fiori-datetime-field">
         <Input
           type="text"
           inputMode="text"
@@ -208,12 +291,12 @@ export function MigrationObjectFormDialog({
           spellCheck={false}
           disabled={fieldsLocked}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => setDraft(formatBrazilianDateTimeInput(e.target.value))}
           onBlur={() => commitChargeDraft(key, draft, formData[key])}
-          placeholder="dd/mm/aaaa hh:mm:ss"
+          placeholder="dd/mm/aaaa, hh:mm:ss"
           aria-label={`Data e hora de ${label.toLowerCase()} da carga`}
           className={cn(
-            "fiori-input fiori-input-datetime flex-1 font-mono tabular-nums shadow-none",
+            "fiori-input fiori-input-datetime shadow-none",
             fieldsLocked && "readable-disabled",
           )}
         />
@@ -221,7 +304,7 @@ export function MigrationObjectFormDialog({
           <FioriPopoverIconButtonHint
             hint={`Abrir calendário — ${label.toLowerCase()} da carga`}
             disabled={fieldsLocked}
-            className="fiori-icon-btn fiori-icon-btn-bordered shrink-0"
+            className="fiori-icon-btn fiori-icon-btn-bordered fiori-datetime-field-trigger shrink-0"
             onMouseDown={(e) => e.preventDefault()}
           >
             <CalendarDays className="h-4 w-4" />
@@ -353,7 +436,7 @@ export function MigrationObjectFormDialog({
                 </label>
                 {filteredMasterObjects.length > 0 && (
                   <button type="button" onClick={onSelectAll} className="fiori-link-btn">
-                    {filteredMasterObjects.every((mo) => selectedMasterIds.includes(mo.id))
+                    {filteredMasterObjects.every((mo) => selectedMasterIdSet.has(mo.id))
                       ? "Desmarcar todos"
                       : "Marcar todos"}
                   </button>
@@ -367,45 +450,11 @@ export function MigrationObjectFormDialog({
                   <Loader2 className="h-6 w-6 animate-spin text-[var(--fiori-brand)]" />
                 </div>
               ) : filteredMasterObjects.length > 0 ? (
-                <div className="fiori-object-list fiori-object-list--compact">
-                  {filteredMasterObjects.map((mo) => {
-                    const isSelected = selectedMasterIds.includes(mo.id);
-                    return (
-                      <button
-                        key={mo.id}
-                        type="button"
-                        className={cn(
-                          "fiori-object-row",
-                          isSelected && "fiori-object-row-selected",
-                        )}
-                        onClick={() => onToggleMaster(mo.id)}
-                      >
-                        <div
-                          className={cn(
-                            "fiori-object-row-checkbox",
-                            isSelected && "fiori-object-row-checkbox-checked",
-                          )}
-                          aria-hidden
-                        >
-                          {isSelected && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
-                        </div>
-                        <div className="fiori-object-row-body min-w-0 flex-1">
-                          <span className="fiori-object-row-name">{mo.name}</span>
-                        </div>
-                        {mo.chargeGroup && (
-                          <span
-                            className={cn(
-                              "fiori-seq-badge",
-                              isSelected && "fiori-seq-badge-selected",
-                            )}
-                          >
-                            {mo.chargeGroup}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                <MasterObjectPickerList
+                  objects={filteredMasterObjects}
+                  selectedIds={selectedMasterIds}
+                  onToggle={onToggleMaster}
+                />
               ) : (
                 <p className="fiori-empty-hint px-5 py-8 text-center">
                   {masterPickerEmptyHint}
@@ -485,12 +534,13 @@ export function MigrationObjectFormDialog({
                         type="text"
                         inputMode="numeric"
                         value={formatNumber(formData.targetRecordsCount)}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const formatted = formatNumberInput(e.target.value);
                           onFormChange((prev) => ({
                             ...prev,
-                            targetRecordsCount: unformatNumber(e.target.value),
-                          }))
-                        }
+                            targetRecordsCount: formatted ? unformatNumber(formatted) : 0,
+                          }));
+                        }}
                         className={cn(
                           "fiori-input tabular-nums shadow-none",
                           fieldsLocked && "readable-disabled",
@@ -532,12 +582,13 @@ export function MigrationObjectFormDialog({
                         type="text"
                         inputMode="numeric"
                         value={formatNumber(formData.errorRecordsCount)}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const formatted = formatNumberInput(e.target.value);
                           onFormChange((prev) => ({
                             ...prev,
-                            errorRecordsCount: unformatNumber(e.target.value),
-                          }))
-                        }
+                            errorRecordsCount: formatted ? unformatNumber(formatted) : 0,
+                          }));
+                        }}
                         className={cn(
                           "fiori-input fiori-input-error tabular-nums shadow-none",
                           fieldsLocked && "readable-disabled",
@@ -569,12 +620,13 @@ export function MigrationObjectFormDialog({
                         type="text"
                         inputMode="numeric"
                         value={formatNumber(formData.previousMigratedRecordsCount)}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const formatted = formatNumberInput(e.target.value);
                           onFormChange((prev) => ({
                             ...prev,
-                            previousMigratedRecordsCount: unformatNumber(e.target.value),
-                          }))
-                        }
+                            previousMigratedRecordsCount: formatted ? unformatNumber(formatted) : 0,
+                          }));
+                        }}
                         className={cn(
                           "fiori-input tabular-nums shadow-none",
                           fieldsLocked && "readable-disabled",

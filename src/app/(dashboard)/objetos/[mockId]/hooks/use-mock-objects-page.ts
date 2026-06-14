@@ -23,6 +23,11 @@ import { buildLogExportMeta } from '@/lib/export/log-export-meta';
 import {
   resolveMasterObject,
 } from '@/lib/dashboard/object-filters';
+import {
+  masterObjectsQueryForProject,
+  masterObjectsLegacyUnscopedQuery,
+  mergeMasterCatalogRows,
+} from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { isEffectiveLocked as isMockEffectiveLocked, isMockInactive } from '@/lib/mock-utils';
 import type { Mock, UserProfile } from '@/types/migration';
@@ -56,10 +61,22 @@ export function useMockObjectsPage() {
   const isAdminOrMaster = isAdmin;
 
   const masterObjectsQuery = useMemoDb(
-    () => (db ? collection(db, 'masterObjects') : null),
-    [db],
+    () => (db && projectId ? masterObjectsQueryForProject(db, projectId) : null),
+    [db, projectId],
   );
-  const { data: masterObjects, isLoading: isMasterObjectsLoading } = useCollection<MasterObject>(masterObjectsQuery);
+  const legacyMasterObjectsQuery = useMemoDb(
+    () => (db && projectId && isAdmin ? masterObjectsLegacyUnscopedQuery(db) : null),
+    [db, projectId, isAdmin],
+  );
+  const { data: projectMasterObjects, isLoading: isProjectMasterLoading } =
+    useCollection<MasterObject>(masterObjectsQuery);
+  const { data: legacyMasterObjects, isLoading: isLegacyMasterLoading } =
+    useCollection<MasterObject>(legacyMasterObjectsQuery);
+  const masterObjects = useMemo(
+    () => mergeMasterCatalogRows(projectMasterObjects, legacyMasterObjects) as MasterObject[],
+    [projectMasterObjects, legacyMasterObjects],
+  );
+  const isMasterObjectsLoading = isProjectMasterLoading || (Boolean(projectId && isAdmin) && isLegacyMasterLoading);
 
   const directMockRef = useMemoDb(() => {
     if (!db || !projectId || !routeMockId) return null;
@@ -315,7 +332,7 @@ export function useMockObjectsPage() {
         }
         return (a.name || '').localeCompare(b.name || '');
       });
-  }, [mergedObjects, masterObjects, masterLookupMaps, deferredSearchTerm, performanceFilter]);
+  }, [mergedObjects, masterLookupMaps, deferredSearchTerm, performanceFilter]);
 
   const totals = useMemo(() => {
     if (!sortedObjects) return { target: 0, processed: 0, success: 0, error: 0 };

@@ -128,13 +128,16 @@ export function EditObjectDialog({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editingObject?.id]);
 
-  useEffect(() => {
-    onClearSaveError?.();
-  }, [formDraft, externalDepsDraft, onClearSaveError]);
+  const clearSaveErrorIfNeeded = useCallback(() => {
+    if (saveError) onClearSaveError?.();
+  }, [saveError, onClearSaveError]);
 
   const patchForm = useCallback(
-    (patch: Partial<EditFormData>) => setFormDraft((prev) => ({ ...prev, ...patch })),
-    [],
+    (patch: Partial<EditFormData>) => {
+      clearSaveErrorIfNeeded();
+      setFormDraft((prev) => ({ ...prev, ...patch }));
+    },
+    [clearSaveErrorIfNeeded],
   );
 
   const handleSaveClick = () => {
@@ -408,7 +411,10 @@ export function EditObjectDialog({
                       fieldsLocked && "readable-disabled",
                     )}
                     value={externalDepsDraft}
-                    onChange={(e) => setExternalDepsDraft(e.target.value)}
+                    onChange={(e) => {
+                      clearSaveErrorIfNeeded();
+                      setExternalDepsDraft(e.target.value);
+                    }}
                     disabled={fieldsLocked}
                   />
                   <p className="fiori-field-hint pl-0.5">

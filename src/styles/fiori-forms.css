@@ -4480,6 +4480,101 @@
   flex-shrink: 0;
 }
 
+/* Edição rápida de ciclo — formulário compacto */
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-quick-edit-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem 0.875rem;
+}
+
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-quick-edit-section + .fiori-quick-edit-section {
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-section-title {
+  margin-bottom: 0.4375rem;
+  font-size: 0.75rem;
+}
+
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-quick-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-field-label {
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-input,
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-select-trigger {
+  height: 2.125rem;
+  min-height: 2.125rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-icon-btn-bordered,
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-datetime-field-trigger {
+  width: 2.125rem;
+  height: 2.125rem;
+  min-height: 2.125rem;
+  flex-shrink: 0;
+}
+
+.fiori-dialog.fiori-dialog--quick-edit-form .fiori-input-datetime {
+  min-width: 0;
+}
+
+/* DateTimePicker Fiori — input + value help unificados */
+.fiori-datetime-field {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.fiori-datetime-field .fiori-input-datetime {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-72);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 0;
+}
+
+.fiori-datetime-field .fiori-datetime-field-trigger {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: 0;
+}
+
+.fiori-datetime-field:focus-within .fiori-input-datetime {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  z-index: 1;
+  position: relative;
+}
+
+.fiori-datetime-field:focus-within .fiori-datetime-field-trigger {
+  border-color: var(--fiori-brand);
+  box-shadow: 0 0 0 1px var(--fiori-brand);
+  z-index: 1;
+  position: relative;
+}
+
+.fiori-datetime-field:hover:not(:focus-within) .fiori-input-datetime,
+.fiori-datetime-field:hover:not(:focus-within) .fiori-datetime-field-trigger {
+  border-color: #aeb6bf;
+}
+
 .fiori-dialog .fiori-input-datetime {
   min-width: 14rem;
   flex: 1 1 14rem;
@@ -4500,6 +4595,12 @@
 .fiori-dialog .fiori-object-list--compact {
   gap: 0;
   padding: 0.25rem 1rem 0.5rem;
+}
+
+.fiori-dialog .fiori-master-picker-selected {
+  margin-bottom: 0.125rem;
+  padding-bottom: 0.125rem;
+  border-bottom: 1px solid var(--fiori-border-light);
 }
 
 .fiori-dialog .fiori-object-list--compact .fiori-object-row {

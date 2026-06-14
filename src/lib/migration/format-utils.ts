@@ -14,6 +14,13 @@ export function unformatNumber(val: string): number {
   return parseInt(rawValue, 10) || 0;
 }
 
+/** Formata contagem numérica durante digitação (pt-BR); vazio permanece vazio. */
+export function formatNumberInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return formatNumber(parseInt(digits, 10));
+}
+
 export function formatDurationInput(ms: number, allowZero: boolean = false): string {
   if (!ms || ms <= 0) return allowZero ? "00H 00M 00S" : "00H 00M 01S";
   const totalSeconds = Math.floor(ms / 1000);

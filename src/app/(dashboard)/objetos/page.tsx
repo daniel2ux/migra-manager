@@ -45,7 +45,7 @@ const PAGE_TOOLBAR_BTN =
 function ObjetosMasterPageContent() {
   const {
     // Refs
-    nameInputRef, fileInputRef, depSearch1Ref, depSearch2Ref, depSearchTimerRef, depTriggerRef,
+    registerNameInput, fileInputRef, depSearch1Ref, depSearch2Ref, depSearchTimerRef, depTriggerRef,
     selectNextSearchRef, selectNextTimerRef, selectNextTriggerRef,
     parallelSearchRef, parallelSearchTimerRef, parallelTriggerRef,
     terminalEndRef,
@@ -67,10 +67,11 @@ function ObjetosMasterPageContent() {
     isForceLockOpen, setIsForceLockOpen, forceLockTarget, forceLockBlockerName,
     activityGroups, activityGroupFilter, setActivityGroupFilter,
     chargeGroups, configuredChargeGroupById,
+    chargeGroupCreateSuggestions, handleCreateChargeGroup,
     isPrecedenceOpen, setIsPrecedenceOpen, precedenceObject, setPrecedenceObject, precedenceMode,
     // Derived
     objects, isLoading, isAdmin, isAdminOrMaster, isLockedByOther, lockedByName,
-    usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, hasActiveFilters, selectedMockName, isMockLocked,
+    usageMap, precedenceMap, sequenceContextRows, catalogPickerRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, hasActiveFilters, selectedMockName, isMockLocked,
     canRegisterObjects, objectCatalogBlockedReason,
     displayChargeOrderById,
     // Handlers
@@ -365,7 +366,24 @@ function ObjetosMasterPageContent() {
                             e.stopPropagation();
                             if (draggedObjectId && sequenceContextRows.length > 0) {
                               const moving = sequenceContextRows.find(o => o.id === draggedObjectId);
-                              if (moving) performReorder(moving, String(obj.chargeOrder || ''), obj.id);
+                              if (moving) {
+                                const useListPosition = Boolean(displayChargeOrderById);
+                                const targetDisplayOrder = useListPosition
+                                  ? resolveDisplayChargeOrder(
+                                      obj.id,
+                                      obj.chargeOrder,
+                                      displayChargeOrderById,
+                                    )
+                                  : obj.chargeOrder;
+                                void performReorder(
+                                  moving,
+                                  String(targetDisplayOrder || ''),
+                                  useListPosition ? undefined : obj.id,
+                                  {
+                                    orderedList: useListPosition ? sortedFilteredObjects : undefined,
+                                  },
+                                );
+                              }
                               setDraggedObjectId(null);
                               setDragOverObjectId(null);
                             }
@@ -391,14 +409,6 @@ function ObjetosMasterPageContent() {
                               undefined,
                               {
                                 orderedList: displayChargeOrderById ? sortedFilteredObjects : undefined,
-                                onMoved: (id) => {
-                                  setSelectedCardId(id);
-                                  requestAnimationFrame(() => {
-                                    document
-                                      .getElementById(`obj-card-${id}`)
-                                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                  });
-                                },
                               },
                             );
                           }}
@@ -423,6 +433,11 @@ function ObjetosMasterPageContent() {
                                 }
                               : undefined
                           }
+                          onCreateChargeGroup={
+                            isAdminOrMaster ? handleCreateChargeGroup : undefined
+                          }
+                          suggestedChargeGroupName={chargeGroupCreateSuggestions.name}
+                          suggestedChargeGroupOrder={chargeGroupCreateSuggestions.order}
                           onTypeChange={
                             isAdminOrMaster
                               ? (target, type) => {
@@ -464,11 +479,11 @@ function ObjetosMasterPageContent() {
             onOpenChange={setIsQuickCreateOpen}
             quickFormData={quickFormData}
             activityGroups={activityGroups}
-            catalogObjects={sequenceContextRows}
+            catalogObjects={catalogPickerRows}
             onFormChange={(patch) =>
               setQuickFormData((prev) => ({ ...prev, ...patch }))}
             onSave={handleSaveQuick}
-            nameInputRef={nameInputRef}
+            onNameInputMount={registerNameInput}
           />
 
           <EditObjectDialog
@@ -528,7 +543,7 @@ function ObjetosMasterPageContent() {
             open={isDependenciesOpen}
             onOpenChange={(open) => { setIsDependenciesOpen(open); if (!open) setTimeout(() => depTriggerRef.current?.focus(), 0); }}
             targetObject={dependencyTargetObject}
-            objects={sequenceContextRows}
+            objects={catalogPickerRows}
             displayChargeOrderById={displayChargeOrderById}
             selectedIds={dependencySelectedIds}
             searchTerm={dependencySearchTerm}
@@ -554,7 +569,7 @@ function ObjetosMasterPageContent() {
               }
             }}
             targetObject={parallelSelectTarget}
-            objects={sequenceContextRows}
+            objects={catalogPickerRows}
             displayChargeOrderById={displayChargeOrderById}
             selectedIds={parallelSelectedIds}
             searchTerm={parallelSelectSearch}
@@ -580,7 +595,7 @@ function ObjetosMasterPageContent() {
               }
             }}
             targetObject={selectNextTargetObject}
-            objects={sequenceContextRows}
+            objects={catalogPickerRows}
             displayChargeOrderById={displayChargeOrderById}
             searchTerm={selectNextSearchTerm}
             onSearchChange={setSelectNextSearchTerm}

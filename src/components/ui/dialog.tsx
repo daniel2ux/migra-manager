@@ -71,13 +71,34 @@ type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.
   variant?: "default" | "fiori"
 }
 
+function hasDialogDescriptionNode(node: React.ReactNode): boolean {
+  let found = false
+  React.Children.forEach(node, (child) => {
+    if (found || !React.isValidElement(child)) return
+    const type = child.type as { displayName?: string }
+    if (
+      type === DialogPrimitive.Description ||
+      type?.displayName === DialogPrimitive.Description.displayName ||
+      type?.displayName === "DialogDescription"
+    ) {
+      found = true
+      return
+    }
+    if (child.props && typeof child.props === "object" && "children" in child.props) {
+      found = hasDialogDescriptionNode((child.props as { children?: React.ReactNode }).children)
+    }
+  })
+  return found
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, overlayClassName, manualBackdrop, open, variant = "default", children, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
+>(({ className, overlayClassName, manualBackdrop, open, variant = "default", children, onOpenAutoFocus, onCloseAutoFocus, "aria-describedby": ariaDescribedBy, ...props }, ref) => {
   const preserveDashboardScroll = React.useContext(PreserveDashboardScrollContext)
   const useManualBackdrop = manualBackdrop ?? preserveDashboardScroll
   const instantOpen = isFioriFormDialog(className, variant)
+  const hasDescription = hasDialogDescriptionNode(children)
 
   return (
   <DialogPortal>
@@ -97,7 +118,6 @@ const DialogContent = React.forwardRef<
     )}
     <DialogPrimitive.Content
       ref={ref}
-      aria-describedby={props["aria-describedby"] ?? undefined}
       className={cn(
         variant === "fiori"
           ? cn(
@@ -113,6 +133,11 @@ const DialogContent = React.forwardRef<
       onOpenAutoFocus={onOpenAutoFocus ?? (preserveDashboardScroll ? dashboardDialogFocusProps.onOpenAutoFocus : undefined)}
       onCloseAutoFocus={onCloseAutoFocus ?? (preserveDashboardScroll ? dashboardDialogFocusProps.onCloseAutoFocus : undefined)}
       {...props}
+      {...(ariaDescribedBy !== undefined
+        ? { "aria-describedby": ariaDescribedBy }
+        : hasDescription
+          ? {}
+          : { "aria-describedby": undefined })}
     >
       {children}
       {variant === "default" && (
