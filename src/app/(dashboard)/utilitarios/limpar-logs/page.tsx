@@ -18,6 +18,7 @@ import { safeRouterReplace, useRouterReady } from '@/lib/navigation/safe-router'
 import { Loader2, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Mock, Project } from '@/types/migration';
+import { filterActiveMocks } from '@/lib/mock-utils';
 
 export default function LimparLogsPage() {
   const { user } = useUser();
@@ -67,7 +68,7 @@ export default function LimparLogsPage() {
     try {
       const mocksColl = collection(db as CompatDb, 'projects', activeProjectId, 'mocks');
       const snapshot = await getDocs(mocksColl);
-      const mocksData = snapshot.docs.map((mockDoc) => ({ id: mockDoc.id, ...mockDoc.data() } as Mock));
+      const mocksData = filterActiveMocks(snapshot.docs.map((mockDoc) => ({ id: mockDoc.id, ...mockDoc.data() } as Mock)));
       setMocks(mocksData);
     } catch (err) {
       console.error('[LimparLogs] Erro ao carregar mocks:', err);

@@ -15,6 +15,7 @@ import {
 } from '@/lib/backup/local-registry';
 import type { BackupListItem, RestoreOptions } from '@/lib/backup/types';
 import type { Mock } from '@/types/migration';
+import { filterActiveMocks } from '@/lib/mock-utils';
 import { collection, getDocs } from '@/supabase/compat-db-shim';
 import type { CompatDb } from '@/supabase/compat-db-shim';
 import { extractRoots, fmtBytes } from './backup-formatters';
@@ -227,15 +228,15 @@ export function useBackupManager({
         const mocksColl = collection(db as CompatDb, 'projects', targetProjectId, 'mocks');
         const snapshot = await getDocs(mocksColl);
         const mocksWithCounts = await Promise.all(
-          snapshot.docs.map(async (mockDoc) => {
-            const mock = { id: mockDoc.id, ...mockDoc.data() } as Mock;
+          filterActiveMocks(snapshot.docs.map((mockDoc) => ({ id: mockDoc.id, ...mockDoc.data() } as Mock)))
+            .map(async (mock) => {
             const objectsSnap = await getDocs(
               collection(
                 db as CompatDb,
                 'projects',
                 targetProjectId,
                 'mocks',
-                mockDoc.id,
+                mock.id,
                 'migrationObjects',
               ),
             );

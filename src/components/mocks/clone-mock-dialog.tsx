@@ -17,7 +17,7 @@ interface CloneMockDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sourceMock: any | null;
-  onConfirm: (data: { sequence: string; explanatoryText: string }) => Promise<void>;
+  onConfirm: (data: { sequence: string; explanatoryText: string }) => Promise<boolean | void>;
   nextSequence?: string;
 }
 
@@ -43,8 +43,8 @@ export function CloneMockDialog({
     if (!sequence) return;
     setIsSubmitting(true);
     try {
-      await onConfirm({ sequence, explanatoryText });
-      onOpenChange(false);
+      const ok = await onConfirm({ sequence, explanatoryText });
+      if (ok !== false) onOpenChange(false);
     } catch (error) {
       console.error("Erro ao clonar mock:", error);
     } finally {

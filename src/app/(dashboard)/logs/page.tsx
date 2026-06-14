@@ -109,6 +109,7 @@ export default function LogsPage() {
 
         snap.docs.forEach(d => {
           const data = d.data();
+          if (data.isActive === false) return;
           const name = (data.name as string) || d.id;
           m[d.id] = name;
 

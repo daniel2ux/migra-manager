@@ -44,22 +44,28 @@ export async function POST(req: NextRequest) {
           { status: 403 },
         );
       }
-      if (callerRole !== 'master') {
-        return NextResponse.json(
-          { error: 'Apenas usuários MASTER podem excluir contas.' },
-          { status: 403 },
-        );
-      }
       if (!targetUserDoc.exists || !targetUserData) {
         return NextResponse.json({ error: 'Usuário alvo não encontrado.' }, { status: 404 });
       }
-      const targetRole = targetUserData?.role as UserRole | undefined;
-      const targetIsMaster = targetRole === 'master' || targetUserData?.isMaster === true;
-      if (targetIsMaster) {
-        return NextResponse.json(
-          { error: 'Não é permitido excluir usuários com perfil MASTER.' },
-          { status: 403 },
-        );
+
+      const targetRole = targetUserData.role as UserRole | undefined;
+      const targetIsMaster = targetRole === 'master' || targetUserData.isMaster === true;
+
+      if (callerRole !== 'master') {
+        if (callerRole !== 'admin') {
+          return NextResponse.json(
+            { error: 'Apenas usuários MASTER ou ADMIN podem excluir contas.' },
+            { status: 403 },
+          );
+        }
+        if (targetIsMaster || targetRole === 'admin') {
+          return NextResponse.json(
+            { error: targetIsMaster
+              ? 'Apenas usuários MASTER podem excluir contas MASTER.'
+              : 'Apenas usuários MASTER podem excluir contas de governança.' },
+            { status: 403 },
+          );
+        }
       }
     }
 

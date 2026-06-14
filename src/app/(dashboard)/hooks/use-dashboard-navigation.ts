@@ -3,6 +3,7 @@ import { useActiveProjectId, PROJECT_CHANGED_EVENT } from "@/hooks/use-active-pr
 import { useSessionStorageState } from "@/hooks/use-session-storage-state";
 import { SESSION_KEYS } from "@/lib/constants";
 import type { Mock, Project } from "@/types/migration";
+import { filterActiveMocks, isMockInactive } from "@/lib/mock-utils";
 
 export function useDashboardNavigation(
   allMocks: Mock[] | undefined,
@@ -33,7 +34,7 @@ export function useDashboardNavigation(
     if (selectedProjectId === "all" || !allMocks?.length) return;
     if (selectedMockId === "all") return;
     const mock = allMocks.find((m) => m.id === selectedMockId);
-    if (!mock || mock.projectId !== selectedProjectId) {
+    if (!mock || mock.projectId !== selectedProjectId || isMockInactive(mock)) {
       setSelectedMockId("all");
       setHasAutoSelected(false);
     }
@@ -43,7 +44,7 @@ export function useDashboardNavigation(
     if (!allMocks?.length || hasAutoSelected) return;
     if (selectedProjectId === "all") return;
 
-    const projectMocks = allMocks.filter((m) => m.projectId === selectedProjectId);
+    const projectMocks = filterActiveMocks(allMocks.filter((m) => m.projectId === selectedProjectId));
     if (!projectMocks.length) return;
 
     const runningMock = projectMocks

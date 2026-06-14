@@ -23,7 +23,8 @@ interface MockTableProps {
   onClone: (mock: Mock) => void;
   onEdit: (mock: Mock) => void;
   onView: (mock: Mock) => void;
-  onDelete: (mock: Mock) => void;
+  onToggleActive: (mock: Mock, activate: boolean) => void;
+  onStatusChange?: (mock: Mock, status: string) => void;
   onContextMenu: (e: React.MouseEvent, mock: Mock) => void;
 }
 
@@ -36,7 +37,7 @@ export const MockTable = forwardRef<MockTableHandle, MockTableProps>(
   ({
     mocks, selectedMockId, onSelect, isAdmin, isMaster, isProjectLocked = false, currentUserId: _currentUserId, projectId,
     isTogglingLoad, isDeleting, objectsByMock, catalogObjectCount = 0, onToggleLock, onToggleLoadStatus,
-    onClone, onEdit, onView, onDelete: _onDelete, onContextMenu
+    onClone, onEdit, onView, onToggleActive, onStatusChange, onContextMenu
   }, ref) => {
     const cardRefs = useRef<Map<string, MockCardHandle>>(new Map());
 
@@ -95,6 +96,8 @@ export const MockTable = forwardRef<MockTableHandle, MockTableProps>(
             onClone={onClone}
             onEdit={onEdit}
             onView={onView}
+            onToggleActive={onToggleActive}
+            onStatusChange={onStatusChange}
             onContextMenu={onContextMenu}
           />
         ))}

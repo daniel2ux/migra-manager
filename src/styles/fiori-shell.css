@@ -1366,6 +1366,18 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
     box-shadow 0.15s ease;
 }
 
+.fiori-migration-object-card-status-label {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1;
+}
+
 .fiori-migration-object-card:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target),
 .fiori-dashboard-object-card:hover:not(.card-static-border) {
   background: #f7f7f7 !important;
@@ -3148,6 +3160,28 @@ body.dashboard-plaque-focus .fiori-card-plaque {
 }
 
 /* ── Cards de projeto ── */
+.fiori-project-card--readonly {
+  background: #f5f6f7;
+  border-color: var(--fiori-border-light, #e5e5e5);
+  opacity: 0.95;
+}
+
+.fiori-project-card--readonly:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging),
+.fiori-project-card--readonly[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--fiori-border-light, #e5e5e5);
+}
+
+.fiori-project-card--readonly .fiori-mock-card-desc,
+.fiori-project-card--readonly .fiori-project-card-title {
+  color: var(--fiori-label, #6a6d70);
+}
+
+.fiori-project-card--active.fiori-project-card--readonly {
+  background: #eef0f2;
+}
+
 .fiori-project-card {
   --fiori-brand: #0070f2;
   --fiori-brand-light: #e8f3ff;
@@ -3293,15 +3327,6 @@ body:has([role="alertdialog"][data-state="open"]) .fiori-project-card:not(.fiori
   text-transform: none;
   color: var(--fiori-text);
   line-height: 1.25;
-}
-
-.fiori-project-card-status-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: help;
-  line-height: 0;
 }
 
 .fiori-project-card-header {
@@ -6984,6 +7009,54 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
   font-weight: 400;
   line-height: 1.4;
   color: var(--fiori-label);
+}
+
+.fiori-wizard-panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 1rem;
+}
+
+/* Utilitário wizard — ocupa toda a área abaixo do shell fixo + page header */
+.fiori-wizard-page--fullscreen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: calc(100dvh - 4rem);
+  max-height: calc(100dvh - 4rem);
+  overflow: hidden;
+}
+
+.fiori-wizard-page--fullscreen .fiori-wizard-body {
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+}
+
+.fiori-wizard-page--fullscreen .fiori-wizard-inner {
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.fiori-wizard-page--fullscreen .fiori-wizard-panel {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1rem 1rem 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .fiori-wizard-page--fullscreen .fiori-wizard-panel {
+    padding: 1.25rem 2rem 1rem;
+  }
 }
 
 .fiori-wizard-search-row {

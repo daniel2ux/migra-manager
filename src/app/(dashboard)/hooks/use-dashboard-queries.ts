@@ -25,6 +25,7 @@ import type {
 import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
 import { idsForDbIn } from "@/lib/constants";
+import { filterActiveMocks } from "@/lib/mock-utils";
 
 export function useDashboardQueries(selectedProjectId: string, selectedMockId: string) {
     const db = useDb();
@@ -83,7 +84,14 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
         return query(mocksRef, limit(500));
     }, [db, user, isProfileLoading, userProfile, isAdmin, accessibleProjectIds, isProjectsLoading, selectedProjectId]);
 
-    const { data: allMocks, isLoading: isMocksLoading } = useCollection<Mock>(mocksQuery);
+    const { data: allMocksRaw, isLoading: isMocksLoading } = useCollection<Mock>(mocksQuery);
+
+    const allMocks = useMemo(() => filterActiveMocks(allMocksRaw), [allMocksRaw]);
+
+    const activeMockIds = useMemo(
+        () => new Set(allMocks.map((m) => m.id)),
+        [allMocks],
+    );
 
     // 5. Migration Objects
     const objectsQuery = useMemoDb(() => {
@@ -154,7 +162,12 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
         return query(objectsRef, limit(500));
     }, [db, user, isProfileLoading, userProfile, isAdmin, accessibleProjectIds, isProjectsLoading, selectedProjectId, selectedMockId, allMocks]);
 
-    const { data: objects, isLoading: isObjectsLoading } = useCollection<MigrationObject>(objectsQuery);
+    const { data: objectsRaw, isLoading: isObjectsLoading } = useCollection<MigrationObject>(objectsQuery);
+
+    const objects = useMemo(() => {
+        if (!objectsRaw) return undefined;
+        return objectsRaw.filter((obj) => obj.mockId && activeMockIds.has(obj.mockId));
+    }, [objectsRaw, activeMockIds]);
 
     // 6. Comments
     const allCommentsQuery = useMemoDb(() => {

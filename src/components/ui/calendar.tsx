@@ -52,6 +52,7 @@ function Calendar({
     <DayPicker
       locale={locale}
       showOutsideDays={showOutsideDays}
+      navLayout={isFiori ? "around" : undefined}
       className={cn(isFiori ? "fiori-calendar" : "p-3", className)}
       classNames={isFiori ? {
         ...fioriCalendarClassNames,

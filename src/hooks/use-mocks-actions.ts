@@ -5,6 +5,7 @@ import { doc, serverTimestamp, setDoc, type CompatDb } from "@/supabase/compat-d
 import type { User } from "@/supabase/auth-shim";
 import { setDocumentNonBlocking } from "@/supabase/mutations";
 import { slugify } from "@/lib/formatters";
+import { buildClonedMigrationObjectRecord, buildClonedMockRecord, extractMockPrefix, isMockActive, isMockCargaInProgress, remapDependencyIds, sanitizeUuidList } from "@/lib/mock-utils";
 import { DB_BATCH_SIZE } from "@/lib/constants";
 import type { Mock, MigrationObject, UserProfile } from "@/types/migration";
 
@@ -47,6 +48,24 @@ function useMockLocking(
         toast({ variant: "destructive", description: "FALHA AO FORÇAR LIBERAÇÃO." });
       }
     }, [isAdmin, projectId, db, user, isMaster, userProfile, toast]),
+
+    handleToggleActive: useCallback(async (mock: Mock, activate: boolean) => {
+      if (!isAdmin || !projectId || !db) return;
+      if (!activate && isMockCargaInProgress(mock)) {
+        toast({ variant: "destructive", description: "Não é possível inativar uma mock em execução." });
+        return;
+      }
+      await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', mock.id), {
+        isActive: activate,
+        ...(!activate ? { isRunning: false, status: 'PENDENTE' } : {}),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      toast({
+        description: activate
+          ? `Mock ${mock.name} reativada.`
+          : `Mock ${mock.name} inativada.`,
+      });
+    }, [isAdmin, projectId, db, toast]),
   };
 }
 
@@ -54,7 +73,7 @@ function useMockLifecycle(
   db: CompatDb | null, 
   isAdmin: boolean, 
   projectId: string | null, 
-  _toast: ToastFn
+  toast: ToastFn
 ) {
   const [isTogglingLoad, setIsTogglingLoad] = useState<string | null>(null);
   const [isCargaConfirmOpen, setIsCargaConfirmOpen] = useState(false);
@@ -104,6 +123,53 @@ function useMockLifecycle(
         setIsRestartConfirmOpen(false); setMockToRestart(null);
       } finally { setIsTogglingLoad(null); }
     }, [isAdmin, projectId, mockToRestart, db]),
+
+    handleStatusChange: useCallback(async (mock: Mock, newStatus: string, activeMocks: Mock[]) => {
+      if (!db || !isAdmin || !projectId) return;
+      const currentStatus = mock.status || (mock.isRunning ? 'CARGA_EM_ANDAMENTO' : 'PENDENTE');
+      const targetStatus = newStatus.trim().toUpperCase();
+      if (currentStatus === targetStatus) return;
+
+      if (isMockCargaInProgress(mock) && targetStatus !== 'CARGA_CONCLUIDA') {
+        toast({ variant: "destructive", description: "Finalize a carga antes de alterar para outro status." });
+        return;
+      }
+
+      if (currentStatus === 'CARGA_EM_ANDAMENTO' && targetStatus === 'CARGA_CONCLUIDA') {
+        setLoadStatusToConfirm(mock);
+        setIsCargaConfirmOpen(true);
+        return;
+      }
+
+      if (currentStatus === 'CARGA_CONCLUIDA' && targetStatus === 'CARGA_EM_ANDAMENTO') {
+        setMockToRestart(mock);
+        setIsRestartConfirmOpen(true);
+        return;
+      }
+
+      if (targetStatus === 'CARGA_EM_ANDAMENTO') {
+        setIsTogglingLoad(mock.id);
+        try {
+          await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', mock.id), {
+            status: 'CARGA_EM_ANDAMENTO', isRunning: true, updatedAt: serverTimestamp()
+          }, { merge: true });
+          activeMocks?.filter(m => (m.status === 'CARGA_EM_ANDAMENTO' || m.isRunning) && m.id !== mock.id)
+            .forEach(rm => setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', rm.id), {
+              isRunning: false, status: 'PENDENTE', updatedAt: serverTimestamp()
+            }, { merge: true }));
+        } finally { setIsTogglingLoad(null); }
+        return;
+      }
+
+      setIsTogglingLoad(mock.id);
+      try {
+        await setDocumentNonBlocking(doc(db, 'projects', projectId, 'mocks', mock.id), {
+          status: targetStatus,
+          isRunning: false,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      } finally { setIsTogglingLoad(null); }
+    }, [db, isAdmin, projectId, toast]),
   };
 }
 
@@ -171,24 +237,45 @@ function useMockCloneFeature(
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const [cloneSourceMock, setCloneSourceMock] = useState<Mock | null>(null);
 
-  const _cloneObjects = useCallback(async (sourceMockId: string, targetMockId: string) => {
+  const _cloneObjects = useCallback(async (sourceMockId: string, targetMockId: string, ownerId?: string | null) => {
     if (!projectId || !db) return;
     const { collection, writeBatch, getDocs, doc, serverTimestamp } = await import("@/supabase/compat-db-shim");
     const snap = await getDocs(collection(db, 'projects', projectId, 'mocks', sourceMockId, 'migrationObjects'));
     if (snap.empty) return;
-    let batch = writeBatch(db); let count = 0;
-    for (const d of snap.docs) {
-      const newObjId = crypto.randomUUID();
-      const docData = d.data() as Partial<MigrationObject> & { updatedAt?: unknown; __path?: string };
-      const { id: _id, updatedAt: _u, __path: _p, ...objData } = docData;
-      batch.set(doc(db, 'projects', projectId, 'mocks', targetMockId, 'migrationObjects', newObjId), {
-        ...objData, id: newObjId, mockId: targetMockId, projectId,
-        chargeStartTime: "", chargeEndTime: "", targetRecordsCount: 0,
-        processedRecordsCount: 0, migratedRecordsCount: 0, successfulRecordsCount: 0, errorRecordsCount: 0,
-        currentChargeDurationMs: 0, previousMigratedRecordsCount: objData.targetRecordsCount || 0,
-        previousChargeDurationMs: objData.currentChargeDurationMs || 0, status: 'PENDENTE', loadHistory: [], updatedAt: serverTimestamp()
-      });
-      count++; if (count >= DB_BATCH_SIZE) { await batch.commit(); batch = writeBatch(db); count = 0; }
+
+    const sourceRows = snap.docs.map((row) => ({
+      oldId: row.id,
+      data: row.data() as MigrationObject & Record<string, unknown>,
+    }));
+    const idMap = new Map(sourceRows.map((row) => [row.oldId, crypto.randomUUID()]));
+
+    let batch = writeBatch(db);
+    let count = 0;
+    for (const row of sourceRows) {
+      const newObjId = idMap.get(row.oldId)!;
+      const remappedDeps = remapDependencyIds(
+        sanitizeUuidList(row.data.dependencyIds),
+        idMap,
+      );
+      batch.set(
+        doc(db, 'projects', projectId, 'mocks', targetMockId, 'migrationObjects', newObjId),
+        {
+          ...buildClonedMigrationObjectRecord(row.data, {
+            id: newObjId,
+            mockId: targetMockId,
+            projectId,
+            ownerId,
+            dependencyIds: remappedDeps,
+          }),
+          updatedAt: serverTimestamp(),
+        },
+      );
+      count++;
+      if (count >= DB_BATCH_SIZE) {
+        await batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
     }
     if (count > 0) await batch.commit();
   }, [db, projectId]);
@@ -198,21 +285,56 @@ function useMockCloneFeature(
     cloneSourceMock, setCloneSourceMock,
 
     handleConfirmClone: useCallback(async (sourceMock: Mock | null, cloneData: { sequence: string; explanatoryText: string }) => {
-      if (!sourceMock || !isAdmin || !projectId || !user || !db) return;
+      if (!sourceMock || !isMockActive(sourceMock) || !isAdmin || !projectId || !user || !db) return false;
       try {
+        const { collection, getDocs } = await import("@/supabase/compat-db-shim");
+        const baseName = extractMockPrefix(sourceMock.name);
+        const sequence = String(cloneData.sequence ?? "").trim().toUpperCase();
+        if (!sequence) {
+          toast({ variant: "destructive", description: "Informe a parte numérica da nova mock." });
+          return false;
+        }
+
         const finalId = crypto.randomUUID();
-        const parts = sourceMock.name.split('-');
-        const baseName = parts.length > 1 ? parts.slice(0, -1).join('-') : sourceMock.name;
-        const finalName = `${baseName.toUpperCase()}-${cloneData.sequence.toUpperCase()}`;
-        const { id: _id, loadHistory: _lh, isRunning: _ir, status: _st, isLocked: _il, updatedAt: _up, data_inicio_carga: _dic, data_fim_carga: _dfc, ...srcData } = sourceMock as Partial<Mock> & { updatedAt?: unknown };
-        await setDoc(doc(db, 'projects', projectId, 'mocks', finalId), {
-          ...srcData, id: finalId, projectId, name: finalName, slug: slugify(finalName),
-          explanatoryText: cloneData.explanatoryText.toUpperCase(), status: 'PENDENTE', isRunning: false, isLocked: false,
-          loadHistory: [], updatedAt: serverTimestamp(),
-        }, { merge: true });
-        await _cloneObjects(sourceMock.id, finalId);
-        setIsCloneDialogOpen(false); setCloneSourceMock(null);
-      } catch { toast({ variant: "destructive", description: "FALHA AO CLONAR MOCK." }); }
+        const finalName = `${baseName.toUpperCase()}-${sequence}`;
+        const mocksSnap = await getDocs(collection(db, 'projects', projectId, 'mocks'));
+        const nameTaken = mocksSnap.docs.some((row) => {
+          const rowName = String((row.data() as Record<string, unknown>).name ?? "").toUpperCase();
+          return rowName === finalName;
+        });
+        if (nameTaken) {
+          toast({
+            variant: "destructive",
+            description: `Já existe uma mock com o identificador ${finalName}. Escolha outra sequência.`,
+          });
+          return false;
+        }
+
+        await setDoc(
+          doc(db, 'projects', projectId, 'mocks', finalId),
+          {
+            ...buildClonedMockRecord(sourceMock, {
+              id: finalId,
+              projectId,
+              name: finalName,
+              slug: slugify(finalName),
+              explanatoryText: String(cloneData.explanatoryText ?? sourceMock.explanatoryText ?? "").toUpperCase(),
+            }),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+        await _cloneObjects(sourceMock.id, finalId, user.uid);
+        toast({ description: `Mock ${finalName} clonada com sucesso.` });
+        setIsCloneDialogOpen(false);
+        setCloneSourceMock(null);
+        return true;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Falha ao clonar mock.";
+        console.error("[handleConfirmClone]", error);
+        toast({ variant: "destructive", description: message });
+        throw error;
+      }
     }, [isAdmin, projectId, user, db, toast, _cloneObjects]),
   };
 }
@@ -257,7 +379,9 @@ export function useMocksActions(
     isTogglingLoad: lifecycle.isTogglingLoad, setIsTogglingLoad: lifecycle.setIsTogglingLoad,
     isResetting, setIsResetting,
     handleToggleLock: locking.handleToggleLock,
+    handleToggleActive: locking.handleToggleActive,
     handleToggleLoadStatus: lifecycle.handleToggleLoadStatus,
+    handleStatusChange: lifecycle.handleStatusChange,
     confirmFinalizeCarga: lifecycle.confirmFinalizeCarga,
     handleConfirmRestart: lifecycle.handleConfirmRestart,
     handleForceAcquire: locking.handleForceAcquire,
@@ -300,7 +424,7 @@ export function useMocksActions(
           explanatoryText: String(formData.explanatoryText ?? "").toUpperCase(),
           updatedAt: serverTimestamp(),
           ...(isNew
-            ? { status: 'PENDENTE', isRunning: false, isLocked: false, loadHistory: [] }
+            ? { status: 'PENDENTE', isRunning: false, isLocked: false, isActive: true, loadHistory: [] }
             : {}),
         }, { merge: true });
 

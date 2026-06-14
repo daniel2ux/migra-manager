@@ -17,7 +17,15 @@ import { FioriPopoverIconButtonHint } from "@/components/ui/fiori-icon-button-hi
 import { Calendar } from "@/components/ui/calendar";
 import type { UserProfile, UserFormData } from "@/types/usuarios";
 import { formatBrazilianPhone } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
+
+const FIORI_FIELD = "fiori-input shadow-none";
+const FIORI_FIELD_UPPER = `${FIORI_FIELD} uppercase`;
+
+function fioriFieldClass(readonly: boolean, uppercase = false): string {
+  return cn(uppercase ? FIORI_FIELD_UPPER : FIORI_FIELD, readonly && "readable-disabled");
+}
 
 interface EditUserDialogProps {
   open: boolean;
@@ -141,7 +149,7 @@ function DateField({
   pickerAriaLabel: string;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="fiori-form-field">
       <label className="fiori-field-label" htmlFor={id}>
         {label}
       </label>
@@ -154,7 +162,10 @@ function DateField({
           disabled={disabled}
           value={displayDateBRInput(value)}
           onChange={(e) => onInputChange(e.target.value)}
-          className="fiori-input min-w-0 flex-1 font-mono readable-disabled shadow-none"
+          className={cn(
+            "fiori-input min-w-0 flex-1 font-mono shadow-none",
+            disabled && "readable-disabled",
+          )}
         />
         <Popover open={calOpen} onOpenChange={onCalOpenChange}>
           <FioriPopoverIconButtonHint
@@ -238,7 +249,7 @@ export function EditUserDialog({
       <DialogContent
         variant="fiori"
         overlayClassName="fiori-dialog-overlay"
-        className="fiori-dialog fiori-dialog--form flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
+        className="fiori-dialog fiori-dialog--form fiori-dialog--user-form flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
       >
         <DialogHeader className="fiori-dialog-header fiori-dialog-header-rich shrink-0 space-y-0">
           <DialogDescription className="sr-only">
@@ -264,20 +275,20 @@ export function EditUserDialog({
               Dados pessoais
             </h3>
             <div className="space-y-4">
-              <div className="space-y-1.5">
+              <div className="fiori-form-field">
                 <label className="fiori-field-label" htmlFor="edit-user-name">
                   Nome completo
                 </label>
                 <Input
                   id="edit-user-name"
                   value={getField(formData, user, "name")}
-                  onChange={(e) => updateField("name", e.target.value)}
+                  onChange={(e) => updateField("name", e.target.value.toUpperCase())}
                   placeholder="João da Silva"
                   disabled={readonly}
-                  className="fiori-input readable-disabled shadow-none"
+                  className={fioriFieldClass(readonly, true)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="fiori-form-field">
                 <label className="fiori-field-label" htmlFor="edit-user-phone">
                   Telefone de contato
                 </label>
@@ -289,7 +300,7 @@ export function EditUserDialog({
                   onChange={(e) => updateField("phone", formatBrazilianPhone(e.target.value))}
                   placeholder="(11) 99999-9999"
                   disabled={readonly}
-                  className="fiori-input readable-disabled shadow-none"
+                  className={fioriFieldClass(readonly)}
                 />
               </div>
             </div>
@@ -301,56 +312,56 @@ export function EditUserDialog({
               Identificação corporativa
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
+              <div className="fiori-form-field">
                 <label className="fiori-field-label" htmlFor="edit-user-company">
                   Empresa
                 </label>
                 <Input
                   id="edit-user-company"
                   value={getField(formData, user, "company")}
-                  onChange={(e) => updateField("company", e.target.value)}
+                  onChange={(e) => updateField("company", e.target.value.toUpperCase())}
                   placeholder="Acme Ltda"
                   disabled={readonly}
-                  className="fiori-input readable-disabled shadow-none"
+                  className={fioriFieldClass(readonly, true)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="fiori-form-field">
                 <label className="fiori-field-label" htmlFor="edit-user-position">
                   Cargo
                 </label>
                 <Input
                   id="edit-user-position"
                   value={getField(formData, user, "position")}
-                  onChange={(e) => updateField("position", e.target.value)}
+                  onChange={(e) => updateField("position", e.target.value.toUpperCase())}
                   placeholder="Analista sênior"
                   disabled={readonly}
-                  className="fiori-input readable-disabled shadow-none"
+                  className={fioriFieldClass(readonly, true)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="fiori-form-field">
                 <label className="fiori-field-label" htmlFor="edit-user-department">
                   Departamento
                 </label>
                 <Input
                   id="edit-user-department"
                   value={getField(formData, user, "department")}
-                  onChange={(e) => updateField("department", e.target.value)}
+                  onChange={(e) => updateField("department", e.target.value.toUpperCase())}
                   placeholder="Tecnologia"
                   disabled={readonly}
-                  className="fiori-input readable-disabled shadow-none"
+                  className={fioriFieldClass(readonly, true)}
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="fiori-form-field">
                 <label className="fiori-field-label" htmlFor="edit-user-manager">
                   Gestor direto
                 </label>
                 <Input
                   id="edit-user-manager"
                   value={getField(formData, user, "manager")}
-                  onChange={(e) => updateField("manager", e.target.value)}
+                  onChange={(e) => updateField("manager", e.target.value.toUpperCase())}
                   placeholder="Maria Santos"
                   disabled={readonly}
-                  className="fiori-input readable-disabled shadow-none"
+                  className={fioriFieldClass(readonly, true)}
                 />
               </div>
             </div>
@@ -386,7 +397,7 @@ export function EditUserDialog({
                   pickerAriaLabel="Abrir calendário — data de fim"
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="fiori-form-field">
                 <label className="fiori-field-label" htmlFor="edit-user-notes">
                   Observações adicionais
                 </label>
@@ -397,7 +408,7 @@ export function EditUserDialog({
                   placeholder="Anotações relevantes sobre o profissional…"
                   disabled={readonly}
                   rows={3}
-                  className="fiori-textarea readable-disabled shadow-none min-h-[5rem]"
+                  className={cn("fiori-textarea shadow-none min-h-[5rem]", readonly && "readable-disabled")}
                 />
               </div>
             </div>

@@ -3,7 +3,7 @@
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import {
-  Plus, Search, RefreshCcw, Trash2, X
+  Plus, Search, RefreshCcw, Trash2, X, Eye, EyeOff
 } from 'lucide-react';
 import {
   Tooltip,
@@ -29,12 +29,16 @@ interface MockHeaderProps {
   empresa?: string;
   projectName?: string;
   mockName?: string;
+  showInactive?: boolean;
+  onToggleShowInactive?: () => void;
+  inactiveCount?: number;
 }
 
 export function MockHeader({
   isAdmin, searchTerm, setSearchTerm, isSearchOpen, setIsSearchOpen,
   onAddMock, onBulkDelete, onBulkRestart, selectedMockId, _filteredCount,
   empresa, projectName, mockName,
+  showInactive = false, onToggleShowInactive, inactiveCount = 0,
 }: MockHeaderProps) {
   const isAll = selectedMockId === 'all';
 
@@ -84,6 +88,27 @@ export function MockHeader({
             {isSearchOpen ? "Fechar busca" : "Pesquisar mocks"}
           </TooltipContent>
         </Tooltip>
+
+        {onToggleShowInactive && inactiveCount > 0 && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(PAGE_TOOLBAR_BTN, showInactive && "fiori-toolbar-btn-active")}
+                onClick={onToggleShowInactive}
+                aria-label={showInactive ? "Ocultar mocks inativas" : "Exibir mocks inativas"}
+              >
+                {showInactive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" variant="fiori">
+              {showInactive
+                ? `Ocultar inativas (${inactiveCount})`
+                : `Exibir inativas (${inactiveCount})`}
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         {isAdmin && (
           <>

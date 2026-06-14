@@ -5,6 +5,7 @@ import { doc, collection } from "@/supabase/compat-db-shim";
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { UserProfile } from "@/types/usuarios";
 import { dedupeDirectoryUsers, type UserDirectoryDoc } from "@/lib/user-directory";
+import { SUPERADMIN_UID } from "@/lib/constants";
 
 export function useUsersData(searchTerm: string) {
   const db = useDb();
@@ -36,8 +37,14 @@ export function useUsersData(searchTerm: string) {
     );
   }, [directoryUsers, searchTerm]);
 
-  const isMaster = currentUserProfile?.role?.toLowerCase() === "master" || currentUserProfile?.isMaster === true;
-  const isAdmin = isMaster || currentUserProfile?.role?.toLowerCase() === "admin";
+  const isMaster =
+    currentUserProfile?.isMaster === true ||
+    currentUserProfile?.role?.toLowerCase() === "master" ||
+    userId === SUPERADMIN_UID;
+  const isAdmin =
+    isMaster ||
+    currentUserProfile?.role?.toLowerCase() === "admin" ||
+    userId === SUPERADMIN_UID;
 
   return { currentUserProfile, isProfileLoading, allUsers, isUsersLoading, filteredUsers, isMaster, isAdmin, refreshUsers };
 }

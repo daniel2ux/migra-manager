@@ -37,6 +37,7 @@ import {
     CompatDb
 } from "@/supabase/compat-db-shim";
 import { idsForDbIn } from "@/lib/constants";
+import { filterActiveMocks } from "@/lib/mock-utils";
 import {
     setDocumentNonBlocking,
     updateDocumentNonBlocking,
@@ -150,7 +151,7 @@ export default function ProjetosPageContent() {
     const mocksByProject = useMemo(() => {
         if (!allMocks) return {};
         const map: Record<string, any[]> = {};
-        for (const mock of allMocks) {
+        for (const mock of filterActiveMocks(allMocks)) {
             const pid = mock.projectId || mock.__path?.split("/")[1];
             if (pid) { if (!map[pid]) map[pid] = []; map[pid].push(mock); }
         }

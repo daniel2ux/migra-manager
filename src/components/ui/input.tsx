@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 
 /** Layout base sem cores — usado com `.fiori-input` / `.fiori-textarea` (estilo em fiori-forms.css). */
 const fioriFieldLayoutClassName =
-  "relative z-0 flex w-full rounded-none px-3 py-2 text-xs font-normal ring-offset-background placeholder:text-muted-foreground transition-colors focus-visible:outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none focus:shadow-none focus-visible:shadow-none focus:scale-100 focus-visible:scale-100 disabled:cursor-default md:text-xs"
+  "relative z-0 block w-full font-normal ring-offset-background transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none disabled:cursor-default"
 
 /** Padrão alinhado ao diálogo de projeto: borda visível, fundo branco, sem sombra/anel no foco, borda SkyBlue ao focar. */
 const inputDefaultClassName =
@@ -22,7 +22,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
         type={type}
         step={step ?? defaultStep}
         className={cn(
-          isFioriField ? cn(fioriFieldLayoutClassName, "h-9") : inputDefaultClassName,
+          isFioriField ? fioriFieldLayoutClassName : inputDefaultClassName,
           className,
         )}
         ref={ref}

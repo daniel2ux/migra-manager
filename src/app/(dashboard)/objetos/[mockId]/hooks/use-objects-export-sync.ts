@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { collection, doc, serverTimestamp, query, orderBy, getDocs } from '@/supabase/compat-db-shim';
 import { setDocumentNonBlocking } from '@/supabase/mutations';
 import type { Mock } from '@/types/migration';
+import { filterActiveMocks } from '@/lib/mock-utils';
 import type { MigrationObject } from '../types';
 
 interface UseObjectsExportSyncDeps {
@@ -75,7 +76,7 @@ export function useObjectsExportSync({
       toast({ description: 'INICIANDO SINCRONIZAÇÃO DE REFERÊNCIAS...' });
 
       const mocksSnap = await getDocs(query(collection(db, 'projects', projectId, 'mocks'), orderBy('startDate', 'asc')));
-      const allMocks = mocksSnap.docs.map(d => ({ id: d.id, ...d.data() } as Mock));
+      const allMocks = filterActiveMocks(mocksSnap.docs.map(d => ({ id: d.id, ...d.data() } as Mock)));
       const currentMockIndex = allMocks.findIndex(m => m.id === mockId);
 
       if (currentMockIndex <= 0) {

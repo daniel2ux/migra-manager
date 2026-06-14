@@ -12,6 +12,7 @@ import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { useSessionStorageState } from "@/hooks/use-session-storage-state";
 import { SESSION_KEYS, idsForDbIn, SUPERADMIN_UID } from "@/lib/constants";
+import { filterActiveMocks } from "@/lib/mock-utils";
 
 interface UseReportFiltersReturn {
   selectedProjectId: string;
@@ -113,7 +114,9 @@ export function useRunningMock(
     return collection(db, "projects", selectedProjectId, "mocks");
   }, [db, selectedProjectId]);
 
-  const { data: projectMocks } = useCollection<any>(projectMocksQuery);
+  const { data: projectMocksRaw } = useCollection<any>(projectMocksQuery);
+
+  const projectMocks = useMemo(() => filterActiveMocks(projectMocksRaw), [projectMocksRaw]);
 
   useEffect(() => {
     if (

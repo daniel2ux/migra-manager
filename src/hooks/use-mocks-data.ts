@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { collection, collectionGroup, doc, query, where } from "@/supabase/compat-db-shim";
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { Mock, Project } from "@/types/migration";
+import { filterActiveMocks } from "@/lib/mock-utils";
 
 interface UseMocksDataReturn {
   userProfile: any;
@@ -66,7 +67,7 @@ export function useMocksData(projectId: string | null): UseMocksDataReturn {
 
   const objectsByMock = useMemo(() => {
     if (!allMigrationObjects) return {};
-    const allowedMockIds = new Set((mocks || []).map((m) => m.id));
+    const allowedMockIds = new Set(filterActiveMocks(mocks).map((m) => m.id));
     const map: Record<string, any[]> = {};
     for (let i = 0; i < allMigrationObjects.length; i++) {
       const obj = allMigrationObjects[i];

@@ -51,8 +51,8 @@ export function useObjectsMockSync(db: any, selectedProjectId: string | null) {
   // Mock salva no localStorage pode ser de outro projeto — invalida para não consultar subcoleção vazia
   useEffect(() => {
     if (!selectedMockId || !mocksForProject.length) return;
-    const belongsToProject = mocksForProject.some((m) => m.id === selectedMockId);
-    if (!belongsToProject) {
+    const selected = mocksForProject.find((m) => m.id === selectedMockId);
+    if (!selected || selected.isActive === false) {
       setSelectedMockId(null);
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem(SESSION_KEYS.DASHBOARD_MOCK);

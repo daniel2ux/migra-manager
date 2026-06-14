@@ -12,9 +12,11 @@ import { useMocksActions } from "@/hooks/use-mocks-actions";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { getProjectCompanyName } from "@/lib/migration/project-company";
 import {
-  extractMockSequence,
   isMockCargaInProgress,
   isMockLocked,
+  suggestNextMockSequenceFromSource,
+  filterActiveMocks,
+  isMockInactive,
 } from "@/lib/mock-utils";
 import { safeRouterReplace, useRouterReady } from "@/lib/navigation/safe-router";
 import { Loader2, Layers, AlertCircle } from "lucide-react";
@@ -22,19 +24,6 @@ import { AccessDeniedScreen } from "@/components/usuarios";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Mock, UserProfile } from "@/types/migration";
-
-function suggestNextSequence(sourceMock: Mock, mocks: Mock[]): string {
-  const parts = sourceMock.name.split("-");
-  const baseName = parts.length > 1 ? parts.slice(0, -1).join("-") : sourceMock.name;
-  const baseUpper = baseName.toUpperCase();
-  const maxSeq = mocks.reduce((max, mock) => {
-    const mockParts = mock.name.split("-");
-    const mockBase = mockParts.length > 1 ? mockParts.slice(0, -1).join("-") : mock.name;
-    if (mockBase.toUpperCase() !== baseUpper) return max;
-    return Math.max(max, extractMockSequence(mock.name));
-  }, 0);
-  return String(maxSeq + 1).padStart(2, "0");
-}
 
 export default function ClonarMockPage() {
   const { projectId } = useActiveProjectId();
@@ -58,18 +47,18 @@ export default function ClonarMockPage() {
   }, [isRouterReady, projectId, router]);
 
   const sortedMocks = useMemo(
-    () => [...(mocks || [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
+    () => [...filterActiveMocks(mocks || [])].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })),
     [mocks],
   );
 
   const nextSequence = useMemo(() => {
     const source = mocksActions.cloneSourceMock;
     if (!source || !mocks) return "01";
-    return suggestNextSequence(source, mocks);
+    return suggestNextMockSequenceFromSource(source, mocks);
   }, [mocksActions.cloneSourceMock, mocks]);
 
   const handleOpenClone = (mock: Mock) => {
-    if (isProjectLocked || isMockLocked(mock) || isMockCargaInProgress(mock)) {
+    if (isMockInactive(mock) || isProjectLocked || isMockLocked(mock) || isMockCargaInProgress(mock)) {
       toast({
         variant: "destructive",
         description: "Esta mock não pode ser clonada no estado atual.",

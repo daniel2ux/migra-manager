@@ -360,6 +360,12 @@
   box-shadow: 0 0 0 1px var(--fiori-brand);
 }
 
+.fiori-dialog .fiori-input::placeholder,
+.fiori-dialog .fiori-textarea::placeholder {
+  color: var(--fiori-label);
+  opacity: 0.75;
+}
+
 .fiori-dialog .fiori-input.fiori-invalid,
 .fiori-dialog .fiori-input.fiori-invalid:focus-visible {
   border-color: var(--fiori-negative);
@@ -4783,6 +4789,16 @@
   padding: 0.625rem 1rem;
 }
 
+.fiori-dialog.fiori-dialog--mock-form .fiori-input.uppercase {
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+}
+
+.fiori-dialog.fiori-dialog--mock-form .fiori-input:not(.readable-disabled):not(:disabled),
+.fiori-dialog.fiori-dialog--mock-form .fiori-textarea:not(.readable-disabled):not(:disabled) {
+  background: #fff;
+}
+
 .fiori-dialog.fiori-dialog--mock-form .fiori-mock-summary + .fiori-message-box-text {
   margin-top: 0.5rem;
 }
@@ -4914,19 +4930,80 @@
 }
 
 .fiori-datetime-popover .fiori-calendar-month {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1.75rem 1fr 1.75rem;
+  grid-template-rows: auto auto;
+  column-gap: 0.375rem;
+  row-gap: 1rem;
   width: 100%;
 }
 
 .fiori-datetime-popover .fiori-calendar-caption {
   position: relative;
   display: flex;
+  grid-column: 2;
+  grid-row: 1;
   align-items: center;
   justify-content: center;
   min-height: 2rem;
-  margin-bottom: 0.125rem;
+  margin-bottom: 0;
+}
+
+.fiori-datetime-popover .fiori-calendar-month > .fiori-calendar-nav-btn:first-of-type {
+  grid-column: 1;
+  grid-row: 1;
+  position: static;
+  justify-self: center;
+  align-self: center;
+  transform: none;
+}
+
+.fiori-datetime-popover .fiori-calendar-month > .fiori-calendar-nav-btn:last-of-type {
+  grid-column: 3;
+  grid-row: 1;
+  position: static;
+  justify-self: center;
+  align-self: center;
+  transform: none;
+}
+
+.fiori-datetime-popover .fiori-calendar-grid {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  padding-top: 0.375rem;
+}
+
+/* Fallback: barra de navegação entre caption e grade (navLayout after / legado) */
+.fiori-datetime-popover .fiori-calendar-month > .fiori-calendar-nav {
+  display: flex;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2rem;
+  margin-bottom: 0.25rem;
+}
+
+.fiori-datetime-popover .fiori-calendar-month > .fiori-calendar-nav .fiori-calendar-nav-btn {
+  position: static;
+  transform: none;
+}
+
+.fiori-datetime-popover .fiori-calendar-month > .fiori-calendar-nav + .fiori-calendar-grid {
+  margin-top: 0.375rem;
+}
+
+.fiori-datetime-popover .fiori-calendar-months > .fiori-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0 0.125rem;
+}
+
+.fiori-datetime-popover .fiori-calendar-months > .fiori-calendar-nav .fiori-calendar-nav-btn {
+  position: static;
+  transform: none;
 }
 
 .fiori-datetime-popover .fiori-calendar-caption-label {
@@ -4963,6 +5040,14 @@
     border-color 0.15s ease;
 }
 
+/* Botões no grid do mês (navLayout around) não usam posicionamento absoluto */
+.fiori-datetime-popover .fiori-calendar-month > .fiori-calendar-nav-btn,
+.fiori-datetime-popover .fiori-calendar-month > .fiori-calendar-nav .fiori-calendar-nav-btn,
+.fiori-datetime-popover .fiori-calendar-months > .fiori-calendar-nav .fiori-calendar-nav-btn {
+  position: static;
+  transform: none;
+}
+
 .fiori-datetime-popover .fiori-calendar-nav-btn:hover {
   color: var(--fiori-text);
   background: #f5f6f7;
@@ -4986,6 +5071,7 @@
 .fiori-datetime-popover .fiori-calendar-weekdays {
   display: flex;
   width: 100%;
+  margin-top: 0.25rem;
 }
 
 .fiori-datetime-popover .fiori-calendar-weekday {
@@ -5234,6 +5320,33 @@
   outline: none;
   border-color: var(--fiori-brand);
   box-shadow: 0 0 0 1px var(--fiori-brand);
+}
+
+/* Ficha técnica — profissional (RH) */
+.fiori-dialog.fiori-dialog--user-form .fiori-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.fiori-dialog.fiori-dialog--user-form .fiori-form-section + .fiori-form-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.fiori-dialog.fiori-dialog--user-form .fiori-section-title {
+  margin-bottom: 0.625rem;
+}
+
+.fiori-dialog.fiori-dialog--user-form .fiori-input,
+.fiori-dialog.fiori-dialog--user-form .fiori-textarea {
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.fiori-dialog.fiori-dialog--user-form .fiori-input.uppercase {
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
 }
 
 /* Apresentação instantânea — sem fade/zoom ao abrir formulários */

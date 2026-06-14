@@ -18,6 +18,26 @@ import {
     formatNumber, formatPercentage, formatDateTime,
 } from "@/lib/migration/format-utils";
 
+const CARD_TOOLBAR_BTN =
+    "fiori-card-toolbar-btn !rounded-[0.375rem] !size-7 min-h-0 min-w-0";
+
+function getObjectLoadStatusMeta(
+    isInProgress: boolean,
+    successPct: number,
+    hasErrors: boolean,
+) {
+    if (isInProgress) {
+        return { label: "Em andamento", labelClass: "text-orange-700" };
+    }
+    if (successPct === 100) {
+        return { label: "Concluído", labelClass: "text-[#107e3e]" };
+    }
+    if (hasErrors) {
+        return { label: "Com erros", labelClass: "text-[#bb0000]" };
+    }
+    return { label: "Pendente", labelClass: "text-[#6a6d70]" };
+}
+
 interface ObjectCardProps {
     obj: MigrationObject;
     idx: number;
@@ -67,6 +87,7 @@ export function ObjectCard({
         return { isBetter: diff > 0, percentage: Math.abs(percentage).toFixed(1).replace(".", ",") };
     };
     const perfChange = calculatePerformanceChange(obj.currentChargeDurationMs, obj.previousChargeDurationMs);
+    const loadStatusMeta = getObjectLoadStatusMeta(isInProgress, successPct, hasErrors);
 
     return (
         <div
@@ -209,16 +230,14 @@ export function ObjectCard({
 
                 </div>
 
-                {/* Status dot top-right */}
-                <div className={cn(
-                    "w-4 h-4 flex items-center justify-center rounded-none shrink-0",
-                    isInProgress ? "bg-orange-50" : successPct === 100 ? "bg-emerald-50" : hasErrors ? "bg-red-50" : "bg-slate-100"
-                )}>
-                    <div className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        isInProgress ? "bg-orange-500 animate-pulse" : successPct === 100 ? "bg-emerald-500" : hasErrors ? "bg-red-500" : "bg-slate-400"
-                    )} />
-                </div>
+                <span
+                    className={cn(
+                        "fiori-migration-object-card-status-label shrink-0",
+                        loadStatusMeta.labelClass,
+                    )}
+                >
+                    {loadStatusMeta.label}
+                </span>
             </div>
 
             {/* Quality indicator bar */}
@@ -272,13 +291,22 @@ export function ObjectCard({
             </div>
 
             {/* Actions footer */}
-            <div className="flex items-center justify-between px-1.5 py-1 gap-1">
-                <div className="flex items-center gap-0">
+            <div className="fiori-card-footer flex items-center justify-between px-1.5 py-1 gap-1">
+                <div className="fiori-card-toolbar">
                     {/* Toggle carga */}
                     {isAdmin && !isMockLocked && isMockInProgress && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className={cn("w-7 h-7 rounded-none border-0 shrink-0 transition-all active:scale-95", isInProgress ? "text-orange-600 hover:bg-slate-100" : obj.status === 'CARGA_CONCLUIDA' ? "text-emerald-600 hover:bg-slate-100" : "text-slate-400 hover:bg-slate-100")} onClick={(e) => { e.stopPropagation(); onToggleCargaStatus(obj); }}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn(
+                                        CARD_TOOLBAR_BTN,
+                                        isInProgress && "fiori-card-toolbar-btn-active text-orange-600",
+                                        !isInProgress && obj.status === "CARGA_CONCLUIDA" && "text-emerald-600",
+                                    )}
+                                    onClick={(e) => { e.stopPropagation(); onToggleCargaStatus(obj); }}
+                                >
                                     {isInProgress ? <StopCircle className="w-3.5 h-3.5" /> : <PlayCircle className="w-3.5 h-3.5" />}
                                 </Button>
                             </TooltipTrigger>
@@ -289,7 +317,12 @@ export function ObjectCard({
                     {isAdmin && !isMockLocked && !isMockCompleted && !isInProgress && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="w-7 h-7 rounded-none border-0 shrink-0 text-slate-400 hover:text-red-600 hover:bg-slate-100 transition-all active:scale-95" onClick={(e) => { e.stopPropagation(); onResetObject(obj); }}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn(CARD_TOOLBAR_BTN, "fiori-card-toolbar-btn-danger")}
+                                    onClick={(e) => { e.stopPropagation(); onResetObject(obj); }}
+                                >
                                     <RotateCcw className="w-3.5 h-3.5" />
                                 </Button>
                             </TooltipTrigger>
@@ -300,7 +333,7 @@ export function ObjectCard({
                     {!isInProgress && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="w-7 h-7 rounded-none border-0 shrink-0 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all active:scale-95" onClick={() => onOpenDialog(obj)}>
+                                <Button variant="ghost" size="icon" className={CARD_TOOLBAR_BTN} onClick={() => onOpenDialog(obj)}>
                                     {(isAdmin && !isMockLocked && !isMockCompleted) ? <Pencil className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 </Button>
                             </TooltipTrigger>
@@ -311,7 +344,12 @@ export function ObjectCard({
                     {!isInProgress && (
                         <Tooltip delayDuration={0}>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className={cn("w-7 h-7 rounded-none border-0 shrink-0 transition-all active:scale-95 hover:bg-slate-100", hasComments ? "text-slate-600" : "text-emerald-500")} onClick={() => onOpenCommentDialog(obj)}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn(CARD_TOOLBAR_BTN, hasComments ? "text-slate-600" : "text-emerald-500")}
+                                    onClick={() => onOpenCommentDialog(obj)}
+                                >
                                     {hasComments ? <MessageCircle className="w-3.5 h-3.5 fill-slate-100" /> : <MessageSquare className="w-3.5 h-3.5" />}
                                 </Button>
                             </TooltipTrigger>
@@ -322,7 +360,7 @@ export function ObjectCard({
                     {isAdminOrMaster && !isMockLocked && !isMockCompleted && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="w-7 h-7 rounded-none border-0 shrink-0 text-amber-500 hover:bg-slate-100 transition-all active:scale-95" onClick={() => onOpenQuickDialog(obj)}>
+                                <Button variant="ghost" size="icon" className={cn(CARD_TOOLBAR_BTN, "text-amber-500")} onClick={() => onOpenQuickDialog(obj)}>
                                     <Zap className="w-3.5 h-3.5" />
                                 </Button>
                             </TooltipTrigger>
@@ -333,7 +371,7 @@ export function ObjectCard({
                     {isAdminOrMaster && !isMockLocked && !isMockCompleted && successPct < 100 && !isInProgress && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="w-7 h-7 rounded-none border-0 shrink-0 text-slate-400 hover:bg-slate-100 transition-all active:scale-95" onClick={() => onImportLogs(obj.id)}>
+                                <Button variant="ghost" size="icon" className={CARD_TOOLBAR_BTN} onClick={() => onImportLogs(obj.id)}>
                                     <Terminal className="w-3.5 h-3.5" />
                                 </Button>
                             </TooltipTrigger>
@@ -344,7 +382,7 @@ export function ObjectCard({
                     {error > 0 && obj.hasTechLogs && !isInProgress && (
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="w-7 h-7 rounded-none border-0 shrink-0 text-red-500 hover:bg-slate-100 transition-all active:scale-95" onClick={() => onViewLogs(obj)}>
+                                <Button variant="ghost" size="icon" className={cn(CARD_TOOLBAR_BTN, "fiori-card-toolbar-btn-danger text-red-500")} onClick={() => onViewLogs(obj)}>
                                     <ScrollText className="w-3.5 h-3.5" />
                                 </Button>
                             </TooltipTrigger>

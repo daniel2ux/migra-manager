@@ -157,6 +157,7 @@ export interface Mock {
   lockedByUid?: string;
   lockedByName?: string;
   isRunning?: boolean;
+  isActive?: boolean;
   quantityExistingObjects: number;
   status?: string;
   data_inicio_carga?: string;

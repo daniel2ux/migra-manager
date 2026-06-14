@@ -89,10 +89,7 @@ src/
 │   │   ├── email/send/route.ts       # Envio de e-mail
 │   │   ├── log-service/              # Serviço de logs
 │   │   │   ├── clear-mock/route.ts
-│   │   │   ├── import/route.ts
-│   │   │   ├── import-upload/route.ts
-│   │   │   ├── list/route.ts
-│   │   │   └── preview/route.ts
+│   │   │   └── import/route.ts
 │   │   └── user/update-password/route.ts
 │   ├── login/                        # Autenticação
 │   ├── register/                     # Registro

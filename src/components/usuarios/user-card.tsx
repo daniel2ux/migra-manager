@@ -104,6 +104,23 @@ function getRoleMeta(role: string, blocked: boolean) {
   };
 }
 
+function canDeleteUserProfile(
+  viewer: { isMe: boolean; isMaster: boolean; isAdmin: boolean },
+  target: UserProfile,
+): boolean {
+  if (viewer.isMe) return false;
+
+  const targetIsMaster = target.role === "master" || target.isMaster;
+
+  if (viewer.isMaster) return true;
+
+  if (viewer.isAdmin) {
+    return !targetIsMaster && target.role !== "admin";
+  }
+
+  return false;
+}
+
 export function UserCard({
   user,
   isMe,
@@ -131,8 +148,7 @@ export function UserCard({
   const blocked = !!user.isDisabled;
   const isEditingEmail = emailEditUserId === user.uid;
   const roleMeta = getRoleMeta(user.role, blocked);
-  const targetIsMaster = user.role === "master" || user.isMaster;
-  const canMasterDelete = isMaster && !isMe && !targetIsMaster;
+  const canDelete = canDeleteUserProfile({ isMe, isMaster, isAdmin }, user);
   const canEditEmail = isMaster || isMe;
 
   const cardContent = (
@@ -320,7 +336,7 @@ export function UserCard({
                   Reset senha
                 </TooltipContent>
               </Tooltip>
-              {canMasterDelete && (
+              {canDelete && (
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <Button
@@ -397,6 +413,26 @@ export function UserCard({
                 >
                   <Ban className="w-3.5 h-3.5" />
                 </div>
+              )}
+              {canDelete && !isMaster && (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(CARD_TOOLBAR_BTN, "fiori-card-toolbar-btn-danger")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenDeleteConfirm();
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" variant="fiori">
+                    Excluir
+                  </TooltipContent>
+                </Tooltip>
               )}
             </>
           )}
@@ -670,7 +706,7 @@ function UserContextMenuContent({
   onOpenSettings: () => void;
 }) {
   const isTargetMaster = user.role === "master" || user.isMaster;
-  const canMasterDelete = isMaster && !isMe && !isTargetMaster;
+  const canDelete = canDeleteUserProfile({ isMe, isMaster, isAdmin }, user);
 
   return (
     <ContextMenuContent variant="fiori" className="fiori-dropdown-menu w-52">
@@ -699,7 +735,7 @@ function UserContextMenuContent({
             <KeyRound className="h-3.5 w-3.5 shrink-0" />
             Reset senha
           </ContextMenuItem>
-          {canMasterDelete && (
+          {canDelete && (
             <ContextMenuItem
               onClick={onOpenDeleteConfirm}
               className="cursor-pointer gap-2 rounded-sm text-[0.75rem] font-semibold text-[#bb0000] focus:bg-[#ffebeb]"
@@ -736,6 +772,15 @@ function UserContextMenuContent({
                 <Ban className="h-3.5 w-3.5 shrink-0" />
               )}
               {blocked ? "Reativar" : "Bloquear"}
+            </ContextMenuItem>
+          )}
+          {canDelete && !isMaster && (
+            <ContextMenuItem
+              onClick={onOpenDeleteConfirm}
+              className="cursor-pointer gap-2 rounded-sm text-[0.75rem] font-semibold text-[#bb0000] focus:bg-[#ffebeb]"
+            >
+              <Trash2 className="h-3.5 w-3.5 shrink-0" />
+              Excluir permanentemente
             </ContextMenuItem>
           )}
         </>

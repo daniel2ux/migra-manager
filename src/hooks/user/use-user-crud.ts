@@ -156,14 +156,18 @@ export function useUserCrud({ user, isMaster, isAdmin }: UseUserCrudProps) {
   };
 
   const handleDeleteUser = async (target: UserProfile | null): Promise<boolean> => {
-    if (!user || !target || !isMaster) return false;
+    if (!user || !target || (!isMaster && !isAdmin)) return false;
     if (target.uid === user.uid) {
       toast({ variant: "destructive", description: "Não é permitido excluir o próprio usuário." });
       return false;
     }
     const targetIsMaster = target.role === "master" || target.isMaster;
-    if (targetIsMaster) {
+    if (targetIsMaster && !isMaster) {
       toast({ variant: "destructive", description: "Não é permitido excluir usuários com perfil MASTER." });
+      return false;
+    }
+    if (!isMaster && target.role === "admin") {
+      toast({ variant: "destructive", description: "Apenas usuários MASTER podem excluir contas de governança." });
       return false;
     }
 

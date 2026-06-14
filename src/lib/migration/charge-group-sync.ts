@@ -35,7 +35,7 @@ export function isChargeGroupNameDuplicateError(err: unknown): boolean {
   );
 }
 
-export function chargeGroupNameConflictMessage(name: string): string {
+function chargeGroupNameConflictMessage(name: string): string {
   return `Já existe um grupo de objetos com o nome "${normalizeChargeGroupName(name)}". Escolha outro nome.`;
 }
 

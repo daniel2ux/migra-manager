@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 
 /** Layout base sem cores — usado com `.fiori-textarea` (estilo em fiori-forms.css). */
 const fioriTextareaLayoutClassName =
-  "relative z-0 flex min-h-[80px] w-full rounded-none px-3 py-2 text-xs font-normal ring-offset-background placeholder:text-muted-foreground transition-colors focus-visible:outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none focus:shadow-none focus-visible:shadow-none focus:scale-100 focus-visible:scale-100 disabled:cursor-default md:text-xs"
+  "relative z-0 block w-full font-normal ring-offset-background transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none disabled:cursor-default"
 
 /** Mesmo padrão visual do Input (formulário de projeto). */
 const textareaDefaultClassName =

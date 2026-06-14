@@ -23,8 +23,20 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Database, Lock, Sparkles, Package, Hash, FileText, Timer, Settings2 } from "lucide-react";
+import { CalendarDays, Database, Lock, Package, Hash, FileText, Timer, Settings2 } from "lucide-react";
 import { ptBR } from "date-fns/locale";
+
+const FIORI_FIELD = "fiori-input shadow-none";
+const FIORI_FIELD_UPPER = `${FIORI_FIELD} uppercase`;
+const FIORI_TEXTAREA = "fiori-textarea shadow-none min-h-[3.5rem] resize-none";
+
+function fioriFieldClass(readonly: boolean, uppercase = false): string {
+    return cn(uppercase ? FIORI_FIELD_UPPER : FIORI_FIELD, readonly && "readable-disabled");
+}
+
+function fioriTextareaClass(readonly: boolean): string {
+    return cn(FIORI_TEXTAREA, readonly && "readable-disabled");
+}
 
 function pad2(n: number) {
     return String(n).padStart(2, "0");
@@ -133,7 +145,7 @@ function MockDateTimeField({
                     onChange={(e) => onDraftChange(e.target.value)}
                     onBlur={onCommit}
                     placeholder="dd/mm/aaaa hh:mm:ss"
-                    className="fiori-input min-w-0 flex-1 text-sm readable-disabled shadow-none"
+                    className={cn(fioriFieldClass(readonly), "min-w-0 flex-1")}
                 />
                 <Popover>
                     <FioriPopoverIconButtonHint
@@ -223,8 +235,6 @@ interface MockFormDialogProps {
     masterObjects: any[] | null;
     selectedMasters: Record<string, string[]>;
     onMasterSelect: (mockId: string, masterIds: string[]) => void;
-    onAiGenerate: () => void;
-    isGeneratingAi: boolean;
     isViewOnly: boolean;
     isAdmin: boolean;
 }
@@ -239,13 +249,11 @@ export function MockFormDialog({
     masterObjects,
     selectedMasters = {},
     onMasterSelect,
-    onAiGenerate,
-    isGeneratingAi,
     isViewOnly,
     isAdmin,
 }: MockFormDialogProps) {
     const isMockLocked = (editingMock?.isLocked ?? false) || editingMock?.status === 'BLOQUEADO';
-    const readonly = isViewOnly || !isAdmin || isMockLocked;
+    const readonly = isViewOnly || !isAdmin || isMockLocked || (!!editingMock && editingMock.isActive === false);
     const isNew = !editingMock;
 
     const getTitle = () => {
@@ -427,6 +435,7 @@ export function MockFormDialog({
                         </div>
                     )}
 
+                    {isNew && (
                     <section className="fiori-form-section">
                         <h3 className="fiori-section-title">
                             <Hash className="h-3.5 w-3.5" />
@@ -434,18 +443,12 @@ export function MockFormDialog({
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-x-3 gap-y-2">
                             <div className="col-span-1 sm:col-span-8 space-y-1">
-                                <div className="flex items-center justify-between gap-2">
-                                    <label className="fiori-field-label">Nome (prefixo)</label>
-                                    <span className="fiori-field-hint">Ex.: MOCK, TESTE…</span>
-                                </div>
+                                <label className="fiori-field-label">Nome (prefixo)</label>
                                 <Input
                                     value={formData.name}
-                                    onChange={(e) =>
-                                        onFormChange({ ...formData, name: e.target.value })
-                                    }
+                                    readOnly
                                     placeholder="MOCK"
-                                    disabled={readonly}
-                                    className="fiori-input text-sm uppercase readable-disabled shadow-none"
+                                    className={fioriFieldClass(true, true)}
                                 />
                             </div>
 
@@ -453,12 +456,9 @@ export function MockFormDialog({
                                 <label className="fiori-field-label">Parte numérica</label>
                                 <Input
                                     value={formData.sequence}
-                                    onChange={(e) =>
-                                        onFormChange({ ...formData, sequence: e.target.value })
-                                    }
+                                    readOnly
                                     placeholder="01"
-                                    disabled={readonly}
-                                    className="fiori-input text-sm text-center readable-disabled shadow-none"
+                                    className={cn(fioriFieldClass(true), "text-center")}
                                 />
                             </div>
 
@@ -470,25 +470,13 @@ export function MockFormDialog({
                             </div>
                         </div>
                     </section>
+                    )}
 
                     <section className="fiori-form-section">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                            <h3 className="fiori-section-title mb-0">
-                                <FileText className="h-3.5 w-3.5" />
-                                Texto explicativo
-                            </h3>
-                            {!readonly && (
-                                <button
-                                    type="button"
-                                    onClick={onAiGenerate}
-                                    disabled={isGeneratingAi || !formData.name}
-                                    className="fiori-icon-btn"
-                                >
-                                    <Sparkles className={cn("w-3.5 h-3.5", isGeneratingAi && "animate-spin")} />
-                                    Gerar com IA
-                                </button>
-                            )}
-                        </div>
+                        <h3 className="fiori-section-title">
+                            <FileText className="h-3.5 w-3.5" />
+                            Texto explicativo
+                        </h3>
                         <Textarea
                             value={formData.explanatoryText}
                             onChange={(e) =>
@@ -496,7 +484,7 @@ export function MockFormDialog({
                             }
                             placeholder="Descreva o escopo e objetivos desta janela..."
                             disabled={readonly}
-                            className="fiori-textarea text-sm readable-disabled shadow-none min-h-[3.5rem] resize-none"
+                            className={fioriTextareaClass(readonly)}
                         />
                     </section>
 

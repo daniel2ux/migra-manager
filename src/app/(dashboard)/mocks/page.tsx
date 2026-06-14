@@ -15,10 +15,10 @@ import { useUser } from '@/supabase';
 import { cn } from '@/lib/utils';
 import { FOCUS_RETURN_DELAY, STORAGE_KEYS } from '@/lib/constants';
 import type { Mock } from '@/types/migration';
-import { useToast } from "@/hooks/use-toast";
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
 import { isActiveCatalogMaster } from '@/lib/dashboard/object-filters';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
+import { suggestNextMockSequence, suggestNextMockSequenceFromSource, filterActiveMocks, isMockInactive } from '@/lib/mock-utils';
 import { safeRouterReplace, useRouterReady } from '@/lib/navigation/safe-router';
 
 function MocksContent() {
@@ -26,7 +26,6 @@ function MocksContent() {
   const router = useRouter();
   const isRouterReady = useRouterReady();
   const { user } = useUser();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!isRouterReady || projectId) return;
@@ -60,7 +59,14 @@ function MocksContent() {
   const [selectedMockId, setSelectedMockId] = useLocalStorageState<string>(STORAGE_KEYS.DASHBOARD_MOCK, 'all');
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; mock: Mock } | null>(null);
   const [selectedMasters, setSelectedMasters] = useState<Record<string, string[]>>({});
-  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [showInactive, setShowInactive] = useLocalStorageState<boolean>(STORAGE_KEYS.MOCKS_SHOW_INACTIVE, false);
+
+  const inactiveCount = useMemo(
+    () => (mocks ?? []).filter((m) => isMockInactive(m)).length,
+    [mocks],
+  );
+
+  const activeMocks = useMemo(() => filterActiveMocks(mocks), [mocks]);
 
   // Ref para gerenciar foco nos cards
   const mockTableRef = useRef<MockTableHandle>(null);
@@ -85,7 +91,8 @@ function MocksContent() {
   // Derived data
   const filteredMocks = useMemo(() => {
     if (!mocks) return [];
-    return mocks.filter(m =>
+    const scope = showInactive ? mocks : activeMocks;
+    return scope.filter(m =>
       m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (m.explanatoryText && m.explanatoryText.toLowerCase().includes(searchTerm.toLowerCase()))
     ).sort((a, b) => {
@@ -93,10 +100,22 @@ function MocksContent() {
       const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
       return dateA - dateB;
     });
-  }, [mocks, searchTerm]);
+  }, [mocks, activeMocks, showInactive, searchTerm]);
+
+  useEffect(() => {
+    if (selectedMockId === 'all') return;
+    const selected = mocks?.find((m) => m.id === selectedMockId);
+    if (!selected || (!showInactive && isMockInactive(selected))) {
+      setSelectedMockId('all');
+    }
+  }, [mocks, selectedMockId, showInactive, setSelectedMockId]);
 
   // Handlers
   const handleOpenDialog = async (mock?: Mock, viewOnly: boolean = false) => {
+    if (mock && isMockInactive(mock) && !viewOnly) {
+      handleOpenDialog(mock, true);
+      return;
+    }
     if ((!isAdmin || isProjectLocked) && !viewOnly) return;
     if (mock && !viewOnly) {
       const { acquired, lockedByName: blocker } = await acquireLock(`projects/${projectId}/mocks/${mock.id}`);
@@ -125,7 +144,7 @@ function MocksContent() {
       setEditingMock(null);
       setFormData({
         name: 'MOCK',
-        sequence: ((mocks?.length || 0) + 1).toString().padStart(2, '0'),
+        sequence: suggestNextMockSequence('MOCK', activeMocks),
         explanatoryText: '',
         startDate: '',
         endDate: '',
@@ -135,6 +154,15 @@ function MocksContent() {
       setSelectedMasters((prev) => ({ ...prev, new: prev.new || [] }));
     }
     setOpen(true);
+  };
+
+  const cloneNextSequence = useMemo(
+    () => suggestNextMockSequenceFromSource(mocksActions.cloneSourceMock ?? { name: '' }, activeMocks),
+    [mocksActions.cloneSourceMock, activeMocks],
+  );
+
+  const handleFormChange = (data: typeof formData) => {
+    setFormData(data);
   };
 
   const selectedMock = useMemo(
@@ -162,36 +190,6 @@ function MocksContent() {
     return selectedMasters[key] || [];
   }, [editingMock?.id, selectedMasters]);
 
-  const handleAiGenerate = async () => {
-    if (!formData.name.trim()) {
-      toast({ variant: "destructive", description: "Digite o prefixo para gerar o texto com IA." });
-      return;
-    }
-    setIsGeneratingAi(true);
-    try {
-      const callerToken = await user?.getIdToken();
-      if (!callerToken) {
-        toast({ variant: "destructive", description: "Sessão expirada. Faça login novamente." });
-        return;
-      }
-      const res = await fetch("/api/ai/description", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "mock", keywords: formData.name.trim(), callerToken }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Falha ao gerar texto com IA.");
-      setFormData((prev) => ({ ...prev, explanatoryText: data.description }));
-      if (data?.source === "fallback") {
-        toast({ description: "IA indisponível no ambiente. Texto gerado por fallback local." });
-      }
-    } catch {
-      toast({ variant: "destructive", description: "Erro ao gerar texto explicativo com IA." });
-    } finally {
-      setIsGeneratingAi(false);
-    }
-  };
-
   if (isLoading) return <div className="p-8 text-xs font-black animate-pulse uppercase tracking-[0.2em] text-slate-400">SINCRONIZANDO JANELAS...</div>;
 
   return (
@@ -210,6 +208,9 @@ function MocksContent() {
         empresa={headerEmpresa}
         projectName={headerProjectName}
         mockName={headerMockName}
+        showInactive={showInactive}
+        onToggleShowInactive={() => setShowInactive(!showInactive)}
+        inactiveCount={inactiveCount}
       />
 
       <div>
@@ -228,11 +229,12 @@ function MocksContent() {
           objectsByMock={objectsByMock}
           catalogObjectCount={catalogObjectCount}
           onToggleLock={(mock) => { mocksActions.handleToggleLock(mock); returnFocusToSelected(); }}
-          onToggleLoadStatus={(mock) => { mocksActions.handleToggleLoadStatus(mock, mocks || []); returnFocusToSelected(); }}
+          onToggleLoadStatus={(mock) => { mocksActions.handleToggleLoadStatus(mock, activeMocks); returnFocusToSelected(); }}
           onClone={(mock) => { mocksActions.setCloneSourceMock(mock); mocksActions.setIsCloneDialogOpen(true); }}
           onEdit={(mock) => handleOpenDialog(mock)}
           onView={(mock) => handleOpenDialog(mock, true)}
-          onDelete={(mock) => { setSelectedMockId(mock.id); mocksActions.setIsBulkDeleteConfirmOpen(true); }}
+          onToggleActive={(mock, activate) => { void mocksActions.handleToggleActive(mock, activate); returnFocusToSelected(); }}
+          onStatusChange={(mock, status) => { void mocksActions.handleStatusChange(mock, status, activeMocks); returnFocusToSelected(); }}
           onContextMenu={(e, mock) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY, mock }); }}
         />
       </div>
@@ -250,11 +252,11 @@ function MocksContent() {
         setIsBulkDeleteConfirmOpen={mocksActions.setIsBulkDeleteConfirmOpen}
         selectedMockName={selectedMockName}
         selectedMockDescription={selectedMockDescription}
-        handleBulkDelete={() => mocksActions.handleBulkDelete(selectedMockId, mocks || [])}
+        handleBulkDelete={() => mocksActions.handleBulkDelete(selectedMockId, activeMocks)}
         isBulkRestartConfirmOpen={mocksActions.isBulkRestartConfirmOpen}
         setIsBulkRestartConfirmOpen={mocksActions.setIsBulkRestartConfirmOpen}
         isBulkReseting={mocksActions.isBulkReseting}
-        handleBulkReset={() => mocksActions.handleBulkReset(selectedMockId, mocks || [])}
+        handleBulkReset={() => mocksActions.handleBulkReset(selectedMockId, activeMocks)}
         isForceLockOpen={mocksActions.isForceLockOpen}
         setIsForceLockOpen={mocksActions.setIsForceLockOpen}
         forceLockBlockerName={mocksActions.forceLockBlockerName}
@@ -269,7 +271,7 @@ function MocksContent() {
         isViewOnly={isViewOnly}
         isAdmin={isAdmin}
         formData={formData}
-        onFormChange={setFormData}
+        onFormChange={handleFormChange}
         editingMock={editingMock}
         onSave={() =>
           void mocksActions.handleSaveMock(
@@ -285,14 +287,13 @@ function MocksContent() {
         onMasterSelect={(mockId, masterIds) =>
           setSelectedMasters((prev) => ({ ...prev, [mockId]: masterIds }))
         }
-        onAiGenerate={handleAiGenerate}
-        isGeneratingAi={isGeneratingAi}
       />
 
       <CloneMockDialog
         open={mocksActions.isCloneDialogOpen}
         onOpenChange={mocksActions.setIsCloneDialogOpen}
         sourceMock={mocksActions.cloneSourceMock}
+        nextSequence={cloneNextSequence}
         onConfirm={(data) => mocksActions.handleConfirmClone(mocksActions.cloneSourceMock, data)}
       />
 
@@ -301,9 +302,20 @@ function MocksContent() {
           className="fixed z-50 bg-white border border-slate-200 shadow-xl py-1 min-w-[160px]"
           style={{ top: ctxMenu.y, left: ctxMenu.x }}
         >
-          <button onClick={() => handleOpenDialog(ctxMenu.mock)} className={cn("w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors", isProjectLocked ? "text-slate-300 cursor-not-allowed" : "text-slate-700 hover:bg-slate-100")}>Editar Janela</button>
-          {!isProjectLocked && (
+          <button onClick={() => handleOpenDialog(ctxMenu.mock, isMockInactive(ctxMenu.mock))} className={cn("w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-colors", (isProjectLocked || isMockInactive(ctxMenu.mock)) ? "text-slate-300 cursor-not-allowed" : "text-slate-700 hover:bg-slate-100")}>Editar Janela</button>
+          {!isProjectLocked && !isMockInactive(ctxMenu.mock) && (
             <button onClick={() => mocksActions.handleToggleLock(ctxMenu.mock)} className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 uppercase tracking-widest">Bloquear/Desbloquear</button>
+          )}
+          {isAdmin && !isProjectLocked && (
+            <button
+              onClick={() => {
+                void mocksActions.handleToggleActive(ctxMenu.mock, isMockInactive(ctxMenu.mock));
+                setCtxMenu(null);
+              }}
+              className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-slate-700 hover:bg-slate-100 uppercase tracking-widest"
+            >
+              {isMockInactive(ctxMenu.mock) ? "Reativar janela" : "Inativar janela"}
+            </button>
           )}
         </div>
       )}

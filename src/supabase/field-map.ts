@@ -24,6 +24,7 @@ const TO_SNAKE: Record<string, string> = {
   endDate: 'end_date',
   isLoaded: 'is_loaded',
   isRunning: 'is_running',
+  isActive: 'is_active',
   quantityExistingObjects: 'quantity_existing_objects',
   dataInicioCarga: 'data_inicio_carga',
   dataFimCarga: 'data_fim_carga',

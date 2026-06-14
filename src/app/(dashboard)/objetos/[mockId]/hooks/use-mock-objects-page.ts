@@ -24,6 +24,7 @@ import {
   resolveMasterObject,
 } from '@/lib/dashboard/object-filters';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
+import { isEffectiveLocked as isMockEffectiveLocked, isMockInactive } from '@/lib/mock-utils';
 import type { Mock, UserProfile } from '@/types/migration';
 import type { MasterObject, MigrationComment, MigrationObject } from '../types';
 
@@ -77,7 +78,9 @@ export function useMockObjectsPage() {
   const isMockLoading = isIdLoading || isSlugLoading;
   const isMockLocked = !!mockData?.isLocked || mockData?.status === 'BLOQUEADO';
   const isProjectLocked = !!projectData?.isLocked;
-  const isEffectiveLocked = isMockLocked || isProjectLocked;
+  const isEffectiveLocked = mockData
+    ? isMockEffectiveLocked(mockData, isProjectLocked)
+    : isProjectLocked;
 
   const companyName = getProjectCompanyName(projectData);
   const headerEmpresa = companyName ?? projectData?.name;
@@ -136,6 +139,17 @@ export function useMockObjectsPage() {
       return next.length ? [...prev, ...next] : prev;
     });
   }, []);
+
+  useEffect(() => {
+    if (!mockData || isMockLoading) return;
+    if (isMockInactive(mockData)) {
+      toast({
+        variant: 'destructive',
+        description: 'Esta mock está inativa e não pode ser acessada.',
+      });
+      router.push('/mocks');
+    }
+  }, [mockData, isMockLoading, router, toast]);
 
   useEffect(() => {
     if (isMasked && !mockId && !isMockLoading && !isLoading) {
