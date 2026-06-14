@@ -1345,8 +1345,16 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   --fiori-border: #d9d9d9;
   --fiori-border-light: #e5e5e5;
   --fiori-radius: 0.5rem;
+  border: 1px solid #dde1e6;
   border-radius: var(--fiori-radius, 0.5rem) !important;
-  box-shadow: 0 0 0.125rem 0 rgba(85, 107, 130, 0.08);
+  background: var(--fiori-shell);
+  box-shadow:
+    0 0 0 1px rgba(217, 217, 217, 0.2),
+    0 1px 2px 0 rgba(85, 107, 130, 0.06);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .fiori-migration-object-card {
@@ -1361,10 +1369,40 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
 .fiori-migration-object-card:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target),
 .fiori-dashboard-object-card:hover:not(.card-static-border) {
   background: #f7f7f7 !important;
+  border-color: #c5c9cf;
+  box-shadow:
+    0 0 0 1px rgba(197, 201, 207, 0.35),
+    0 2px 4px 0 rgba(85, 107, 130, 0.08);
 }
 
 .fiori-dashboard-object-card {
   font-family: var(--font-72);
+}
+
+.fiori-dashboard-object-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  width: 100%;
+  min-height: 1.125rem;
+  line-height: 1;
+}
+
+.fiori-dashboard-object-card-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.fiori-dashboard-object-card-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .fiori-dashboard-object-card-title {
@@ -1372,7 +1410,23 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   font-weight: 600;
   letter-spacing: -0.01em;
   text-transform: uppercase;
-  line-height: 1.2;
+  line-height: 1;
+  color: var(--fiori-text, #32363a);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.fiori-dashboard-object-card-charge-meta {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: visible;
+  min-width: max-content;
+  line-height: 1;
+  padding-left: 0.25rem;
+}
+
+.fiori-dashboard-object-card-charge-meta:hover span {
   color: var(--fiori-text, #32363a);
 }
 
@@ -2430,9 +2484,9 @@ body.dashboard-plaque-focus .fiori-card-plaque {
 
 .consolidated-tooltip-panel-header {
   padding: 1rem;
-  background: var(--color-SkyBlue-100, #e0effe);
-  color: #32363a;
-  border-bottom: 1px solid var(--color-SkyBlue-300, #7cc2fc);
+  background: #354a5f;
+  color: #fff;
+  border-bottom: 1px solid #2a3d4f;
 }
 
 .consolidated-tooltip-panel-header-title {
@@ -2451,7 +2505,7 @@ body.dashboard-plaque-focus .fiori-card-plaque {
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-SkyBlue-500, #3b82f6);
+  color: #fff;
 }
 
 .consolidated-tooltip-panel-header-pct {
@@ -2478,13 +2532,18 @@ body.dashboard-plaque-focus .fiori-card-plaque {
   color: #fff;
 }
 
+.consolidated-tooltip-panel-header-pct--neutral {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
 .consolidated-tooltip-panel-header-sub {
   margin-top: 0.25rem;
   font-size: 0.5625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-SkyBlue-600, #0963e9);
+  color: #a9b4be;
 }
 
 .consolidated-tooltip-panel-body {

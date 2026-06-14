@@ -39,6 +39,12 @@ export function endDashboardDialogScroll(restore = true): number | null {
   const top = activeScrollLock?.unlock(restore) ?? activeScrollTop;
   activeScrollLock = null;
   activeScrollTop = null;
+
+  const main = getDashboardScrollContainer();
+  if (main && main.style.overflow === "hidden") {
+    main.style.removeProperty("overflow");
+  }
+
   return top ?? null;
 }
 

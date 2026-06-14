@@ -19,16 +19,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc, serverTimestamp, type CompatDb } from '@/supabase/compat-db-shim';
 import { ref, uploadBytes, getDownloadURL, type CompatStorage } from '@/supabase/storage-shim';
-import { createUserWithEmailAndPassword, Auth } from '@/supabase/auth-shim';
 import Link from 'next/link';
-import { useAuth, useDb, useUser, useDoc, useMemoDb, useStorage } from '@/supabase';
+import { useDb, useUser, useDoc, useMemoDb, useStorage } from '@/supabase';
 import { Camera, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useAuth();
   const db = useDb();
   const { user: currentUser, isUserLoading } = useUser();
 
@@ -37,7 +35,7 @@ export default function RegisterPage() {
     name: '',
     email: '',
     password: '',
-    role: 'user' as 'admin' | 'user',
+    role: 'membro' as 'admin' | 'membro',
     phone: '',
     position: '',
     company: '',
@@ -79,8 +77,6 @@ export default function RegisterPage() {
     (currentUserProfile as any)?.role === 'admin' ||
     currentUser?.uid === '9sTbj0ERgMMVfaqDEZGluQ75EmG2'
   );
-  const isSelfRegistration = !currentUser;
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 11) value = value.slice(0, 11);
@@ -121,32 +117,31 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    const finalRole = isSelfRegistration ? 'user' : formData.role;
+    const finalRole = formData.role;
 
     try {
       let newUserUid: string;
 
       try {
-        if (currentUser && isAdmin) {
-          const token = await currentUser.getIdToken();
-          const res = await fetch('/api/admin/create-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: formData.email,
-              name: formData.name,
-              role: finalRole,
-              reason: 'Registro via painel admin',
-              callerToken: token,
-            }),
-          });
-          const json = await res.json();
-          if (!res.ok) throw new Error(json.error ?? 'Falha ao criar usuário');
-          newUserUid = json.uid;
-        } else {
-          const userCredential = await createUserWithEmailAndPassword(auth as Auth, formData.email, formData.password);
-          newUserUid = userCredential.user.uid;
+        if (!currentUser || !isAdmin) {
+          throw new Error('Cadastro público desabilitado. Solicite acesso ao administrador.');
         }
+
+        const token = await currentUser.getIdToken();
+        const res = await fetch('/api/admin/create-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            name: formData.name,
+            role: finalRole,
+            reason: 'Registro via painel admin',
+            callerToken: token,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? 'Falha ao criar usuário');
+        newUserUid = json.uid;
 
         let photoURL = "";
         if (photoFile) {
@@ -178,12 +173,10 @@ export default function RegisterPage() {
 
         toast({
           title: "Sucesso!",
-          description: currentUser
-            ? "Usuário cadastrado com sucesso."
-            : "Conta criada com sucesso."
+          description: "Usuário cadastrado com sucesso."
         });
 
-        router.push(currentUser && isAdmin ? '/usuarios' : '/');
+        router.push('/usuarios');
 
       } catch (innerError) {
         throw innerError;
@@ -215,6 +208,29 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-SkyBlue-500" />
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md text-center border-amber-100 bg-amber-50 rounded-none">
+          <CardHeader>
+            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-2" />
+            <CardTitle className="text-amber-900 font-black uppercase tracking-tight">Cadastro Restrito</CardTitle>
+            <CardDescription className="text-amber-700 font-bold uppercase text-[10px] tracking-widest">
+              Novas contas são criadas apenas por administradores. Solicite acesso ao responsável do sistema.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-center gap-2">
+            <Link href="/login">
+              <Button variant="ghost" size="sm" className="text-SkyBlue-600 hover:text-SkyBlue-600 font-black uppercase text-[10px] tracking-widest gap-2 h-10 px-4 hover:bg-SkyBlue-50 rounded-none transition-all active:scale-95 ">
+                Fazer Login
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
@@ -266,7 +282,7 @@ export default function RegisterPage() {
             <UserPlus className="w-8 h-8 text-SkyBlue-500" />
           </div>
           <CardTitle className="text-2xl font-black uppercase tracking-tight">
-            {currentUser ? "Novo Usuário" : "Criar Nova Conta"}
+            Novo Usuário
           </CardTitle>
           <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
             Gestão Técnica • Migra V1.0
@@ -383,7 +399,7 @@ export default function RegisterPage() {
                 className="w-full font-black uppercase text-[10px] tracking-widest h-12  text-SkyBlue-600 hover:bg-SkyBlue-50 hover:text-SkyBlue-600 rounded-none transition-all active:scale-95"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
-                {currentUser ? "Criar Usuário" : "Criar Minha Conta"}
+                Criar Usuário
               </Button>
             )}
             {loading && (
@@ -393,16 +409,6 @@ export default function RegisterPage() {
             )}
           </form>
         </CardContent>
-        {!currentUser && (
-          <CardFooter className="flex flex-col items-center gap-2 border-t p-4 mt-2 bg-white/50">
-            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-              Já possui uma conta?{" "}
-              <Link href="/login" className="text-SkyBlue-600 font-black hover:underline ml-1">
-                Fazer Login
-              </Link>
-            </p>
-          </CardFooter>
-        )}
       </Card>
     </div>
   );

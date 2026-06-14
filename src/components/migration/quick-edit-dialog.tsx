@@ -26,6 +26,7 @@ import {
     parseBrazilianLocalDateTime,
     toIsoLocalSeconds,
 } from "@/lib/migration/datetime-br";
+import { cn } from "@/lib/utils";
 
 export interface QuickFormData {
     chargeStartTime: string;
@@ -357,7 +358,7 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
                     placeholder="dd/mm/aaaa hh:mm:ss"
                     autoComplete="off"
                     aria-label={`Data e hora de ${label.toLowerCase()} da carga`}
-                    className="fiori-input min-w-0 flex-1 font-mono tabular-nums shadow-none"
+                    className="fiori-input fiori-input-datetime flex-1 font-mono tabular-nums shadow-none"
                 />
                 <Popover>
                     <FioriPopoverIconButtonHint
@@ -418,7 +419,12 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
             <DialogContent
                 open={open}
                 overlayClassName={preserveScroll ? undefined : "fiori-dialog-overlay"}
-                className="fiori-dialog !flex h-[min(36rem,calc(100dvh-2rem))] w-[calc(100vw-1rem)] max-w-[480px] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden"
+                className={cn(
+                    "fiori-dialog !flex w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)] [&>button]:hidden",
+                    isMock
+                        ? "h-[min(92vh,640px)] max-w-4xl"
+                        : "h-[min(36rem,calc(100dvh-2rem))] max-w-lg",
+                )}
                 {...dialogContentProps}
             >
                 <DialogHeader className="fiori-dialog-header shrink-0 space-y-0">
@@ -449,38 +455,12 @@ export function QuickEditDialog(props: QuickEditDialogProps) {
 
                 <ScrollArea className="min-h-0 flex-1">
                     <div className="space-y-4 px-5 py-4">
-                        <div className="fiori-object-exec-summary">
-                            <div className="fiori-object-exec-name">
-                                <div className="fiori-object-exec-icon">
-                                    <Database className="h-4 w-4" />
-                                </div>
-                                <div className="min-w-0">
-                                    <span className="fiori-field-label">{isMock ? "Objeto" : "Objeto técnico"}</span>
-                                    <p className="truncate text-sm font-semibold uppercase text-[var(--fiori-text)]">
-                                        {quickEditObject?.name}
-                                    </p>
-                                </div>
-                            </div>
-                            {isMock ? (
-                                <span className="fiori-chip bg-[var(--fiori-brand-light)] text-[var(--fiori-brand)] border-[var(--fiori-brand-light)]">
-                                    Ativo
-                                </span>
-                            ) : (
-                                <div className="fiori-object-exec-field">
-                                    <span className="fiori-field-label">Grupo / ordem</span>
-                                    <span className="fiori-chip bg-[var(--fiori-brand-light)] text-[var(--fiori-brand)] border-[var(--fiori-brand-light)]">
-                                        {quickEditObject?.chargeOrder || "G1 - 01.00"}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
                         <div>
                             <h3 className="fiori-section-title">
                                 <Timer className="h-3.5 w-3.5" />
                                 Monitoramento da carga
                             </h3>
-                            <div className={isMock ? "space-y-3" : "grid grid-cols-1 gap-3 sm:grid-cols-2"}>
+                            <div className="grid grid-cols-1 gap-3">
                                 {renderDateTimeField("chargeStartTime", "Início", chargeStartDraft, setChargeStartDraft, startDate, startValid, isMock)}
                                 {renderDateTimeField("chargeEndTime", "Término", chargeEndDraft, setChargeEndDraft, endDate, endValid, isMock)}
                             </div>

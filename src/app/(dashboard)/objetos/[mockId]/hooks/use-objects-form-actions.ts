@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { doc, serverTimestamp, collection, type CompatDb } from '@/supabase/compat-db-shim';
+import { doc, serverTimestamp, collection, setDoc, type CompatDb } from '@/supabase/compat-db-shim';
 import type { User } from '@/supabase/auth-shim';
 import {
   setDocumentNonBlocking,
@@ -11,6 +11,7 @@ import {
   parseDurationString,
 } from '@/lib/migration/format-utils';
 import { parseSequence, formatSequence, compareSequences } from '@/lib/migration/sequence-utils';
+import { isActiveCatalogMaster } from '@/lib/dashboard/object-filters';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/types/migration';
 import type { MasterObject, MigrationObject } from '../types';
@@ -65,17 +66,66 @@ const EMPTY_FORM: FormData = {
   isParallel: false,
 };
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string | null | undefined): value is string {
+  return !!value && UUID_RE.test(value);
+}
+
+function sanitizeDependencyIds(ids: unknown): string[] {
+  if (!Array.isArray(ids)) return [];
+  return ids.filter((id): id is string => typeof id === 'string' && isUuid(id));
+}
+
+function buildMigrationObjectFromMaster(
+  master: MasterObject,
+  objectId: string,
+  projectId: string,
+  mockId: string,
+  ownerId: string,
+): MigrationObject {
+  return {
+    id: objectId,
+    mockId,
+    projectId,
+    masterObjectId: master.id,
+    name: master.name,
+    description: master.description ?? '',
+    chargeGroup: master.chargeGroup || '',
+    chargeOrder: master.chargeOrder != null ? String(master.chargeOrder) : '',
+    chargeStartTime: '',
+    chargeEndTime: '',
+    targetRecordsCount: 0,
+    processedRecordsCount: 0,
+    migratedRecordsCount: 0,
+    successfulRecordsCount: 0,
+    errorRecordsCount: 0,
+    currentChargeDurationMs: 0,
+    previousMigratedRecordsCount: 0,
+    previousChargeDurationMs: 0,
+    dependencyIds: sanitizeDependencyIds(master.dependencyIds),
+    ownerId,
+    isParallel: false,
+    status: 'PENDENTE',
+  };
+}
+
 interface UseObjectsFormActionsDeps {
   db: CompatDb | null;
   user: User | null;
   projectId: string | null;
   mockId: string | null;
   isAdmin: boolean;
+  isAdminOrMaster?: boolean;
   isEffectiveLocked: boolean;
   objects: MigrationObject[] | null | undefined;
   masterObjects: MasterObject[] | null | undefined;
+  isMasterObjectsLoading?: boolean;
   userProfile: UserProfile | null | undefined;
   toast: ToastFn;
+  refetchObjects?: () => void;
+  addPendingObjects?: (items: MigrationObject[]) => void;
 }
 
 /**
@@ -83,9 +133,11 @@ interface UseObjectsFormActionsDeps {
  * de objetos de migração — incluindo formData, validação e escrita no CompatDb.
  */
 export function useObjectsFormActions({
-  db, user, projectId, mockId, isAdmin, isEffectiveLocked,
-  objects, masterObjects, userProfile, toast,
+  db, user, projectId, mockId, isAdmin, isAdminOrMaster, isEffectiveLocked,
+  objects, masterObjects, isMasterObjectsLoading, userProfile, toast,
+  refetchObjects, addPendingObjects,
 }: UseObjectsFormActionsDeps) {
+  const canManageObjects = isAdminOrMaster ?? isAdmin;
   const [open, setOpen] = useState(false);
   const [editingObject, setEditingObject] = useState<MigrationObject | null>(null);
   const [formData, setFormData] = useState<FormData>(EMPTY_FORM);
@@ -128,17 +180,57 @@ export function useObjectsFormActions({
     });
   }, [formData.targetRecordsCount, formData.errorRecordsCount]);
 
+  const mockObjectKeys = useMemo(() => {
+    const ids = new Set<string>();
+    const names = new Set<string>();
+    for (const obj of objects ?? []) {
+      if (obj.masterObjectId) ids.add(obj.masterObjectId);
+      const name = (obj.name || '').trim().toUpperCase();
+      if (name) names.add(name);
+    }
+    return { ids, names };
+  }, [objects]);
+
+  const availableMasterObjects = useMemo(() => {
+    if (!masterObjects?.length) return [];
+    return masterObjects.filter(
+      (mo) =>
+        isActiveCatalogMaster(mo) &&
+        !mockObjectKeys.ids.has(mo.id) &&
+        !mockObjectKeys.names.has((mo.name || '').trim().toUpperCase()),
+    );
+  }, [masterObjects, mockObjectKeys]);
+
   const filteredMasterObjects = useMemo(() => {
-    if (!masterObjects || !objects) return [];
-    const existingMasterIds = new Set(objects.map(o => o.masterObjectId));
-    return masterObjects
-      .filter(mo =>
-        !existingMasterIds.has(mo.id) &&
-        (mo.name.toLowerCase().includes(searchMasterTerm.toLowerCase()) ||
-          (mo.chargeGroup && mo.chargeGroup.toLowerCase().includes(searchMasterTerm.toLowerCase())))
+    const term = searchMasterTerm.trim().toLowerCase();
+    return availableMasterObjects
+      .filter((mo) =>
+        !term ||
+        mo.name.toLowerCase().includes(term) ||
+        (mo.chargeGroup && mo.chargeGroup.toLowerCase().includes(term)),
       )
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [masterObjects, objects, searchMasterTerm]);
+  }, [availableMasterObjects, searchMasterTerm]);
+
+  const masterPickerEmptyHint = useMemo(() => {
+    if (isMasterObjectsLoading || masterObjects == null) {
+      return 'Carregando catálogo de objetos…';
+    }
+    if (masterObjects.length === 0) {
+      return 'Nenhum objeto no catálogo mestre. Cadastre objetos em Gestão de objetos.';
+    }
+    const activeCount = masterObjects.filter(isActiveCatalogMaster).length;
+    if (activeCount === 0) {
+      return 'Nenhum objeto ATIVO no catálogo. Ative objetos em Gestão de objetos.';
+    }
+    if (availableMasterObjects.length === 0) {
+      return 'Todos os objetos ativos do catálogo já estão nesta mock.';
+    }
+    if (searchMasterTerm.trim()) {
+      return 'Nenhum objeto corresponde à pesquisa.';
+    }
+    return 'Nenhum objeto disponível para cadastro.';
+  }, [isMasterObjectsLoading, masterObjects, availableMasterObjects.length, searchMasterTerm]);
 
   // ── Dialog de criação/edição completa ──────────────────────────────────────
 
@@ -166,10 +258,11 @@ export function useObjectsFormActions({
         isParallel: (obj as any).displayIsParallel ?? obj.isParallel ?? false,
       });
     } else {
-      if (!isAdmin || isEffectiveLocked) return;
+      if (!canManageObjects || isEffectiveLocked) return;
       setEditingObject(null);
       setPrevDurationInput('00H 00M');
       setSelectedMasterIds([]);
+      setSearchMasterTerm('');
       setFormData(EMPTY_FORM);
     }
     setOpen(true);
@@ -267,51 +360,85 @@ export function useObjectsFormActions({
     }
   };
 
-  const handleSave = () => {
-    if (!isAdmin || isEffectiveLocked || !projectId || !mockId || !user || !db) return;
+  const handleSave = async () => {
+    if (!canManageObjects || isEffectiveLocked || !user || !db) return;
+    if (!isUuid(projectId) || !isUuid(mockId)) {
+      toast({
+        variant: 'destructive',
+        description: 'Mock ou projeto ainda não carregou. Aguarde e tente novamente.',
+      });
+      return;
+    }
 
     if (editingObject) {
       if (!formData.name) return;
       const newGroup = (formData.chargeGroup || '').toUpperCase();
       const docRef = doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', editingObject.id);
-      setDocumentNonBlocking(docRef, {
-        ...formData,
-        chargeGroup: newGroup,
-        migratedRecordsCount: formData.processedRecordsCount,
-        projectId,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-    } else {
-      if (selectedMasterIds.length === 0) {
-        toast({ variant: 'destructive', description: 'Selecione pelo menos um objeto.' });
-        return;
-      }
-      selectedMasterIds.forEach(masterId => {
-        const master = masterObjects?.find(m => m.id === masterId);
-        if (!master) return;
-        const objectId = Math.random().toString(36).substr(2, 9);
-        const objectRef = doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', objectId);
-        setDocumentNonBlocking(objectRef, {
-          id: objectId, mockId, projectId,
-          masterObjectId: masterId,
-          name: master.name,
-          description: master.description,
-          chargeGroup: master.chargeGroup || '',
-          chargeOrder: master.chargeOrder || '',
-          isParallel: false,
-          chargeStartTime: '', chargeEndTime: '',
-          targetRecordsCount: 0, processedRecordsCount: 0,
-          migratedRecordsCount: 0, successfulRecordsCount: 0,
-          errorRecordsCount: 0, currentChargeDurationMs: 0,
-          previousMigratedRecordsCount: 0, previousChargeDurationMs: 0,
-          dependencyIds: master.dependencyIds || [],
-          ownerId: user.uid,
+      try {
+        await setDoc(docRef, {
+          ...formData,
+          chargeGroup: newGroup,
+          migratedRecordsCount: formData.processedRecordsCount,
+          projectId,
           updatedAt: serverTimestamp(),
         }, { merge: true });
-      });
-      toast({ description: `${selectedMasterIds.length} objeto(s) adicionado(s).` });
+        setOpen(false);
+        refetchObjects?.();
+      } catch (err) {
+        console.error('Save error:', err);
+        toast({ variant: 'destructive', description: 'Erro ao salvar objeto.' });
+      }
+      return;
     }
-    setOpen(false);
+
+    if (selectedMasterIds.length === 0) {
+      toast({ variant: 'destructive', description: 'Selecione pelo menos um objeto.' });
+      return;
+    }
+
+    const mastersToAdd = selectedMasterIds
+      .map((masterId) => masterObjects?.find((m) => m.id === masterId))
+      .filter((master): master is MasterObject => !!master && isActiveCatalogMaster(master));
+
+    if (mastersToAdd.length === 0) {
+      toast({ variant: 'destructive', description: 'Nenhum objeto válido para adicionar.' });
+      return;
+    }
+
+    try {
+      const creations = mastersToAdd.map((master) => ({
+        objectId: crypto.randomUUID(),
+        master,
+      }));
+
+      const pendingItems = creations.map(({ objectId, master }) =>
+        buildMigrationObjectFromMaster(master, objectId, projectId, mockId, user.uid),
+      );
+      addPendingObjects?.(pendingItems);
+
+      await Promise.all(
+        creations.map(async ({ objectId, master }) => {
+          const objectRef = doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', objectId);
+          const row = buildMigrationObjectFromMaster(master, objectId, projectId, mockId, user.uid);
+          await setDoc(objectRef, {
+            ...row,
+            loadHistory: [],
+            updatedAt: serverTimestamp(),
+          }, { merge: true });
+        }),
+      );
+      toast({ description: `${mastersToAdd.length} objeto(s) adicionado(s).` });
+      setSelectedMasterIds([]);
+      setSearchMasterTerm('');
+      setOpen(false);
+      refetchObjects?.();
+    } catch (err) {
+      console.error('Add objects error:', err);
+      toast({
+        variant: 'destructive',
+        description: err instanceof Error ? err.message : 'Erro ao adicionar objetos à mock.',
+      });
+    }
   };
 
   // ── Dialog de edição rápida ────────────────────────────────────────────────
@@ -439,6 +566,8 @@ export function useObjectsFormActions({
     selectedMasterIds, setSelectedMasterIds,
     searchMasterTerm, setSearchMasterTerm,
     filteredMasterObjects,
+    isMasterCatalogLoading: !!isMasterObjectsLoading || masterObjects == null,
+    masterPickerEmptyHint,
     handleOpenDialog, handleSave,
     handleSelectAll, handleToggleMasterSelection,
     _handleToggleDependency, handleDurationInputChange,

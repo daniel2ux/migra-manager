@@ -1,6 +1,6 @@
 'use client';
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSelection } from '@/context/selection-context';
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
@@ -21,7 +21,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { buildLogExportMeta } from '@/lib/export/log-export-meta';
 import {
-  isActiveCatalogMaster,
   resolveMasterObject,
 } from '@/lib/dashboard/object-filters';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
@@ -59,7 +58,7 @@ export function useMockObjectsPage() {
     () => (db ? collection(db, 'masterObjects') : null),
     [db],
   );
-  const { data: masterObjects } = useCollection<MasterObject>(masterObjectsQuery);
+  const { data: masterObjects, isLoading: isMasterObjectsLoading } = useCollection<MasterObject>(masterObjectsQuery);
 
   const directMockRef = useMemoDb(() => {
     if (!db || !projectId || !routeMockId) return null;
@@ -86,10 +85,57 @@ export function useMockObjectsPage() {
   const headerMockName = mockData?.name;
 
   const objectsQuery = useMemoDb(() => {
-    if (!db || !projectId || !mockId || !userProfile) return null;
+    if (!db || !projectId || !mockId || !user) return null;
     return collection(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects');
-  }, [db, projectId, mockId, userProfile]);
-  const { data: objects, isLoading } = useCollection<MigrationObject>(objectsQuery);
+  }, [db, projectId, mockId, user]);
+  const { data: objects, isLoading, refetch: refetchObjects } = useCollection<MigrationObject>(objectsQuery);
+
+  const [pendingObjects, setPendingObjects] = useState<MigrationObject[]>([]);
+
+  useEffect(() => {
+    if (!objects?.length) return;
+    setPendingObjects((prev) =>
+      prev.filter(
+        (pending) =>
+          !objects.some(
+            (stored) =>
+              stored.id === pending.id ||
+              (!!pending.masterObjectId &&
+                pending.masterObjectId === stored.masterObjectId),
+          ),
+      ),
+    );
+  }, [objects]);
+
+  const mergedObjects = useMemo(() => {
+    const stored = objects ?? [];
+    const storedIds = new Set(stored.map((o) => o.id));
+    const storedMasterIds = new Set(
+      stored.map((o) => o.masterObjectId).filter((id): id is string => !!id),
+    );
+    const extra = pendingObjects.filter(
+      (pending) =>
+        !storedIds.has(pending.id) &&
+        (!pending.masterObjectId || !storedMasterIds.has(pending.masterObjectId)),
+    );
+    return [...stored, ...extra];
+  }, [objects, pendingObjects]);
+
+  const addPendingObjects = useCallback((items: MigrationObject[]) => {
+    if (!items.length) return;
+    setPendingObjects((prev) => {
+      const seenIds = new Set(prev.map((o) => o.id));
+      const seenMasterIds = new Set(
+        prev.map((o) => o.masterObjectId).filter((id): id is string => !!id),
+      );
+      const next = items.filter(
+        (item) =>
+          !seenIds.has(item.id) &&
+          (!item.masterObjectId || !seenMasterIds.has(item.masterObjectId)),
+      );
+      return next.length ? [...prev, ...next] : prev;
+    });
+  }, []);
 
   useEffect(() => {
     if (isMasked && !mockId && !isMockLoading && !isLoading) {
@@ -171,7 +217,7 @@ export function useMockObjectsPage() {
   );
   const scopedMasterByName = useMemo(() => {
     const map = new Map<string, MasterObject>();
-    (objects || []).forEach((o) => {
+    mergedObjects.forEach((o) => {
       const masterId = String(o.masterObjectId || '');
       if (!masterId) return;
       const master = masterObjectsById.get(masterId);
@@ -179,7 +225,7 @@ export function useMockObjectsPage() {
       if (!map.has(o.name)) map.set(o.name, master);
     });
     return map;
-  }, [objects, masterObjectsById]);
+  }, [mergedObjects, masterObjectsById]);
   const masterLookupMaps = useMemo(
     () => ({
       byId: masterObjectsById,
@@ -190,11 +236,9 @@ export function useMockObjectsPage() {
   );
 
   const sortedObjects = useMemo(() => {
-    if (!objects || !masterObjects) return [];
+    if (!mergedObjects.length) return [];
 
-    const enriched = objects
-      .filter((obj) => isActiveCatalogMaster(resolveMasterObject(obj, masterLookupMaps)))
-      .map((obj) => {
+    const enriched = mergedObjects.map((obj) => {
         const master = resolveMasterObject(obj, masterLookupMaps);
         return {
           ...obj,
@@ -257,7 +301,7 @@ export function useMockObjectsPage() {
         }
         return (a.name || '').localeCompare(b.name || '');
       });
-  }, [objects, masterObjects, masterLookupMaps, deferredSearchTerm, performanceFilter]);
+  }, [mergedObjects, masterObjects, masterLookupMaps, deferredSearchTerm, performanceFilter]);
 
   const totals = useMemo(() => {
     if (!sortedObjects) return { target: 0, processed: 0, success: 0, error: 0 };
@@ -292,8 +336,12 @@ export function useMockObjectsPage() {
     isAdmin,
     isAdminOrMaster,
     masterObjects,
+    isMasterObjectsLoading,
     mockData,
     objects,
+    mergedObjects,
+    addPendingObjects,
+    refetchObjects,
     isLoading,
     isMockLoading,
     isMockLocked,

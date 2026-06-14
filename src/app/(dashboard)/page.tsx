@@ -519,7 +519,6 @@ function DashboardContent() {
                                                     });
                                                 });
                                             }}
-                                            commentsCount={commentsMapByObjectName[obj.name]?.length || 0}
                                             commentsMapByObjectName={commentsMapByObjectName}
                                             allObjects={activeQueries.masterObjects || []}
                                             objectsByName={masterObjectsByName}

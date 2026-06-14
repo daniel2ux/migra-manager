@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useUser } from "@/supabase";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ export const AiPerformanceAnalysisDialog = ({
   mockTarget,
   data,
 }: AiPerformanceAnalysisDialogProps) => {
+  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,10 @@ export const AiPerformanceAnalysisDialog = ({
     setIsLoading(true);
     setError(null);
     try {
+      const callerToken = await user?.getIdToken();
+      if (!callerToken) {
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
       const response = await fetch("/api/ai/performance-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,6 +56,7 @@ export const AiPerformanceAnalysisDialog = ({
           referenceMockName: mockReference,
           targetMockName: mockTarget,
           objects: data,
+          callerToken,
         }),
       });
 
@@ -61,7 +68,7 @@ export const AiPerformanceAnalysisDialog = ({
     } finally {
       setIsLoading(false);
     }
-  }, [mockReference, mockTarget, data]);
+  }, [mockReference, mockTarget, data, user]);
 
   React.useEffect(() => {
     if (open && !result && !isLoading) {

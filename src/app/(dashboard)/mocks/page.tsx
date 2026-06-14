@@ -169,10 +169,15 @@ function MocksContent() {
     }
     setIsGeneratingAi(true);
     try {
+      const callerToken = await user?.getIdToken();
+      if (!callerToken) {
+        toast({ variant: "destructive", description: "Sessão expirada. Faça login novamente." });
+        return;
+      }
       const res = await fetch("/api/ai/description", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "mock", keywords: formData.name.trim() }),
+        body: JSON.stringify({ type: "mock", keywords: formData.name.trim(), callerToken }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Falha ao gerar texto com IA.");

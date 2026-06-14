@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/context-menu";
 import {
     Box,
-    GripVertical,
     MessageCircle,
     MessageSquare,
     Zap,
@@ -52,6 +51,8 @@ import {
 } from "@/lib/dashboard/scroll-preservation";
 
 type CardPopoverPanel = "precedence" | "external" | "parallel" | "consolidated";
+
+const SCROLL_LOCK_PANELS: CardPopoverPanel[] = ["precedence", "external", "parallel"];
 
 function isPopoverPortalTarget(target: EventTarget | null) {
     return target instanceof Element && target.closest("[data-radix-popper-content-wrapper]") !== null;
@@ -95,14 +96,6 @@ interface DashboardCardProps {
     allObjects?: any[];
     objectsByName?: Map<string, any>;
     parallelByGroup?: Map<number, any[]>;
-    onToggleLoad?: () => void;
-    onToggleObjectLoad?: (obj: AggregatedObject) => void;
-    onQuickEdit?: (obj: AggregatedObject) => void;
-    onComments?: () => void;
-    onPrecedence?: () => void;
-    onLogs?: () => void;
-    onReset?: () => void;
-    commentsCount?: number;
     selectedMockId?: string;
     /** Sequência exibida pela posição na grade (01.00, 02.00, …). */
     displayChargeOrder?: string | number;
@@ -179,7 +172,6 @@ export const DashboardCard = memo(({
     // Carga Consolidada: Sucesso / Target (Sucesso já é Lido - Erro)
     const processedPct = target > 0 ? (processed / target) * 100 : 0;
     const successPct = target > 0 ? (success / target) * 100 : 0;
-    const errorPct = target > 0 ? (error / target) * 100 : 0;
 
     const objComments = commentsMapByObjectName?.[obj.name] || [];
     const hasComments = objComments.length > 0;
@@ -198,11 +190,7 @@ export const DashboardCard = memo(({
 
     const closePanel = useCallback(() => {
         setOpenPanel((prev) => {
-            if (
-                prev === "precedence" ||
-                prev === "external" ||
-                prev === "parallel"
-            ) {
+            if (prev !== null) {
                 endDashboardDialogScroll(true);
             }
             return null;
@@ -250,7 +238,7 @@ export const DashboardCard = memo(({
         event.stopPropagation();
         suppressOutsideCloseRef.current = true;
         onSelect?.(obj);
-        if (openPanel === null) {
+        if (openPanel === null && SCROLL_LOCK_PANELS.includes(panel)) {
             beginDashboardDialogScroll();
         }
         openPanelState(panel);
@@ -335,7 +323,7 @@ export const DashboardCard = memo(({
                         tabIndex={0}
                         onClick={handleCardClick}
                         className={cn(
-                            "fiori-dashboard-object-card group relative border border-slate-200 hover:border-slate-400 transition-all duration-300 hover:scale-[1.03] hover:z-10 overflow-hidden bg-white cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-SkyBlue-500 focus-visible:ring-offset-2 shadow-none",
+                            "fiori-dashboard-object-card group relative transition-all duration-300 hover:scale-[1.03] hover:z-10 overflow-hidden cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-SkyBlue-500 focus-visible:ring-offset-2",
                             isSelected && "card-static-border z-10",
                         )}
                     >
@@ -425,93 +413,87 @@ export const DashboardCard = memo(({
                                 </PopoverContent>
                             </Popover>
                         )}
-                                <CardHeader className="p-2 pb-1 flex flex-row items-start justify-between space-y-0">
-                                    <div className="flex flex-col space-y-0.5 overflow-hidden">
-                                        <div className="flex items-center gap-1 min-w-0">
-                                            <span className="shrink-0 text-SkyBlue-500"><Box className="w-3.5 h-3.5" /></span>
-                                            <h3 className="fiori-dashboard-object-card-title truncate max-w-[120px] lg:max-w-[140px]">
+                                <CardHeader className="flex-row items-center w-full p-2 pb-1 space-y-0">
+                                    <div className="fiori-dashboard-object-card-header">
+                                        <div className="fiori-dashboard-object-card-header-main">
+                                            <span className="shrink-0 inline-flex items-center text-SkyBlue-500">
+                                                <Box className="w-3.5 h-3.5" />
+                                            </span>
+                                            <h3 className="fiori-dashboard-object-card-title truncate">
                                                 {obj.name}
                                             </h3>
-                                            {objectIsRunning && (
-                                                <Badge className="h-4 px-1 bg-SkyBlue-500 text-white border-none rounded-none text-[8px] font-black uppercase tracking-tighter animate-pulse shadow-xs flex items-center gap-1 shrink-0">
-                                                    <Loader2 className="w-2 h-2 animate-spin" />
-                                                    EM CURSO
-                                                </Badge>
-                                            )}
-                                            {masterObj.dependencyIds && masterObj.dependencyIds.length > 0 && (
-                                                <button
-                                                    type="button"
-                                                    data-dashboard-card-popover-trigger=""
-                                                    className="flex items-center gap-0.5 text-SkyBlue-500 font-bold text-[10px] shrink-0 cursor-pointer hover:text-SkyBlue-600 transition-colors"
-                                                    onClick={(event) => handlePopoverTriggerClick(event, "precedence")}
-                                                    aria-label={`Precedência técnica: ${masterObj.dependencyIds.length} dependência${masterObj.dependencyIds.length > 1 ? "s" : ""}`}
-                                                    aria-expanded={openPanel === "precedence"}
-                                                >
-                                                    <Link2 className="w-2.5 h-2.5" />({masterObj.dependencyIds.length})
-                                                </button>
-                                            )}
-                                            {masterObj.externalDependencies && masterObj.externalDependencies.length > 0 && (
-                                                <button
-                                                    type="button"
-                                                    data-dashboard-card-popover-trigger=""
-                                                    className="flex items-center gap-0.5 text-amber-500 font-bold text-[10px] shrink-0 cursor-pointer hover:text-amber-600 transition-colors"
-                                                    onClick={(event) => handlePopoverTriggerClick(event, "external")}
-                                                    aria-label={`Dependências externas: ${masterObj.externalDependencies.length} item${masterObj.externalDependencies.length > 1 ? "s" : ""}`}
-                                                    aria-expanded={openPanel === "external"}
-                                                >
-                                                    <Network className="w-2.5 h-2.5" />({masterObj.externalDependencies.length})
-                                                </button>
-                                            )}
-                                            {parallelObjects.length > 0 && (
-                                                <button
-                                                    type="button"
-                                                    data-dashboard-card-popover-trigger=""
-                                                    className="flex items-center gap-0.5 text-[#107e3e] font-bold text-[10px] shrink-0 cursor-pointer hover:text-[#0a6642] transition-colors"
-                                                    onClick={(event) => handlePopoverTriggerClick(event, "parallel")}
-                                                    aria-label={`Execução paralela: ${parallelObjects.length} objeto${parallelObjects.length > 1 ? "s" : ""}`}
-                                                    aria-expanded={openPanel === "parallel"}
-                                                >
-                                                    <GitFork className="w-2.5 h-2.5" />({parallelObjects.length})
-                                                </button>
-                                            )}
+                                            <div className="fiori-dashboard-object-card-header-badges">
+                                                {objectIsRunning && (
+                                                    <Badge className="h-4 px-1 bg-SkyBlue-500 text-white border-none rounded-none text-[8px] font-black uppercase tracking-tighter animate-pulse shadow-xs flex items-center gap-1 shrink-0">
+                                                        <Loader2 className="w-2 h-2 animate-spin" />
+                                                        EM CURSO
+                                                    </Badge>
+                                                )}
+                                                {masterObj.dependencyIds && masterObj.dependencyIds.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        data-dashboard-card-popover-trigger=""
+                                                        className="inline-flex items-center gap-0.5 text-SkyBlue-500 font-bold text-[10px] leading-none shrink-0 cursor-pointer hover:text-SkyBlue-600 transition-colors"
+                                                        onClick={(event) => handlePopoverTriggerClick(event, "precedence")}
+                                                        aria-label={`Precedência técnica: ${masterObj.dependencyIds.length} dependência${masterObj.dependencyIds.length > 1 ? "s" : ""}`}
+                                                        aria-expanded={openPanel === "precedence"}
+                                                    >
+                                                        <Link2 className="w-2.5 h-2.5" />({masterObj.dependencyIds.length})
+                                                    </button>
+                                                )}
+                                                {masterObj.externalDependencies && masterObj.externalDependencies.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        data-dashboard-card-popover-trigger=""
+                                                        className="inline-flex items-center gap-0.5 text-amber-500 font-bold text-[10px] leading-none shrink-0 cursor-pointer hover:text-amber-600 transition-colors"
+                                                        onClick={(event) => handlePopoverTriggerClick(event, "external")}
+                                                        aria-label={`Dependências externas: ${masterObj.externalDependencies.length} item${masterObj.externalDependencies.length > 1 ? "s" : ""}`}
+                                                        aria-expanded={openPanel === "external"}
+                                                    >
+                                                        <Network className="w-2.5 h-2.5" />({masterObj.externalDependencies.length})
+                                                    </button>
+                                                )}
+                                                {parallelObjects.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        data-dashboard-card-popover-trigger=""
+                                                        className="inline-flex items-center gap-0.5 text-[#107e3e] font-bold text-[10px] leading-none shrink-0 cursor-pointer hover:text-[#0a6642] transition-colors"
+                                                        onClick={(event) => handlePopoverTriggerClick(event, "parallel")}
+                                                        aria-label={`Execução paralela: ${parallelObjects.length} objeto${parallelObjects.length > 1 ? "s" : ""}`}
+                                                        aria-expanded={openPanel === "parallel"}
+                                                    >
+                                                        <GitFork className="w-2.5 h-2.5" />({parallelObjects.length})
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="p-1 bg-white rounded-lg cursor-move shrink-0">
-                                        <GripVertical className="w-3 h-3 text-slate-300" />
+                                        <div
+                                            className="fiori-dashboard-object-card-charge-meta"
+                                            aria-label={`Grupo ${displayChargeGroup || "—"}, sequência ${normalizeSeqForDisplay(displayChargeOrder)}`}
+                                        >
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-tighter font-bold tabular-nums leading-none">
+                                                {displayChargeGroup || "—"}/{normalizeSeqForDisplay(displayChargeOrder)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </CardHeader>
 
                                 <CardContent className="px-2 py-1">
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-2 px-2 py-0.5 bg-slate-200/90 border-b border-slate-300">
-                                            <div className="flex items-center gap-0.5">
-                                                <span className="text-[6px] uppercase tracking-[0.2em] text-slate-400">Grupo</span>
-                                                <span className="text-[10px] text-slate-700 uppercase tracking-tighter ml-1">{displayChargeGroup || "—"}</span>
-                                            </div>
-                                            <span className="text-slate-300 text-[8px]">·</span>
-                                            <div className="flex items-center gap-0.5">
-                                                <span className="text-[6px] uppercase tracking-[0.2em] text-slate-400">Seq.</span>
-                                                <span className="text-[10px] text-slate-700 uppercase tracking-tighter ml-1">{normalizeSeqForDisplay(displayChargeOrder)}</span>
-                                            </div>
-                                        </div>
-                                        <ConsolidatedTooltip
+                                    <ConsolidatedTooltip
                                             obj={obj}
                                             successPct={successPct}
                                             processedPct={processedPct}
-                                            errorPct={errorPct}
                                             success={success}
                                             error={error}
                                             target={target}
                                             processed={processed}
                                             objHasErrors={objHasErrors}
-                                            asGridCell
                                             isMockFinalized={((obj.mockId ? mocksByIdMap?.get(obj.mockId) : undefined)?.status === "CARGA_CONCLUIDA") || ((obj.mockId ? mocksByIdMap?.get(obj.mockId) : undefined)?.status === "FINALIZADA")}
                                             panelOpen={openPanel === "consolidated"}
                                             onPanelOpenChange={(open) => setOpenPanel(open ? "consolidated" : null)}
                                             onTriggerClick={(event) => handlePopoverTriggerClick(event, "consolidated")}
                                             popoverContentHandlers={popoverContentHandlers}
                                         />
-                                    </div>
                                 </CardContent>
 
                                 <div className="bg-white/50 p-1 flex justify-between items-center border-t border-slate-100">

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiDescriptionGenerator } from "@/ai/flows/ai-description-generator";
+import { requireAdminOrMasterCaller } from "@/lib/api/caller-auth";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 function buildFallbackDescription(type: "project" | "mock" | "object", keywords: string): string {
   const scope = keywords.trim().toUpperCase();
@@ -14,7 +16,29 @@ function buildFallbackDescription(type: "project" | "mock" | "object", keywords:
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const ip = getClientIp(req);
+    const rate = checkRateLimit(`ai:description:${ip}`, 20, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Tente novamente em instantes." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const verification = await requireAdminOrMasterCaller(body, req);
+    if (verification.error || !verification.decoded) {
+      return NextResponse.json({ error: verification.error ?? "Não autorizado." }, { status: 403 });
+    }
+
+    const userRate = checkRateLimit(`ai:description:user:${verification.decoded.uid}`, 30, 60_000);
+    if (!userRate.allowed) {
+      return NextResponse.json(
+        { error: "Limite de gerações por usuário atingido. Aguarde um momento." },
+        { status: 429, headers: { "Retry-After": String(userRate.retryAfterSec) } },
+      );
+    }
+
     const type = body?.type;
     const keywords = String(body?.keywords ?? "").trim();
 
@@ -23,6 +47,10 @@ export async function POST(req: NextRequest) {
         { error: "Parâmetros inválidos. Informe type e keywords." },
         { status: 400 },
       );
+    }
+
+    if (keywords.length > 500) {
+      return NextResponse.json({ error: "Keywords muito longas." }, { status: 400 });
     }
 
     const hasAiKey = Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
@@ -36,14 +64,7 @@ export async function POST(req: NextRequest) {
     const result = await aiDescriptionGenerator({ type, keywords });
     return NextResponse.json({ description: result.description, source: "ai" });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro ao gerar descrição.";
-    if (message.includes("GEMINI_API_KEY") || message.includes("GOOGLE_API_KEY")) {
-      return NextResponse.json({
-        description: buildFallbackDescription("mock", "migração"),
-        source: "fallback",
-      });
-    }
+    console.error("[api/ai/description]", error);
     return NextResponse.json({ error: "Erro interno ao gerar descrição." }, { status: 500 });
   }
 }
-

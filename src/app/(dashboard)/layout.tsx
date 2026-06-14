@@ -105,7 +105,7 @@ export default function DashboardLayout({
 
     return (
         <DashboardShell noPadding>
-            <div className="min-h-dvh bg-slate-50/50 flex flex-col overflow-x-hidden dashboard-no-rounded relative">
+            <div className="h-dvh bg-slate-50/50 flex flex-col overflow-hidden dashboard-no-rounded relative">
                 <Suspense fallback={null}>
                     <StripNavigationQueryParams />
                 </Suspense>

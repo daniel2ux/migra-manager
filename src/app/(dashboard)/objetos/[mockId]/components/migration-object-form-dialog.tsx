@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Clock, Database, History, Search, Timer, CalendarDays } from "lucide-react";
+import { Check, Clock, Database, History, Loader2, Search, Timer, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber, unformatNumber, formatDurationInput } from "@/lib/migration/format-utils";
 import type { MigrationObject } from "@/types/migration";
@@ -62,6 +61,8 @@ interface MigrationObjectFormDialogProps {
   formData: MigrationFormData;
   onFormChange: (fn: (prev: MigrationFormData) => MigrationFormData) => void;
   filteredMasterObjects: MasterObject[];
+  isMasterCatalogLoading?: boolean;
+  masterPickerEmptyHint?: string;
   selectedMasterIds: string[];
   onSelectAll: () => void;
   onToggleMaster: (id: string) => void;
@@ -84,6 +85,8 @@ export function MigrationObjectFormDialog({
   formData,
   onFormChange,
   filteredMasterObjects,
+  isMasterCatalogLoading = false,
+  masterPickerEmptyHint = "Nenhum objeto disponível para cadastro.",
   selectedMasterIds,
   onSelectAll,
   onToggleMaster,
@@ -100,12 +103,21 @@ export function MigrationObjectFormDialog({
 }: MigrationObjectFormDialogProps) {
   const [chargeStartDraft, setChargeStartDraft] = useState("");
   const [chargeEndDraft, setChargeEndDraft] = useState("");
+  const [chargeStartCalOpen, setChargeStartCalOpen] = useState(false);
+  const [chargeEndCalOpen, setChargeEndCalOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setChargeStartDraft(formatBrazilianDateTime(formData.chargeStartTime));
     setChargeEndDraft(formatBrazilianDateTime(formData.chargeEndTime));
   }, [open, formData.chargeStartTime, formData.chargeEndTime]);
+
+  useEffect(() => {
+    if (!open) {
+      setChargeStartCalOpen(false);
+      setChargeEndCalOpen(false);
+    }
+  }, [open]);
 
   const parseLocalDateTime = (value: string) => parseBrazilianLocalDateTime(value);
 
@@ -134,20 +146,26 @@ export function MigrationObjectFormDialog({
   const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")), []);
   const minuteSecondOptions = useMemo(() => Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")), []);
 
-  const updateDatePart = (key: "chargeStartTime" | "chargeEndTime", date: Date | undefined) => {
+  const selectDatePart = (
+    key: "chargeStartTime" | "chargeEndTime",
+    date: Date | undefined,
+    setDraft: (value: string) => void,
+    setCalOpen: (open: boolean) => void,
+  ) => {
     if (!date) return;
-    onFormChange((prev) => {
-      const current = parseBrazilianLocalDateTime(prev[key]) ?? new Date();
-      const merged = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        current.getHours(),
-        current.getMinutes(),
-        current.getSeconds()
-      );
-      return { ...prev, [key]: toIsoLocalSeconds(merged) };
-    });
+    const current = parseBrazilianLocalDateTime(formData[key]) ?? new Date();
+    const merged = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      current.getHours(),
+      current.getMinutes(),
+      current.getSeconds(),
+    );
+    const iso = toIsoLocalSeconds(merged);
+    onFormChange((prev) => ({ ...prev, [key]: iso }));
+    setDraft(formatBrazilianDateTime(iso));
+    setCalOpen(false);
   };
 
   const updateTimePart = (key: "chargeStartTime" | "chargeEndTime", part: "hour" | "minute" | "second", value: string) => {
@@ -165,12 +183,131 @@ export function MigrationObjectFormDialog({
   const endDate = parseLocalDateTime(formData.chargeEndTime);
   const startValid = !!startDate && !Number.isNaN(startDate.getTime());
   const endValid = !!endDate && !Number.isNaN(endDate.getTime());
+  const fieldsLocked = !isAdmin || isMockLocked;
+
+  const renderDateTimeField = (
+    key: "chargeStartTime" | "chargeEndTime",
+    label: string,
+    draft: string,
+    setDraft: (value: string) => void,
+    date: Date | null,
+    valid: boolean,
+    calOpen: boolean,
+    onCalOpenChange: (open: boolean) => void,
+  ) => (
+    <div className="fiori-form-field">
+      <label className="fiori-field-label">
+        <Clock className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
+        {label}
+      </label>
+      <div className="flex gap-2">
+        <Input
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          spellCheck={false}
+          disabled={fieldsLocked}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => commitChargeDraft(key, draft, formData[key])}
+          placeholder="dd/mm/aaaa hh:mm:ss"
+          aria-label={`Data e hora de ${label.toLowerCase()} da carga`}
+          className={cn(
+            "fiori-input fiori-input-datetime flex-1 font-mono tabular-nums shadow-none",
+            fieldsLocked && "readable-disabled",
+          )}
+        />
+        <Popover open={calOpen} onOpenChange={onCalOpenChange}>
+          <FioriPopoverIconButtonHint
+            hint={`Abrir calendário — ${label.toLowerCase()} da carga`}
+            disabled={fieldsLocked}
+            className="fiori-icon-btn fiori-icon-btn-bordered shrink-0"
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <CalendarDays className="h-4 w-4" />
+          </FioriPopoverIconButtonHint>
+          <PopoverContent
+            variant="fiori"
+            className="fiori-datetime-popover"
+            side="bottom"
+            align="end"
+            sideOffset={6}
+            collisionPadding={16}
+            sticky="partial"
+          >
+            <Calendar
+              variant="fiori"
+              mode="single"
+              selected={valid && date ? date : undefined}
+              onSelect={(d) => selectDatePart(key, d, setDraft, onCalOpenChange)}
+              locale={ptBR}
+              initialFocus
+            />
+            <div className="fiori-datetime-time">
+              <span className="fiori-datetime-time-label">Hora</span>
+              <div className="grid grid-cols-3 gap-2">
+                <Select
+                  value={String((valid && date ? date : new Date()).getHours()).padStart(2, "0")}
+                  onValueChange={(v) => updateTimePart(key, "hour", v)}
+                >
+                  <SelectTrigger className="fiori-select-trigger shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent side="top" className="fiori-select-content max-h-40">
+                    {hourOptions.map((h) => (
+                      <SelectItem key={h} value={h} className="fiori-select-item">
+                        {h}h
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={String((valid && date ? date : new Date()).getMinutes()).padStart(2, "0")}
+                  onValueChange={(v) => updateTimePart(key, "minute", v)}
+                >
+                  <SelectTrigger className="fiori-select-trigger shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent side="top" className="fiori-select-content max-h-40">
+                    {minuteSecondOptions.map((m) => (
+                      <SelectItem key={m} value={m} className="fiori-select-item">
+                        {m}m
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={String((valid && date ? date : new Date()).getSeconds()).padStart(2, "0")}
+                  onValueChange={(v) => updateTimePart(key, "second", v)}
+                >
+                  <SelectTrigger className="fiori-select-trigger shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent side="top" className="fiori-select-content max-h-40">
+                    {minuteSecondOptions.map((s) => (
+                      <SelectItem key={s} value={s} className="fiori-select-item">
+                        {s}s
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         overlayClassName="fiori-dialog-overlay"
-        className="fiori-dialog flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]"
+        className={cn(
+          "fiori-dialog flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]",
+          editingObject ? "max-w-4xl" : "max-w-3xl",
+          editingObject && "fiori-dialog--form fiori-dialog--object-exec-form",
+        )}
       >
         <DialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
           <DialogDescription className="sr-only">
@@ -195,67 +332,88 @@ export function MigrationObjectFormDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-4 px-5 py-4">
-            {!editingObject ? (
-              <>
-                <div className="fiori-search-shell">
-                  <Search className="fiori-search-icon" />
-                  <Input
-                    placeholder="Pesquisar objetos no catálogo..."
-                    className="fiori-search-input shadow-none"
-                    value={searchMasterTerm}
-                    onChange={(e) => onSearchMasterChange(e.target.value)}
-                  />
-                </div>
+        {!editingObject ? (
+          <>
+            <div className="shrink-0 space-y-3 px-5 pt-4 pb-2">
+              <div className="fiori-search-shell">
+                <Search className="fiori-search-icon" />
+                <Input
+                  placeholder="Pesquisar objetos no catálogo..."
+                  className="fiori-search-input shadow-none"
+                  value={searchMasterTerm}
+                  onChange={(e) => onSearchMasterChange(e.target.value)}
+                />
+              </div>
 
-                <div>
-                  <div className="fiori-master-picker-header">
-                    <label className="fiori-field-label">
-                      <Database className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
-                      Objetos disponíveis
-                    </label>
-                    {filteredMasterObjects.length > 0 && (
-                      <button type="button" onClick={onSelectAll} className="fiori-link-btn">
-                        {filteredMasterObjects.every((mo) => selectedMasterIds.includes(mo.id))
-                          ? "Desmarcar todos"
-                          : "Marcar todos"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="fiori-picker-zone min-h-[8.75rem]">
-                    <div className="flex flex-wrap gap-1.5">
-                      {filteredMasterObjects.length > 0 ? (
-                        filteredMasterObjects.map((mo) => {
-                          const isSelected = selectedMasterIds.includes(mo.id);
-                          return (
-                            <button
-                              key={mo.id}
-                              type="button"
-                              className={cn(
-                                "fiori-chip",
-                                isSelected && "fiori-chip-selected"
-                              )}
-                              onClick={() => onToggleMaster(mo.id)}
-                            >
-                              {mo.name}
-                              {mo.chargeGroup && (
-                                <span className="opacity-60">({mo.chargeGroup})</span>
-                              )}
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <p className="fiori-empty-hint w-full py-6 text-center">
-                          Nenhum objeto disponível para cadastro.
-                        </p>
-                      )}
-                    </div>
-                  </div>
+              <div className="fiori-master-picker-header mb-0">
+                <label className="fiori-field-label">
+                  <Database className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
+                  Objetos disponíveis
+                </label>
+                {filteredMasterObjects.length > 0 && (
+                  <button type="button" onClick={onSelectAll} className="fiori-link-btn">
+                    {filteredMasterObjects.every((mo) => selectedMasterIds.includes(mo.id))
+                      ? "Desmarcar todos"
+                      : "Marcar todos"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="fiori-master-object-picker-list custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+              {isMasterCatalogLoading ? (
+                <div className="flex justify-center px-5 py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-[var(--fiori-brand)]" />
                 </div>
-              </>
-            ) : (
-              <>
+              ) : filteredMasterObjects.length > 0 ? (
+                <div className="fiori-object-list fiori-object-list--compact">
+                  {filteredMasterObjects.map((mo) => {
+                    const isSelected = selectedMasterIds.includes(mo.id);
+                    return (
+                      <button
+                        key={mo.id}
+                        type="button"
+                        className={cn(
+                          "fiori-object-row",
+                          isSelected && "fiori-object-row-selected",
+                        )}
+                        onClick={() => onToggleMaster(mo.id)}
+                      >
+                        <div
+                          className={cn(
+                            "fiori-object-row-checkbox",
+                            isSelected && "fiori-object-row-checkbox-checked",
+                          )}
+                          aria-hidden
+                        >
+                          {isSelected && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
+                        </div>
+                        <div className="fiori-object-row-body min-w-0 flex-1">
+                          <span className="fiori-object-row-name">{mo.name}</span>
+                        </div>
+                        {mo.chargeGroup && (
+                          <span
+                            className={cn(
+                              "fiori-seq-badge",
+                              isSelected && "fiori-seq-badge-selected",
+                            )}
+                          >
+                            {mo.chargeGroup}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="fiori-empty-hint px-5 py-8 text-center">
+                  {masterPickerEmptyHint}
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+        <div className="fiori-dialog-body custom-scrollbar">
                 <div className="fiori-object-exec-summary">
                   <div className="fiori-object-exec-name">
                     <div className="fiori-object-exec-icon">
@@ -291,174 +449,40 @@ export function MigrationObjectFormDialog({
                   </div>
                 </div>
 
-                <div className="border-t border-[var(--fiori-border-light)] pt-4">
+                <section className="fiori-form-section">
                   <h3 className="fiori-section-title">
                     <Timer className="h-3.5 w-3.5" />
                     Monitoramento da carga
                   </h3>
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <label className="fiori-field-label">
-                        <Clock className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
-                        Início
-                      </label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          disabled={!isAdmin || isMockLocked}
-                          value={chargeStartDraft}
-                          onChange={(e) => setChargeStartDraft(e.target.value)}
-                          onBlur={() =>
-                            commitChargeDraft("chargeStartTime", chargeStartDraft, formData.chargeStartTime)
-                          }
-                          placeholder="dd/mm/aaaa hh:mm:ss"
-                          autoComplete="off"
-                          aria-label="Data e hora de início da carga"
-                          className="fiori-input min-w-0 flex-1 font-mono readable-disabled shadow-none"
-                        />
-                        <Popover>
-                          <FioriPopoverIconButtonHint
-                            hint="Abrir calendário — início da carga"
-                            disabled={!isAdmin || isMockLocked}
-                            className="fiori-icon-btn fiori-icon-btn-bordered"
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            <CalendarDays className="h-4 w-4" />
-                          </FioriPopoverIconButtonHint>
-                          <PopoverContent variant="fiori" className="w-auto max-h-[85vh] overflow-y-auto p-3" align="start">
-                            <div className="space-y-3">
-                              <Calendar
-                                mode="single"
-                                selected={startValid ? startDate! : undefined}
-                                onSelect={(d) => updateDatePart("chargeStartTime", d)}
-                                locale={ptBR}
-                                initialFocus
-                              />
-                              <div className="grid grid-cols-3 gap-2">
-                                <Select
-                                  value={String((startValid ? startDate : new Date()).getHours()).padStart(2, "0")}
-                                  onValueChange={(v) => updateTimePart("chargeStartTime", "hour", v)}
-                                >
-                                  <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                  <SelectContent side="top" className="fiori-select-content max-h-40">
-                                    {hourOptions.map((h) => (
-                                      <SelectItem key={h} value={h} className="fiori-select-item">{h}h</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select
-                                  value={String((startValid ? startDate : new Date()).getMinutes()).padStart(2, "0")}
-                                  onValueChange={(v) => updateTimePart("chargeStartTime", "minute", v)}
-                                >
-                                  <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                  <SelectContent side="top" className="fiori-select-content max-h-40">
-                                    {minuteSecondOptions.map((m) => (
-                                      <SelectItem key={m} value={m} className="fiori-select-item">{m}m</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select
-                                  value={String((startValid ? startDate : new Date()).getSeconds()).padStart(2, "0")}
-                                  onValueChange={(v) => updateTimePart("chargeStartTime", "second", v)}
-                                >
-                                  <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                  <SelectContent side="top" className="fiori-select-content max-h-40">
-                                    {minuteSecondOptions.map((s) => (
-                                      <SelectItem key={s} value={s} className="fiori-select-item">{s}s</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="fiori-field-label">
-                        <Clock className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
-                        Término
-                      </label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          disabled={!isAdmin || isMockLocked}
-                          value={chargeEndDraft}
-                          onChange={(e) => setChargeEndDraft(e.target.value)}
-                          onBlur={() =>
-                            commitChargeDraft("chargeEndTime", chargeEndDraft, formData.chargeEndTime)
-                          }
-                          placeholder="dd/mm/aaaa hh:mm:ss"
-                          autoComplete="off"
-                          aria-label="Data e hora de término da carga"
-                          className="fiori-input min-w-0 flex-1 font-mono readable-disabled shadow-none"
-                        />
-                        <Popover>
-                          <FioriPopoverIconButtonHint
-                            hint="Abrir calendário — término da carga"
-                            disabled={!isAdmin || isMockLocked}
-                            className="fiori-icon-btn fiori-icon-btn-bordered"
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            <CalendarDays className="h-4 w-4" />
-                          </FioriPopoverIconButtonHint>
-                          <PopoverContent variant="fiori" className="w-auto max-h-[85vh] overflow-y-auto p-3" align="start">
-                            <div className="space-y-3">
-                              <Calendar
-                                mode="single"
-                                selected={endValid ? endDate! : undefined}
-                                onSelect={(d) => updateDatePart("chargeEndTime", d)}
-                                locale={ptBR}
-                                initialFocus
-                              />
-                              <div className="grid grid-cols-3 gap-2">
-                                <Select
-                                  value={String((endValid ? endDate : new Date()).getHours()).padStart(2, "0")}
-                                  onValueChange={(v) => updateTimePart("chargeEndTime", "hour", v)}
-                                >
-                                  <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                  <SelectContent side="top" className="fiori-select-content max-h-40">
-                                    {hourOptions.map((h) => (
-                                      <SelectItem key={h} value={h} className="fiori-select-item">{h}h</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select
-                                  value={String((endValid ? endDate : new Date()).getMinutes()).padStart(2, "0")}
-                                  onValueChange={(v) => updateTimePart("chargeEndTime", "minute", v)}
-                                >
-                                  <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                  <SelectContent side="top" className="fiori-select-content max-h-40">
-                                    {minuteSecondOptions.map((m) => (
-                                      <SelectItem key={m} value={m} className="fiori-select-item">{m}m</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <Select
-                                  value={String((endValid ? endDate : new Date()).getSeconds()).padStart(2, "0")}
-                                  onValueChange={(v) => updateTimePart("chargeEndTime", "second", v)}
-                                >
-                                  <SelectTrigger className="fiori-select-trigger"><SelectValue /></SelectTrigger>
-                                  <SelectContent side="top" className="fiori-select-content max-h-40">
-                                    {minuteSecondOptions.map((s) => (
-                                      <SelectItem key={s} value={s} className="fiori-select-item">{s}s</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {renderDateTimeField(
+                      "chargeStartTime",
+                      "Início",
+                      chargeStartDraft,
+                      setChargeStartDraft,
+                      startDate,
+                      startValid,
+                      chargeStartCalOpen,
+                      setChargeStartCalOpen,
+                    )}
+                    {renderDateTimeField(
+                      "chargeEndTime",
+                      "Término",
+                      chargeEndDraft,
+                      setChargeEndDraft,
+                      endDate,
+                      endValid,
+                      chargeEndCalOpen,
+                      setChargeEndCalOpen,
+                    )}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="fiori-form-field">
                       <label className="fiori-field-label">Total target</label>
                       <Input
                         type="text"
+                        inputMode="numeric"
                         value={formatNumber(formData.targetRecordsCount)}
                         onChange={(e) =>
                           onFormChange((prev) => ({
@@ -466,37 +490,46 @@ export function MigrationObjectFormDialog({
                             targetRecordsCount: unformatNumber(e.target.value),
                           }))
                         }
-                        className="fiori-input readable-disabled shadow-none"
-                        disabled={!isAdmin || isMockLocked}
+                        className={cn(
+                          "fiori-input tabular-nums shadow-none",
+                          fieldsLocked && "readable-disabled",
+                        )}
+                        disabled={fieldsLocked}
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="fiori-field-label">Total carregado</label>
+                    <div className="fiori-form-field">
+                      <label className="fiori-field-label">
+                        Total carregado
+                        <span className="font-normal text-[var(--fiori-label)]"> (Target − Erro)</span>
+                      </label>
                       <Input
                         type="text"
                         readOnly
+                        tabIndex={-1}
                         value={formatNumber(
-                          Math.max(0, formData.targetRecordsCount - formData.errorRecordsCount)
+                          Math.max(0, formData.targetRecordsCount - formData.errorRecordsCount),
                         )}
-                        className="fiori-input readable-disabled shadow-none bg-[#f5f6f7]"
+                        className="fiori-input tabular-nums readable-disabled shadow-none"
                       />
                     </div>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    <div className="space-y-1.5">
+                    <div className="fiori-form-field">
                       <label className="fiori-field-label">Sucesso (auto)</label>
                       <Input
                         type="text"
-                        value={formatNumber(formData.successfulRecordsCount)}
                         readOnly
-                        className="fiori-input fiori-input-success readable-disabled shadow-none"
+                        tabIndex={-1}
+                        value={formatNumber(formData.successfulRecordsCount)}
+                        className="fiori-input fiori-input-success tabular-nums readable-disabled shadow-none"
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="fiori-form-field">
                       <label className="fiori-field-label">Total erro</label>
                       <Input
                         type="text"
+                        inputMode="numeric"
                         value={formatNumber(formData.errorRecordsCount)}
                         onChange={(e) =>
                           onFormChange((prev) => ({
@@ -504,31 +537,36 @@ export function MigrationObjectFormDialog({
                             errorRecordsCount: unformatNumber(e.target.value),
                           }))
                         }
-                        className="fiori-input fiori-input-error readable-disabled shadow-none"
-                        disabled={!isAdmin || isMockLocked}
+                        className={cn(
+                          "fiori-input fiori-input-error tabular-nums shadow-none",
+                          fieldsLocked && "readable-disabled",
+                        )}
+                        disabled={fieldsLocked}
                       />
                     </div>
-                    <div className="col-span-2 space-y-1.5 sm:col-span-1">
+                    <div className="fiori-form-field col-span-2 sm:col-span-1">
                       <label className="fiori-field-label">Duração</label>
                       <Input
                         readOnly
+                        tabIndex={-1}
                         value={formatDurationInput(formData.currentChargeDurationMs)}
-                        className="fiori-input font-mono readable-disabled shadow-none bg-[#f5f6f7]"
+                        className="fiori-input font-mono tabular-nums readable-disabled shadow-none"
                       />
                     </div>
                   </div>
-                </div>
+                </section>
 
-                <div className="border-t border-[var(--fiori-border-light)] pt-4">
+                <section className="fiori-form-section">
                   <h3 className="fiori-section-title">
                     <History className="h-3.5 w-3.5" />
                     Histórico do ciclo anterior
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
+                    <div className="fiori-form-field">
                       <label className="fiori-field-label">Volume anterior</label>
                       <Input
                         type="text"
+                        inputMode="numeric"
                         value={formatNumber(formData.previousMigratedRecordsCount)}
                         onChange={(e) =>
                           onFormChange((prev) => ({
@@ -536,26 +574,31 @@ export function MigrationObjectFormDialog({
                             previousMigratedRecordsCount: unformatNumber(e.target.value),
                           }))
                         }
-                        className="fiori-input readable-disabled shadow-none"
-                        disabled={!isAdmin || isMockLocked}
+                        className={cn(
+                          "fiori-input tabular-nums shadow-none",
+                          fieldsLocked && "readable-disabled",
+                        )}
+                        disabled={fieldsLocked}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="fiori-form-field">
                       <label className="fiori-field-label">Duração anterior</label>
                       <Input
+                        type="text"
                         placeholder="Ex.: 08H 30M 00S"
                         value={prevDurationInput}
                         onChange={onDurationInputChange}
-                        className="fiori-input readable-disabled shadow-none"
-                        disabled={!isAdmin || isMockLocked}
+                        className={cn(
+                          "fiori-input font-mono tabular-nums shadow-none",
+                          fieldsLocked && "readable-disabled",
+                        )}
+                        disabled={fieldsLocked}
                       />
                     </div>
                   </div>
-                </div>
-              </>
-            )}
-          </div>
-        </ScrollArea>
+                </section>
+        </div>
+        )}
 
         <DialogFooter className="fiori-dialog-footer shrink-0 flex-col gap-2 sm:flex-row">
           <button type="button" onClick={() => onOpenChange(false)} className="fiori-btn-ghost w-full sm:w-auto">

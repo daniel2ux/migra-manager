@@ -1,5 +1,5 @@
 export { UserCard } from "./user-card";
-export { UserSearchBar, AccessDeniedScreen, UserGridEmptyState } from "./user-search-bar";
+export { AccessDeniedScreen, UserGridEmptyState } from "./user-search-bar";
 export { EditUserDialog } from "./edit-user-dialog";
 export { CreateUserDialog } from "./create-user-dialog";
 export { RoleChangeDialog } from "./role-change-dialog";

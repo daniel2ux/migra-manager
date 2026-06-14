@@ -10,7 +10,6 @@ import {
 import { Loader2, Search, Plus, FolderSearch, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { aiDescriptionGenerator } from "@/ai/flows/ai-description-generator";
 import {
     useDb, useUser, useCollection, useMemoDb,
 } from "@/supabase";
@@ -429,8 +428,22 @@ export default function ProjetosPageContent() {
         if (!formData.name) { toast({ variant: "destructive", description: "Digite um nome para gerar a descrição." }); return; }
         setIsGenerating(true);
         try {
-            const result = await aiDescriptionGenerator({ type: "project", keywords: formData.name });
-            setFormData({ ...formData, description: result.description });
+            const callerToken = await user?.getIdToken();
+            if (!callerToken) {
+                toast({ variant: "destructive", description: "Sessão expirada. Faça login novamente." });
+                return;
+            }
+            const res = await fetch("/api/ai/description", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "project", keywords: formData.name.trim(), callerToken }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data?.error || "Falha ao gerar descrição com IA.");
+            setFormData({ ...formData, description: data.description });
+            if (data?.source === "fallback") {
+                toast({ description: "IA indisponível no ambiente. Texto gerado por fallback local." });
+            }
         } catch { toast({ variant: "destructive", description: "Erro ao gerar descrição com IA." }); }
         finally { setIsGenerating(false); }
     };

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import {
   CheckCircle2,
     Loader2,
@@ -78,6 +78,8 @@ function ObjetosContent() {
     searchMasterTerm,
     setSearchMasterTerm,
         filteredMasterObjects,
+        isMasterCatalogLoading,
+        masterPickerEmptyHint,
     quickOpen,
     setQuickOpen,
         quickEditObject,
@@ -102,11 +104,15 @@ function ObjetosContent() {
     projectId: page.projectId,
     mockId: page.mockId,
     isAdmin: !!page.isAdmin,
+    isAdminOrMaster: !!page.isAdminOrMaster,
     isEffectiveLocked: !!page.isEffectiveLocked,
-    objects: page.objects,
+    objects: page.mergedObjects,
     masterObjects: page.masterObjects,
+    isMasterObjectsLoading: page.isMasterObjectsLoading,
     userProfile: page.userProfile,
     toast: page.toast,
+    refetchObjects: page.refetchObjects,
+    addPendingObjects: page.addPendingObjects,
     });
 
     const {
@@ -153,25 +159,27 @@ function ObjetosContent() {
     toast: page.toast,
   });
 
-    useEffect(() => {
+  const handleOpenDialogRef = useRef(handleOpenDialog);
+
+  useEffect(() => {
+    handleOpenDialogRef.current = handleOpenDialog;
+  }, [handleOpenDialog]);
+
+  const isAddDialogReady =
+    !page.isLoading &&
+    !page.isMockLoading &&
+    !page.isProfileLoading &&
+    !page.isMasterObjectsLoading;
+
+  useEffect(() => {
     const shouldOpenAdd =
       typeof window !== 'undefined' &&
       sessionStorage.getItem(SESSION_KEYS.MOCK_OPEN_ADD) === '1';
-    if (
-      shouldOpenAdd &&
-      !page.isLoading &&
-      !page.isMockLoading &&
-      !page.isProfileLoading
-    ) {
+    if (shouldOpenAdd && isAddDialogReady) {
       sessionStorage.removeItem(SESSION_KEYS.MOCK_OPEN_ADD);
-      handleOpenDialog();
+      handleOpenDialogRef.current();
     }
-  }, [
-    page.isLoading,
-    page.isMockLoading,
-    page.isProfileLoading,
-    handleOpenDialog,
-  ]);
+  }, [isAddDialogReady]);
 
   if (page.isMasked && !page.mockId) {
         return (
@@ -289,6 +297,8 @@ function ObjetosContent() {
                         formData={formData}
                         onFormChange={setFormData}
                         filteredMasterObjects={filteredMasterObjects}
+                        isMasterCatalogLoading={isMasterCatalogLoading}
+                        masterPickerEmptyHint={masterPickerEmptyHint}
                         selectedMasterIds={selectedMasterIds}
                         onSelectAll={handleSelectAll}
                         onToggleMaster={handleToggleMasterSelection}
@@ -341,7 +351,7 @@ function ObjetosContent() {
                 page.showPerformanceTable && 'flex flex-1 flex-col min-h-0 overflow-hidden',
                                 )}
                             >
-              {!page.sortedObjects || page.sortedObjects.length === 0 ? (
+              {!page.isLoading && !page.isMockLoading && page.sortedObjects.length === 0 ? (
                                     <div className="text-center py-12 text-[10px] font-black uppercase tracking-widest text-slate-400 opacity-40">
                                         Nenhum objeto adicionado.
                                     </div>
