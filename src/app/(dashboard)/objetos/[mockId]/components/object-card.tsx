@@ -75,6 +75,7 @@ export function ObjectCard({
     const processed = Number(obj.processedRecordsCount) || 0;
     const error = Number(obj.errorRecordsCount) || 0;
     const success = Math.max(0, processed - error);
+    const processedPct = target > 0 ? (processed / target) * 100 : 0;
     const successPct = target > 0 ? (success / target) * 100 : 0;
     const errorPct = target > 0 ? (error / target) * 100 : 0;
     const hasErrors = error > 0;
@@ -258,18 +259,18 @@ export function ObjectCard({
                                 <span className="text-[8px] font-black text-red-600">{formatNumber(error)}</span>
                             </div>
                         )}
-                        {successPct === 100 && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+                        {processedPct >= 100 && !hasErrors && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
                         <span className={cn(
                             "text-[12px] font-black font-mono tracking-tighter leading-none",
-                            successPct === 0
+                            processedPct === 0
                                 ? "text-slate-400"
-                                : successPct === 100
+                                : processedPct >= 100 && !hasErrors
                                   ? "text-emerald-600"
-                                  : successPct >= 50
+                                  : processedPct >= 50
                                     ? "text-amber-600"
                                     : "text-red-600",
                         )}>
-                            {formatPercentage(successPct, 'success', hasErrors)}%
+                            {formatPercentage(processedPct, "success", hasErrors)}%
                         </span>
                     </div>
                 </div>
@@ -298,7 +299,7 @@ export function ObjectCard({
                     </div>
                     <div className="flex flex-col items-end leading-none">
                         <span className="text-[6.5px] font-black uppercase tracking-widest text-slate-400">Registros</span>
-                        <span className="fiori-migration-object-card-stat-value text-[10px] font-black text-slate-700 tabular-nums mt-0.5">{formatNumber(obj.migratedRecordsCount || 0)}</span>
+                        <span className="fiori-migration-object-card-stat-value text-[10px] font-black text-slate-700 tabular-nums mt-0.5">{formatNumber(target)}</span>
                     </div>
                 </div>
             </div>
