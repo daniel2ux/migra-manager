@@ -64,10 +64,6 @@ export interface WriteBatch {
   commit(): Promise<void>;
 }
 
-export function createDbAdapter(client: SupabaseClient): SupabaseDb {
-  return client;
-}
-
 export function doc(
   dbOrCol: SupabaseDb | CollectionReference,
   ...pathSegments: string[]

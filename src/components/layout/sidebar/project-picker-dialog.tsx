@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, FolderKanban } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useMemo } from "react";
+import { FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -11,6 +11,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { STORAGE_KEYS } from "@/lib/constants";
+import { useLocalStorageState } from "@/hooks/use-local-storage-state";
+import { isProjectInactive } from "@/lib/project-utils";
+import {
+    ProjectPickerList,
+    type ProjectPickerItem,
+} from "@/components/layout/project-picker-list";
+import { ProjectPickerInactiveToggle } from "@/components/layout/project-picker-inactive-toggle";
 
 export function ProjectPickerDialog({
     open,
@@ -21,10 +29,29 @@ export function ProjectPickerDialog({
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    sortedProjects: any[];
+    sortedProjects: ProjectPickerItem[];
     currentPid: string | null;
     onPick: (id: string) => void;
 }) {
+    const [showInactive, setShowInactive] = useLocalStorageState<boolean>(
+        STORAGE_KEYS.PROJECTS_SHOW_INACTIVE,
+        false,
+    );
+
+    const inactiveCount = useMemo(
+        () => sortedProjects.filter((p) => isProjectInactive(p)).length,
+        [sortedProjects],
+    );
+
+    const handlePick = (id: string) => {
+        const project = sortedProjects.find((p) => p.id === id);
+        if (!project) return;
+        if (isProjectInactive(project)) {
+            setShowInactive(true);
+        }
+        onPick(id);
+    };
+
     return (
         <Dialog preserveDashboardScroll open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -43,55 +70,31 @@ export function ProjectPickerDialog({
                                     Alterar projeto
                                 </DialogTitle>
                                 <DialogDescription className="fiori-dialog-subtitle">
-                                    Você está vinculado a mais de um projeto. Selecione o contexto em que deseja trabalhar.
+                                    Selecione o contexto em que deseja trabalhar. Projetos inativos
+                                    podem ser reativados em Projetos.
                                 </DialogDescription>
                             </div>
+                        </div>
+                        <div className="fiori-dialog-header-actions">
+                            <ProjectPickerInactiveToggle
+                                showInactive={showInactive}
+                                onToggle={() => setShowInactive(!showInactive)}
+                                inactiveCount={inactiveCount}
+                            />
                         </div>
                     </div>
                 </DialogHeader>
 
                 <div className="fiori-project-picker-body">
                     <div className="fiori-project-picker-list custom-scrollbar">
-                        <ul className="fiori-project-picker-items">
-                            {sortedProjects.map((p) => {
-                                const isCurrent = currentPid === p.id;
-                                return (
-                                    <li key={p.id}>
-                                        <button
-                                            type="button"
-                                            aria-current={isCurrent ? "true" : undefined}
-                                            className={cn(
-                                                "fiori-project-picker-row",
-                                                isCurrent && "fiori-project-picker-row--current",
-                                            )}
-                                            onClick={() => onPick(p.id)}
-                                        >
-                                            <FolderKanban
-                                                className="fiori-project-picker-row-icon"
-                                                aria-hidden
-                                            />
-                                            <span className="fiori-project-picker-row-text">
-                                                <span className="fiori-project-picker-row-name">
-                                                    {p.name || p.id}
-                                                </span>
-                                                {!!String(p.company || "").trim() && (
-                                                    <span className="fiori-project-picker-row-meta">
-                                                        {p.company}
-                                                    </span>
-                                                )}
-                                            </span>
-                                            {isCurrent ? (
-                                                <Check
-                                                    className="fiori-project-picker-row-check"
-                                                    strokeWidth={2.5}
-                                                    aria-hidden
-                                                />
-                                            ) : null}
-                                        </button>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                        <ProjectPickerList
+                            projects={sortedProjects}
+                            showInactive={showInactive}
+                            currentPid={currentPid}
+                            onPick={handlePick}
+                            showCurrentCheck
+                            allowInactiveSelection
+                        />
                     </div>
                 </div>
 

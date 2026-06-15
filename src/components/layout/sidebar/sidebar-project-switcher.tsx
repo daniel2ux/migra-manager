@@ -1,11 +1,12 @@
 "use client";
 
-import { ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, FolderKanban } from "lucide-react";
 import type { User as CompatAuthUser } from "@/supabase/auth-shim";
 import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
@@ -45,23 +46,32 @@ export function SidebarProjectSwitcher({
         onNavItemClick?.();
     };
 
-    const menuBlocks = sortedProjects.map((p) => (
-        <DropdownMenuItem
-            key={p.id}
-            onClick={() => handlePick(p.id)}
-            className={cn(
-                "cursor-pointer rounded-none text-[10px] font-bold uppercase",
-                currentPid === p.id && "bg-SkyBlue-50 text-SkyBlue-700 focus:bg-SkyBlue-50 focus:text-SkyBlue-700",
-            )}
-        >
-            <span className="flex flex-col gap-0.5 py-1">
-                <span>{p.name || p.id}</span>
-                {!!String(p.company || "").trim() && (
-                    <span className="text-[8px] font-semibold uppercase text-slate-500">{p.company}</span>
+    const menuBlocks = sortedProjects.map((p) => {
+        const isCurrent = currentPid === p.id;
+        const company = String(p.company || "").trim();
+
+        return (
+            <DropdownMenuItem
+                key={p.id}
+                onClick={() => handlePick(p.id)}
+                className={cn(
+                    "fiori-dropdown-menu-item",
+                    isCurrent && "fiori-dropdown-menu-item--selected",
                 )}
-            </span>
-        </DropdownMenuItem>
-    ));
+            >
+                <FolderKanban className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                <div className="min-w-0 flex-1">
+                    <p className="truncate">{p.name || p.id}</p>
+                    {company ? (
+                        <p className="fiori-dropdown-menu-item-desc truncate">{company}</p>
+                    ) : null}
+                </div>
+                {isCurrent ? (
+                    <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+                ) : null}
+            </DropdownMenuItem>
+        );
+    });
 
     if (!canSwitch) return null;
 
@@ -86,12 +96,16 @@ export function SidebarProjectSwitcher({
                 </Tooltip>
                 <DropdownMenuContent
                     align="start"
-                    className="custom-scrollbar max-h-[min(360px,calc(100vh-140px))] w-[260px] overflow-y-auto rounded-none border-slate-100"
+                    side="bottom"
+                    sideOffset={4}
+                    className="fiori-dropdown-menu fiori-dropdown-menu--nav w-[260px] max-h-[min(360px,calc(100vh-140px))] overflow-y-auto custom-scrollbar"
                 >
-                    <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    <DropdownMenuLabel className="fiori-dropdown-menu-label">
                         Alterar projeto
                     </DropdownMenuLabel>
-                    {menuBlocks}
+                    <DropdownMenuGroup className="fiori-dropdown-menu-items">
+                        {menuBlocks}
+                    </DropdownMenuGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
         );

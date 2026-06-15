@@ -60,13 +60,9 @@ import {
 } from './use-objects-reorder';
 import { useObjectsCRUD } from './use-objects-crud';
 
-interface Project {
-  id: string;
-  name: string;
-  company?: string;
-  empresa?: string;
-  companyId?: string | null;
-}
+import type { Project as MigrationProject } from '@/types/migration';
+
+type Project = Pick<MigrationProject, 'id' | 'name' | 'company' | 'empresa' | 'companyId'>;
 
 function _defaultExtractChargeOrderDisplay(chargeOrder: string | number | undefined): string {
   if (chargeOrder === undefined || chargeOrder === null) return '';

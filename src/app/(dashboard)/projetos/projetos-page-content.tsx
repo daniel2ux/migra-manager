@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
     Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Loader2, Search, Plus, FolderSearch, X } from "lucide-react";
+import { Loader2, Search, Plus, FolderSearch, X, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -38,6 +38,9 @@ import {
 } from "@/supabase/compat-db-shim";
 import { idsForDbIn } from "@/lib/constants";
 import { filterActiveMocks } from "@/lib/mock-utils";
+import { filterActiveProjects, isProjectInactive, projectCreatedAtSeconds } from "@/lib/project-utils";
+import { STORAGE_KEYS } from "@/lib/constants";
+import { useLocalStorageState } from "@/hooks/use-local-storage-state";
 import {
     setDocumentNonBlocking,
     updateDocumentNonBlocking,
@@ -46,34 +49,15 @@ import {
 import { useProjectsData } from "@/hooks/use-projects-data";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { getProjectCompanyName } from "@/lib/migration/project-company";
+import { useProjectStatusActions } from "@/app/(dashboard)/projetos/hooks/use-project-status-actions";
+import type { Project } from "@/types/migration";
 import {
     ProjectFormDialog,
     ProjectCard,
     ProjectDeleteDialog,
     ProjectResetDialog,
     ProjectLockDialog,
-    resolveProjectExecutionStatus,
-    type ProjectExecutionStatus,
 } from "@/components/projetos";
-
-interface DbTimestamp { seconds: number; nanoseconds: number; }
-
-interface Project {
-    id: string;
-    name: string;
-    description: string;
-    company: string;
-    createdAt?: DbTimestamp | any;
-    updatedAt?: DbTimestamp | any;
-    isLocked: boolean;
-    ownerId: string;
-    memberUids?: string[];
-    memberProfiles?: { uid: string; name: string; position?: string; role?: string }[];
-    lockedByMaster?: boolean;
-    lockedByUid?: string;
-    lockedByName?: string;
-    executionStatus?: 'EM_EXECUCAO' | 'ENCERRADO' | 'ATIVO';
-}
 
 const PAGE_TOOLBAR_BTN =
     "fiori-toolbar-btn !rounded-[0.375rem] !size-8 min-h-0 min-w-0";
@@ -94,14 +78,17 @@ export default function ProjetosPageContent() {
     const [projectToReset, setProjectToReset] = useState<Project | null>(null);
     const [projectToLock, setProjectToLock] = useState<Project | null>(null);
     const [isResetting, setIsResetting] = useState(false);
-    const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
+    const [showInactive, setShowInactive] = useLocalStorageState<boolean>(
+        STORAGE_KEYS.PROJECTS_SHOW_INACTIVE,
+        false,
+    );
     const [mockDataByProject, setMockDataByProject] = useState<Record<string, any[]>>({});
     const [memberDataByProject, setMemberDataByProject] = useState<Record<string, any[]>>({});
 
     const {
         userProfile, isProfileLoading, isMaster, isAdmin, can, userProjectIds,
         projects, isProjectsLoading, allUsers, projectMembers,
-    } = useProjectsData(searchTerm);
+    } = useProjectsData();
 
     const canCreate = can("projects.create");
     const canEdit = can("projects.edit");
@@ -111,6 +98,19 @@ export default function ProjetosPageContent() {
     const usePrivilegedMockQuery = isAdmin || canEdit;
 
     const { projectId: activeProjectId, updateActiveProject } = useActiveProjectId();
+
+    const {
+        statusTogglingId,
+        changeProjectStatus,
+        toggleStatus,
+        handleToggleActive,
+    } = useProjectStatusActions({
+        db: db as CompatDb | null,
+        canEdit,
+        activeProjectId,
+        updateActiveProject,
+        toast,
+    });
 
     // Fetch mocks and members for non-admin users
     useEffect(() => {
@@ -219,26 +219,42 @@ export default function ProjetosPageContent() {
 
     const filteredProjects = useMemo(() => {
         if (!projects) return [];
-        const filtered = projects
+        let scope = showInactive ? projects : filterActiveProjects(projects);
+        if (activeProjectId && activeProjectId !== "all") {
+            const selected = projects.find((p) => p.id === activeProjectId);
+            if (
+                selected &&
+                isProjectInactive(selected) &&
+                !scope.some((p) => p.id === activeProjectId)
+            ) {
+                scope = [...scope, selected];
+            }
+        }
+        const filtered = scope
             .filter(p =>
                 p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (p.company && p.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                p.description.toLowerCase().includes(searchTerm.toLowerCase())
+                (p.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
             );
 
         if (orderedProjectIds.length > 0) {
             return [...filtered].sort((a, b) => {
                 const idxA = orderedProjectIds.indexOf(a.id);
                 const idxB = orderedProjectIds.indexOf(b.id);
-                if (idxA === -1 && idxB === -1) return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                if (idxA === -1 && idxB === -1) return projectCreatedAtSeconds(b.createdAt) - projectCreatedAtSeconds(a.createdAt);
                 if (idxA === -1) return 1;
                 if (idxB === -1) return -1;
                 return idxA - idxB;
             });
         }
 
-        return filtered.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-    }, [projects, searchTerm, orderedProjectIds]);
+        return filtered.sort((a, b) => projectCreatedAtSeconds(b.createdAt) - projectCreatedAtSeconds(a.createdAt));
+    }, [projects, searchTerm, orderedProjectIds, showInactive, activeProjectId]);
+
+    const inactiveCount = useMemo(
+        () => (projects ?? []).filter((p) => isProjectInactive(p)).length,
+        [projects],
+    );
 
     /** Escopo global: apenas o projeto ativo escolhido após login (URL/sessão). */
     const displayedProjects = useMemo(() => {
@@ -361,7 +377,7 @@ export default function ProjetosPageContent() {
             });
         }
         deleteDocumentNonBlocking(doc(db as CompatDb, "projects", project.id));
-        // toast({ description: "Projeto excluído permanentemente." });
+        toast({ description: "Projeto excluído permanentemente." });
         setProjectToDelete(null);
     };
 
@@ -387,7 +403,7 @@ export default function ProjetosPageContent() {
                 batch.delete(mockDoc.ref); opCount++; await commitBatch();
             }
             if (opCount > 0) await batch.commit();
-            // toast({ description: "Projeto reinicializado com sucesso." });
+            toast({ description: "Projeto reinicializado com sucesso." });
         } catch { toast({ variant: "destructive", description: "Erro ao inicializar projeto." }); }
         finally { setIsResetting(false); setProjectToReset(null); }
     };
@@ -414,28 +430,6 @@ export default function ProjetosPageContent() {
         }
     };
 
-    const changeProjectStatus = async (project: Project, newStatus: ProjectExecutionStatus) => {
-        if (!canEdit || project.isLocked) return;
-        setStatusTogglingId(project.id);
-        try {
-            const projectRef = doc(db as CompatDb, "projects", project.id);
-            await updateDocumentNonBlocking(projectRef, {
-                executionStatus: newStatus,
-                updatedAt: serverTimestamp()
-            });
-        } catch {
-            toast({ variant: "destructive", description: "Erro ao alterar status do projeto." });
-        } finally {
-            setStatusTogglingId(null);
-        }
-    };
-
-    const toggleStatus = async (project: Project, hasMocksInProgress: boolean) => {
-        const current = resolveProjectExecutionStatus(project, hasMocksInProgress);
-        const nextStatus: ProjectExecutionStatus = current === 'EM_EXECUCAO' ? 'ENCERRADO' : 'EM_EXECUCAO';
-        await changeProjectStatus(project, nextStatus);
-    };
-
     const handleAiGenerate = async () => {
         if (!formData.name) { toast({ variant: "destructive", description: "Digite um nome para gerar a descrição." }); return; }
         setIsGenerating(true);
@@ -458,12 +452,6 @@ export default function ProjetosPageContent() {
             }
         } catch { toast({ variant: "destructive", description: "Erro ao gerar descrição com IA." }); }
         finally { setIsGenerating(false); }
-    };
-
-    const _formatDate = (date: any) => { if (!date) return "..."; const d = date?.toDate ? date.toDate() : new Date(date); return d.toLocaleDateString("pt-BR"); };
-    const _formatDateTimeFull = (dateString: string) => {
-        if (!dateString) return "-";
-        try { return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(dateString)); } catch { return dateString; }
     };
 
     if (isProjectsLoading || isProfileLoading) {
@@ -513,6 +501,37 @@ export default function ProjetosPageContent() {
                                         {isSearchOpen ? "Fechar busca" : "Buscar projetos"}
                                     </TooltipContent>
                                 </Tooltip>
+                                {inactiveCount > 0 && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className={cn(
+                                                    PAGE_TOOLBAR_BTN,
+                                                    showInactive && "fiori-toolbar-btn-active",
+                                                )}
+                                                onClick={() => setShowInactive(!showInactive)}
+                                                aria-label={
+                                                    showInactive
+                                                        ? "Ocultar projetos inativos"
+                                                        : "Exibir projetos inativos"
+                                                }
+                                            >
+                                                {showInactive ? (
+                                                    <EyeOff className="w-4 h-4" />
+                                                ) : (
+                                                    <Eye className="w-4 h-4" />
+                                                )}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" variant="fiori">
+                                            {showInactive
+                                                ? "Ocultar projetos inativos"
+                                                : `Exibir projetos inativos (${inactiveCount})`}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
                                 {canCreate && (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -598,9 +617,15 @@ export default function ProjetosPageContent() {
                                                     onToggleLock={() => toggleLock(project)}
                                                     onToggleStatus={() => toggleStatus(project, hasMocksInProgress)}
                                                     onStatusChange={(status) => changeProjectStatus(project, status)}
+                                                    onToggleActive={(activate) =>
+                                                        handleToggleActive(project, activate, hasMocksInProgress)
+                                                    }
                                                     isToggling={statusTogglingId === project.id}
                                                     hasMocksInProgress={hasMocksInProgress}
-                                                    isActive={project.id === activeProjectId}
+                                                    isActive={
+                                                        project.id === activeProjectId &&
+                                                        !isProjectInactive(project)
+                                                    }
                                                     onSelect={() => updateActiveProject(project.id)}
                                                 />
                                             );

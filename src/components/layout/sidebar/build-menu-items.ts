@@ -8,7 +8,6 @@ import {
     Layout,
     Package,
     Table2,
-    Shield,
 } from "lucide-react";
 import type { PermissionKey } from "@/lib/auth/permissions";
 import type { SidebarMenuItem } from "./types";
@@ -152,6 +151,3 @@ export function isMenuItemDisabled(
         !effectiveProjectId
     );
 }
-
-/** Ícone auxiliar para item de perfis (usado externamente se necessário). */
-export const PERFIS_MENU_ICON = Shield;

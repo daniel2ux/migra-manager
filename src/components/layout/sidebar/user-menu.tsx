@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -85,31 +86,40 @@ export function UserMenu() {
             </DropdownMenuTrigger>
             <DropdownMenuContent
                 align="end"
-                className="w-56 border-slate-100 shadow-xl p-2 bg-white dashboard-no-rounded max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar"
+                side="bottom"
+                sideOffset={4}
+                className="fiori-dropdown-menu fiori-dropdown-menu--nav max-h-[calc(100vh-120px)] w-56 overflow-y-auto custom-scrollbar"
             >
-                <DropdownMenuLabel className="text-[8px]! font-bold text-slate-400 uppercase tracking-wider p-2">Minha Conta</DropdownMenuLabel>
-                <DropdownMenuItem asChild className="focus:bg-slate-100 focus:text-slate-900">
-                    <Link href="/perfil" className="text-[10px] font-bold text-slate-900 p-3 rounded-none">
-                        Ver Perfil
-                    </Link>
-                </DropdownMenuItem>
-                {canSwitch ? (
-                    <DropdownMenuItem
-                        onClick={() => setProjectSwitchOpen(true)}
-                        className="cursor-pointer rounded-none p-3 text-[10px] font-bold text-slate-900 focus:bg-slate-100 focus:text-slate-900"
-                    >
-                        <FolderKanban className="mr-2 w-4 h-4" aria-hidden />
-                        Trocar projeto
+                <DropdownMenuLabel className="fiori-dropdown-menu-label">
+                    Minha Conta
+                </DropdownMenuLabel>
+                <DropdownMenuGroup className="fiori-dropdown-menu-items">
+                    <DropdownMenuItem asChild className="fiori-dropdown-menu-item">
+                        <Link href="/perfil">
+                            <User className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                            Ver Perfil
+                        </Link>
                     </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuSeparator className="bg-slate-100" />
-                <DropdownMenuItem
-                    onClick={handleSignOut}
-                    className="text-[10px] font-bold text-red-600 focus:bg-red-50 focus:text-red-600 p-3 rounded-none cursor-pointer"
-                >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Encerrar Sessão
-                </DropdownMenuItem>
+                    {canSwitch ? (
+                        <DropdownMenuItem
+                            onClick={() => setProjectSwitchOpen(true)}
+                            className="fiori-dropdown-menu-item"
+                        >
+                            <FolderKanban className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                            Trocar projeto
+                        </DropdownMenuItem>
+                    ) : null}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup className="fiori-dropdown-menu-items">
+                    <DropdownMenuItem
+                        onClick={handleSignOut}
+                        className="fiori-dropdown-menu-item fiori-dropdown-menu-item--critical"
+                    >
+                        <LogOut className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                        Encerrar Sessão
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
             </DropdownMenuContent>
             </DropdownMenu>
             <ProjectPickerDialog

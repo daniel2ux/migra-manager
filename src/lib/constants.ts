@@ -37,6 +37,7 @@ export const STORAGE_KEYS = {
   DASHBOARD_SHOW_INDICATORS: 'dashboard_show_indicators',
   DASHBOARD_SHOW_COMPARISON: 'dashboard_show_comparison',
   MOCKS_SHOW_INACTIVE: 'mocks_show_inactive',
+  PROJECTS_SHOW_INACTIVE: 'projects_show_inactive',
   OBJECTS_SHOW_INACTIVE: 'objects_show_inactive',
   RELATORIO_COMPARATIVO_PROJECT: 'relatorio-comparativo-project',
   RELATORIO_COMPARATIVO_MOCK_A: 'relatorio-comparativo-mock-a',
@@ -53,4 +54,5 @@ export const SESSION_KEYS = {
   LOGS_PAGE: 'migra_logs_page',
   LOGIN_FLASH: 'migra_login_flash',
   MOCK_OPEN_ADD: 'migra_mock_open_add',
+  PROJECT_PICKER_CONFIRMED: 'migra_project_picker_confirmed',
 } as const;

@@ -50,6 +50,8 @@ export function HorizontalNavDropdownMenu({
     const router = useRouter();
     const [open, setOpen] = useState(false);
     const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     const cancelScheduledClose = useCallback(() => {
         if (closeTimerRef.current) {
@@ -68,12 +70,43 @@ export function HorizontalNavDropdownMenu({
         setOpen(true);
     }, [cancelScheduledClose]);
 
+    const isFocusWithinMenu = useCallback((target: EventTarget | null) => {
+        const node = target as Node | null;
+        if (!node) return false;
+        if (triggerRef.current?.contains(node)) return true;
+        if (contentRef.current?.contains(node)) return true;
+        return false;
+    }, []);
+
+    const handleMenuBlur = useCallback(
+        (event: React.FocusEvent) => {
+            if (isFocusWithinMenu(event.relatedTarget)) return;
+            cancelScheduledClose();
+            setOpen(false);
+        },
+        [cancelScheduledClose, isFocusWithinMenu],
+    );
+
+    const handleContentFocusOutside = useCallback(
+        (event: Event) => {
+            const relatedTarget = (event as FocusEvent).relatedTarget as Node | null;
+            if (isFocusWithinMenu(relatedTarget)) {
+                event.preventDefault();
+                return;
+            }
+            cancelScheduledClose();
+            setOpen(false);
+        },
+        [cancelScheduledClose, isFocusWithinMenu],
+    );
+
     useEffect(() => () => cancelScheduledClose(), [cancelScheduledClose]);
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
             <DropdownMenuTrigger asChild>
                 <button
+                    ref={triggerRef}
                     type="button"
                     className={cn(
                         HORIZONTAL_NAV_ITEM,
@@ -82,12 +115,14 @@ export function HorizontalNavDropdownMenu({
                     onPointerEnter={handleOpen}
                     onPointerLeave={scheduleClose}
                     onFocus={handleOpen}
+                    onBlur={handleMenuBlur}
                 >
                     {item.label}
                     <ChevronDown className="h-3 w-3 opacity-50" />
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
+                ref={contentRef}
                 className="fiori-dropdown-menu fiori-dropdown-menu--nav max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar"
                 align="start"
                 side="bottom"
@@ -95,6 +130,8 @@ export function HorizontalNavDropdownMenu({
                 collisionPadding={{ top: 140, right: 8, bottom: 8, left: 8 }}
                 onPointerEnter={handleOpen}
                 onPointerLeave={scheduleClose}
+                onBlur={handleMenuBlur}
+                onFocusOutside={handleContentFocusOutside}
             >
                 <DropdownMenuLabel className="fiori-dropdown-menu-label">
                     {item.label}

@@ -11,7 +11,8 @@ export interface MemberProfile {
 export interface Project {
   id: string;
   name: string;
-  memberUids: string[];
+  description?: string;
+  memberUids?: string[];
   memberProfiles?: MemberProfile[];
   isLocked?: boolean;
   lockedByMaster?: boolean;
@@ -21,6 +22,11 @@ export interface Project {
   company?: string;
   /** FK para `companies` — obrigatório para cadastro de objetos mestre */
   companyId?: string;
+  ownerId?: string;
+  createdAt?: Timestamp | string;
+  updatedAt?: Timestamp | string;
+  executionStatus?: 'ATIVO' | 'EM_EXECUCAO' | 'ENCERRADO';
+  isActive?: boolean;
   /** @deprecated Preferir `company` */
   empresa?: string;
 }

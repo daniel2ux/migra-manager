@@ -1,7 +1,5 @@
 'use client';
 
-import { createSupabaseBrowserClient } from './client';
-
 export * from './provider';
 export { useCollection } from './hooks/use-collection';
 export { useDoc } from './hooks/use-doc';
@@ -16,13 +14,3 @@ export * from './storage-compat';
 export * from './config';
 export { SupabaseClientProvider } from './client-provider';
 export { createSupabaseBrowserClient } from './client';
-
-export function initializeSupabase() {
-  const client = createSupabaseBrowserClient();
-  return {
-    client,
-    auth: client.auth,
-    db: client,
-    storage: client,
-  };
-}

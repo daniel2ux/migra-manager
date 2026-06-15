@@ -30,27 +30,6 @@ export function defaultAccessProfileLabel(role?: string | null, isMaster?: boole
   return `Padrão (${roleLabel} → ${systemName})`;
 }
 
-export function resolveAccessProfileId(
-  profiles: AccessProfileRecord[],
-  value: string | null | undefined,
-): string | null {
-  if (!value || value === ACCESS_PROFILE_DEFAULT) return null;
-  return profiles.some((p) => p.id === value) ? value : null;
-}
-
-export function accessProfileDisplayName(
-  profiles: AccessProfileRecord[],
-  accessProfileId: string | null | undefined,
-  role?: string | null,
-  isMaster?: boolean,
-): string {
-  if (!accessProfileId) {
-    return defaultAccessProfileLabel(role, isMaster);
-  }
-  const found = profiles.find((p) => p.id === accessProfileId);
-  return found?.name ?? "Perfil personalizado";
-}
-
 /** Rótulo compacto para cards de usuário na listagem. */
 export function accessProfileCardLabel(
   profiles: AccessProfileRecord[],

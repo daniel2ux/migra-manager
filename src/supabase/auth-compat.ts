@@ -60,21 +60,6 @@ export async function setPersistence(_auth: Auth, _mode: unknown) {
 
 export const browserSessionPersistence = 'session';
 
-export function getAuth(client: SupabaseClient): Auth {
-  return client.auth;
-}
-
-export async function createUserWithEmailAndPassword(
-  auth: Auth,
-  email: string,
-  password: string,
-) {
-  const { data, error } = await auth.signUp({ email, password });
-  if (error) throw Object.assign(error, { code: mapAuthError(error.message) });
-  if (!data.user) throw new Error('Falha ao criar usuário');
-  return { user: toCompatUser(data.user, auth) };
-}
-
 function mapAuthError(msg: string): string {
   const lower = msg.toLowerCase();
   if (lower.includes('invalid login') || lower.includes('invalid credentials')) {

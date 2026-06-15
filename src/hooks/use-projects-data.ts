@@ -4,26 +4,10 @@ import { useMemo } from "react";
 import { collection, query, where, doc } from "@/supabase/compat-db-shim";
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import type { WithId } from "@/supabase";
+import type { Project } from "@/types/migration";
 import { dedupeDirectoryUsers } from "@/lib/user-directory";
 import { useAccessPermissions } from "@/hooks/use-access-permissions";
 import type { PermissionKey } from "@/lib/auth/permissions";
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  company: string;
-  createdAt?: any;
-  updatedAt?: any;
-  isLocked: boolean;
-  ownerId: string;
-  memberUids?: string[];
-  memberProfiles?: { uid: string; name: string; position?: string; role?: string }[];
-  lockedByMaster?: boolean;
-  lockedByUid?: string;
-  lockedByName?: string;
-  executionStatus?: "ATIVO" | "EM_EXECUCAO" | "ENCERRADO";
-}
 
 type ProjectMemberData = {
   uid?: string;
@@ -50,7 +34,7 @@ interface UseProjectsDataReturn {
   projectMembers: (ProjectMemberRow & { uid: string })[];
 }
 
-export function useProjectsData(__searchTerm: string): UseProjectsDataReturn {
+export function useProjectsData(): UseProjectsDataReturn {
   const db = useDb();
   const { user } = useUser();
 

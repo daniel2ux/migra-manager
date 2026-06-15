@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { collection, doc, query, where } from "@/supabase/compat-db-shim";
 import {
   Dialog,
@@ -17,17 +17,29 @@ import { AlertCircle, Loader2, FolderKanban, LogOut } from "lucide-react";
 import { useAuth } from "@/supabase/provider";
 import { signOutAndRedirect } from "@/lib/auth/sign-out";
 import { useRouter, usePathname } from "next/navigation";
+import { isProjectInactive } from "@/lib/project-utils";
+import { SESSION_KEYS, STORAGE_KEYS } from "@/lib/constants";
+import { useLocalStorageState } from "@/hooks/use-local-storage-state";
+import {
+  ProjectPickerList,
+  useSortedProjects,
+  type ProjectPickerItem,
+} from "@/components/layout/project-picker-list";
+import { ProjectPickerInactiveToggle } from "@/components/layout/project-picker-inactive-toggle";
 
-type ProjectBrief = {
-  id: string;
-  name?: string;
-  company?: string;
-};
+function readPickerConfirmed(): boolean {
+  if (typeof window === "undefined") return false;
+  return sessionStorage.getItem(SESSION_KEYS.PROJECT_PICKER_CONFIRMED) === "1";
+}
+
+function markPickerConfirmed(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(SESSION_KEYS.PROJECT_PICKER_CONFIRMED, "1");
+}
 
 /**
- * Após login, se o usuário participar de mais de um projeto, exige a escolha
- * explícita do projeto em que trabalhará. O estado ativo usa `useActiveProjectId`
- * (sessão + URL + eventos), alinhado ao restante do dashboard.
+ * Após login, exige escolha explícita do projeto (incluindo inativos, via toggle).
+ * Repete a cada nova sessão do navegador até o usuário confirmar a seleção.
  */
 export function MandatoryProjectPicker() {
   const db = useDb();
@@ -36,6 +48,15 @@ export function MandatoryProjectPicker() {
   const pathname = usePathname();
   const { user, isUserLoading } = useUser();
   const { projectId: activeProjectId, updateActiveProject } = useActiveProjectId();
+  const [pickerConfirmed, setPickerConfirmed] = useState(false);
+  const [showInactive, setShowInactive] = useLocalStorageState<boolean>(
+    STORAGE_KEYS.PROJECTS_SHOW_INACTIVE,
+    false,
+  );
+
+  useEffect(() => {
+    setPickerConfirmed(readPickerConfirmed());
+  }, []);
 
   const userDocRef = useMemoDb(
     () => (user && db && !isUserLoading ? doc(db, "users", user.uid) : null),
@@ -71,19 +92,18 @@ export function MandatoryProjectPicker() {
     data: rawProjects,
     isLoading: projectsLoading,
     error: projectsError,
-  } = useCollection<ProjectBrief>(projectsQuery);
+  } = useCollection<ProjectPickerItem>(projectsQuery);
 
-  const sortedProjects = useMemo(() => {
-    const list = rawProjects ?? [];
-    if (!list.length) return [];
-    return [...list].sort((a, b) =>
-      (a.name ?? a.id).localeCompare(b.name ?? b.id, "pt-BR"),
-    );
-  }, [rawProjects]);
+  const allSortedProjects = useSortedProjects(rawProjects);
+
+  const inactiveCount = useMemo(
+    () => allSortedProjects.filter((p) => isProjectInactive(p)).length,
+    [allSortedProjects],
+  );
 
   const allowedIds = useMemo(
-    () => new Set(sortedProjects.map((p) => p.id)),
-    [sortedProjects],
+    () => new Set(allSortedProjects.map((p) => p.id)),
+    [allSortedProjects],
   );
 
   const profileSettled = !!user && !!db && !isUserLoading && !profileLoading;
@@ -94,18 +114,10 @@ export function MandatoryProjectPicker() {
 
   const loadError = profileError ?? projectsError;
 
-  /** ID ativo permitido nos projetos onde o usuário é membro */
-  const validActiveId =
-    activeProjectId &&
-    activeProjectId !== "all" &&
-    allowedIds.has(activeProjectId)
-      ? activeProjectId
-      : null;
-
   /** Seleção salva/anterior não é mais válida entre os projetos do usuário */
   useEffect(() => {
     if (!membershipsReady || loadError) return;
-    if (sortedProjects.length === 0) return;
+    if (allSortedProjects.length === 0) return;
     if (
       activeProjectId &&
       activeProjectId !== "all" &&
@@ -116,7 +128,7 @@ export function MandatoryProjectPicker() {
   }, [
     membershipsReady,
     loadError,
-    sortedProjects.length,
+    allSortedProjects.length,
     activeProjectId,
     allowedIds,
     updateActiveProject,
@@ -125,29 +137,14 @@ export function MandatoryProjectPicker() {
   /** Sem projetos como membro: limpa sessão para não manter projeto de outra conta/contexto */
   useEffect(() => {
     if (!membershipsReady || loadError) return;
-    if (sortedProjects.length > 0) return;
+    if (allSortedProjects.length > 0) return;
     if (activeProjectId && activeProjectId !== "all") {
       updateActiveProject(null);
     }
   }, [
     membershipsReady,
     loadError,
-    sortedProjects.length,
-    activeProjectId,
-    updateActiveProject,
-  ]);
-
-  /** Um único projeto disponível — escolhe automaticamente */
-  useEffect(() => {
-    if (!membershipsReady || loadError) return;
-    if (sortedProjects.length !== 1) return;
-    const only = sortedProjects[0].id;
-    if (activeProjectId === only) return;
-    updateActiveProject(only);
-  }, [
-    membershipsReady,
-    loadError,
-    sortedProjects,
+    allSortedProjects.length,
     activeProjectId,
     updateActiveProject,
   ]);
@@ -155,8 +152,8 @@ export function MandatoryProjectPicker() {
   const mustPick =
     membershipsReady &&
     !loadError &&
-    sortedProjects.length > 1 &&
-    !validActiveId;
+    allSortedProjects.length > 0 &&
+    !pickerConfirmed;
 
   const showLoadingBackdrop = !!user && !!db && !membershipsReady;
 
@@ -167,7 +164,12 @@ export function MandatoryProjectPicker() {
 
   const handlePick = (id: string) => {
     if (!allowedIds.has(id)) return;
+    markPickerConfirmed();
+    setPickerConfirmed(true);
     updateActiveProject(id);
+    if (isProjectInactive(allSortedProjects.find((p) => p.id === id) ?? {})) {
+      setShowInactive(true);
+    }
   };
 
   const shouldSkip =
@@ -238,12 +240,17 @@ export function MandatoryProjectPicker() {
                     Escolha o projeto
                   </DialogTitle>
                   <DialogDescription className="fiori-dialog-subtitle">
-                    Você está vinculado a mais de um projeto. Selecione em qual contexto deseja
-                    trabalhar.
+                    Selecione o contexto em que deseja trabalhar. Use o ícone de olho
+                    para exibir projetos inativos e reativá-los em Projetos.
                   </DialogDescription>
                 </div>
               </div>
-              <div className="fiori-dialog-header-actions">
+              <div className="fiori-dialog-header-actions flex items-center gap-1">
+                <ProjectPickerInactiveToggle
+                  showInactive={showInactive}
+                  onToggle={() => setShowInactive(!showInactive)}
+                  inactiveCount={inactiveCount}
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -259,25 +266,14 @@ export function MandatoryProjectPicker() {
 
           <div className="fiori-project-picker-body">
             <div className="fiori-project-picker-list custom-scrollbar">
-              <ul className="fiori-project-picker-items">
-                {sortedProjects.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      className="fiori-project-picker-row"
-                      onClick={() => handlePick(p.id)}
-                    >
-                      <FolderKanban className="fiori-project-picker-row-icon" aria-hidden />
-                      <span className="fiori-project-picker-row-text">
-                        <span className="fiori-project-picker-row-name">{p.name || p.id}</span>
-                        {p.company?.trim() ? (
-                          <span className="fiori-project-picker-row-meta">{p.company}</span>
-                        ) : null}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <ProjectPickerList
+                projects={allSortedProjects}
+                showInactive={showInactive}
+                currentPid={activeProjectId}
+                onPick={handlePick}
+                showCurrentCheck
+                allowInactiveSelection
+              />
             </div>
           </div>
         </DialogContent>

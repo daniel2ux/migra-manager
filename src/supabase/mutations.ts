@@ -20,22 +20,39 @@ function handleWriteError(
   }
 }
 
+function withWriteErrorHandling<T>(
+  promise: Promise<T>,
+  path: string,
+  operation: SupabasePermissionError['request']['method'],
+  data?: unknown,
+): Promise<T> {
+  return promise.catch((error) => {
+    handleWriteError(error, path, operation, data);
+    throw error;
+  });
+}
+
 export function setDocumentNonBlocking(
   docRef: DocumentReference,
   data: Record<string, unknown>,
   options: { merge?: boolean },
 ) {
-  return setDoc(docRef, data, options).catch((e) => handleWriteError(e, docRef.path, 'write', data));
+  return withWriteErrorHandling(
+    setDoc(docRef, data, options),
+    docRef.path,
+    'write',
+    data,
+  );
 }
 
 export function addDocumentNonBlocking(colRef: CollectionReference, data: Record<string, unknown>) {
-  return addDoc(colRef, data).catch((e) => handleWriteError(e, colRef.path, 'create', data));
+  return withWriteErrorHandling(addDoc(colRef, data), colRef.path, 'create', data);
 }
 
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: Record<string, unknown>) {
-  return updateDoc(docRef, data).catch((e) => handleWriteError(e, docRef.path, 'update', data));
+  return withWriteErrorHandling(updateDoc(docRef, data), docRef.path, 'update', data);
 }
 
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
-  return deleteDoc(docRef).catch((e) => handleWriteError(e, docRef.path, 'delete'));
+  return withWriteErrorHandling(deleteDoc(docRef), docRef.path, 'delete');
 }

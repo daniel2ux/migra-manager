@@ -1,7 +1,6 @@
 import { getSupabaseAdmin } from '@/supabase/admin';
 import {
   verifyCallerRole,
-  verifyCallerPermission,
   type VerifyResult,
   type PermissionKey,
 } from '@/lib/admin-auth';
@@ -74,15 +73,5 @@ export async function requireAdminOrMasterCaller(
 ): Promise<VerifyResult & { token: string }> {
   const token = extractCallerToken(body, req);
   const verification = await verifyCallerRole(token, ['admin', 'master']);
-  return { ...verification, token };
-}
-
-export async function requirePermissionCaller(
-  body: Record<string, unknown> | null | undefined,
-  permission: PermissionKey,
-  req?: Request,
-): Promise<VerifyResult & { token: string }> {
-  const token = extractCallerToken(body, req);
-  const verification = await verifyCallerPermission(token, permission);
   return { ...verification, token };
 }

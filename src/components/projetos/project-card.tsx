@@ -3,7 +3,7 @@
 import {
   Lock, Unlock, RotateCcw, ExternalLink, Pencil, Trash2,
   FolderOpen, Zap, CheckCircle2,
-  PlayCircle, StopCircle, Loader2, ChevronDown,
+  PlayCircle, StopCircle, Loader2, ChevronDown, Ban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { dispatchProjectChange } from '@/hooks/use-active-project-id';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { isProjectInactive } from '@/lib/project-utils';
 
 const CARD_TOOLBAR_BTN =
   "fiori-card-toolbar-btn !rounded-[0.375rem] !size-7 min-h-0 min-w-0";
@@ -40,6 +41,7 @@ interface ProjectCardProps {
   onToggleLock: () => void;
   onToggleStatus?: () => void;
   onStatusChange?: (status: ProjectExecutionStatus) => void;
+  onToggleActive?: (activate: boolean) => void;
   isToggling?: boolean;
   isActive?: boolean;
 }
@@ -69,7 +71,19 @@ export function resolveProjectExecutionStatus(
   return hasMocksInProgress ? "EM_EXECUCAO" : "ATIVO";
 }
 
-function getStatusMeta(isLocked: boolean, executionStatus: ProjectExecutionStatus): StatusMeta {
+function getStatusMeta(
+  isLocked: boolean,
+  executionStatus: ProjectExecutionStatus,
+  inactive: boolean,
+): StatusMeta {
+  if (inactive) {
+    return {
+      label: "Inativo",
+      labelClass: "text-[#6a6d70]",
+      icon: null,
+    };
+  }
+
   if (isLocked) {
     return {
       label: "Bloqueado",
@@ -104,17 +118,19 @@ function getStatusMeta(isLocked: boolean, executionStatus: ProjectExecutionStatu
 function CardStatusControl({
   isLocked,
   executionStatus,
+  inactive,
   editable,
   isToggling,
   onChange,
 }: {
   isLocked: boolean;
   executionStatus: ProjectExecutionStatus;
+  inactive: boolean;
   editable: boolean;
   isToggling: boolean;
   onChange: (status: ProjectExecutionStatus) => void;
 }) {
-  const meta = getStatusMeta(isLocked, executionStatus);
+  const meta = getStatusMeta(isLocked, executionStatus, inactive);
 
   if (!editable) {
     return (
@@ -193,14 +209,16 @@ export function ProjectCard({
   onToggleLock,
   onToggleStatus,
   onStatusChange,
+  onToggleActive,
   isToggling = false,
   isActive = false,
   onSelect,
 }: ProjectCardProps & { onSelect?: () => void }) {
   const isLocked = project.isLocked;
+  const isInactive = isProjectInactive(project);
   const executionStatus = resolveProjectExecutionStatus(project, hasMocksInProgress);
   const isExecuting = executionStatus === "EM_EXECUCAO";
-  const canEditStatus = canEdit && !isLocked;
+  const canEditStatus = canEdit && !isLocked && !isInactive;
   const showToolbar = canEdit || canLock || canReset || canDelete;
 
   const {
@@ -226,6 +244,7 @@ export function ProjectCard({
       {...attributes}
       data-selectable="true"
       onClick={(e) => {
+        if (isInactive) return;
         const target = e.target as HTMLElement;
         const clickedButton = target.closest("button");
         const clickedLink = target.closest("a");
@@ -235,8 +254,11 @@ export function ProjectCard({
         }
       }}
       className={cn(
-        "fiori-project-card fiori-project-card--neutral-hover group relative overflow-hidden p-3 flex flex-col gap-2.5 select-none cursor-pointer",
-        isActive && "fiori-project-card--active",
+        "fiori-project-card group relative overflow-hidden p-3 flex flex-col gap-2.5 select-none",
+        isInactive
+          ? "fiori-project-card--inactive fiori-project-card--readonly cursor-default"
+          : "fiori-project-card--neutral-hover cursor-pointer",
+        isActive && !isInactive && "fiori-project-card--active",
         isDragging && "fiori-project-card--dragging"
       )}
     >
@@ -254,6 +276,7 @@ export function ProjectCard({
         <CardStatusControl
           isLocked={isLocked}
           executionStatus={executionStatus}
+          inactive={isInactive}
           editable={canEditStatus && !!onStatusChange}
           isToggling={isToggling}
           onChange={(status) => onStatusChange?.(status)}
@@ -287,6 +310,32 @@ export function ProjectCard({
         <div className="fiori-card-toolbar">
           {showToolbar && (
             <>
+              {isInactive ? (
+                canEdit && !isLocked && onToggleActive && (
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={CARD_TOOLBAR_BTN}
+                        disabled={isToggling}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleActive(true);
+                        }}
+                      >
+                        {isToggling ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent variant="fiori">Reativar projeto</TooltipContent>
+                  </Tooltip>
+                )
+              ) : (
+                <>
               {canEditStatus && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
@@ -400,10 +449,35 @@ export function ProjectCard({
                 </TooltipContent>
               </Tooltip>
               )}
+
+              {canEdit && !isLocked && onToggleActive && (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(CARD_TOOLBAR_BTN, isExecuting && "opacity-40")}
+                      disabled={isToggling || isExecuting}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isExecuting) onToggleActive(false);
+                      }}
+                    >
+                      <Ban className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent variant="fiori">
+                    {isExecuting ? "Projeto em execução" : "Inativar projeto"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+                </>
+              )}
             </>
           )}
         </div>
 
+        {!isInactive && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <Link
@@ -425,6 +499,23 @@ export function ProjectCard({
           </TooltipTrigger>
           <TooltipContent variant="fiori">Mocks</TooltipContent>
         </Tooltip>
+        )}
+        {isInactive && canEdit && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="fiori-project-card-mocks-btn shadow-none opacity-40"
+                disabled
+                aria-label="Mocks indisponíveis"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent variant="fiori">Projeto inativo</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

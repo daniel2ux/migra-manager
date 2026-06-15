@@ -754,9 +754,12 @@ export type Database = {
       projects: {
         Row: {
           company: string | null
+          company_id: string | null
           created_at: string
           description: string | null
+          execution_status: string
           id: string
+          is_active: boolean
           is_locked: boolean
           locked_by_master: boolean
           locked_by_name: string | null
@@ -769,9 +772,12 @@ export type Database = {
         }
         Insert: {
           company?: string | null
+          company_id?: string | null
           created_at?: string
           description?: string | null
+          execution_status?: string
           id?: string
+          is_active?: boolean
           is_locked?: boolean
           locked_by_master?: boolean
           locked_by_name?: string | null
@@ -784,9 +790,12 @@ export type Database = {
         }
         Update: {
           company?: string | null
+          company_id?: string | null
           created_at?: string
           description?: string | null
+          execution_status?: string
           id?: string
+          is_active?: boolean
           is_locked?: boolean
           locked_by_master?: boolean
           locked_by_name?: string | null

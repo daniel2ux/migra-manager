@@ -111,10 +111,6 @@ export function useStorage(): SupabaseClient | null {
   return useSupabase().storage;
 }
 
-export function useSupabaseClient() {
-  return useSupabase().client;
-}
-
 export function useUser(): UserHookResult {
   const { user, isUserLoading, userError } = useSupabase();
   return { user, isUserLoading, userError };

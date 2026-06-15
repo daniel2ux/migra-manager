@@ -39,25 +39,6 @@ export function buildGestaoDisplayOrderIndex(
   return index;
 }
 
-/** Índice de exibição alinhado à gestão de objetos (mock selecionada). */
-export function buildGestaoMasterOrderIndex(
-  migrationsInMock: MigrationObject[] | null | undefined,
-  masters: MasterObject[] | null | undefined,
-): Map<string, number> {
-  return buildGestaoDisplayOrderIndex(buildGestaoRowsFromMockMigrations(migrationsInMock, masters));
-}
-
-/** Índice de exibição do catálogo mestre (modo execução). */
-export function buildCatalogMasterOrderIndex(
-  masters: MasterObject[] | null | undefined,
-): Map<string, number> {
-  if (!masters?.length) return new Map();
-  const sorted = [...masters]
-    .filter(isActiveCatalogMaster)
-    .sort(compareGestaoExecutionOrder);
-  return buildGestaoDisplayOrderIndex(sorted);
-}
-
 function compareByGestaoDisplayOrder(
   a: Pick<ChargeSequenceSortFields, "name" | "chargeGroup" | "chargeOrder" | "parallelOrder"> & {
     masterObjectId?: string | null;
@@ -424,13 +405,6 @@ export function buildGestaoPageDisplayList(params: BuildGestaoPageDisplayParams)
   });
 
   return buildGestaoDisplayList(displayRows, sortMode, null);
-}
-
-/** Índice id/nome → posição na gestão de objetos (mesma ordem dos cards da gestão). */
-export function buildGestaoPageDisplayOrderIndex(
-  params: BuildGestaoPageDisplayParams,
-): Map<string, number> {
-  return buildGestaoDisplayOrderIndex(buildGestaoPageDisplayList(params));
 }
 
 /** Sequência no dashboard com mock filtrada — mesma regra da gestão de objetos. */

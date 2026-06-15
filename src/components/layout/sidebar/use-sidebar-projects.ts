@@ -8,6 +8,11 @@ import { collection, query, where } from "@/supabase/compat-db-shim";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { useAuth, useDb, useMemoDb, useCollection } from "@/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { isProjectInactive } from "@/lib/project-utils";
+import {
+  useSortedProjects,
+  type ProjectPickerItem,
+} from "@/components/layout/project-picker-list";
 
 /** Mesmos critérios do seletor pós-login: admin vê todos; demais apenas `memberUids`. */
 export function useSwitchableProjects(
@@ -26,19 +31,19 @@ export function useSwitchableProjects(
         return query(projectsRef, where("memberUids", "array-contains", user.uid));
     }, [db, user, isUserLoading, profileLoading, isAdmin]);
 
-    const { data: switchableProjects } = useCollection<any>(projectsQuery);
+    const { data: switchableProjects } = useCollection<ProjectPickerItem>(projectsQuery);
 
-    const sortedProjects = useMemo(() => {
-        if (!switchableProjects?.length) return [];
-        return [...switchableProjects].sort((a, b) =>
-            String(a.name || a.id).localeCompare(String(b.name || b.id), "pt-BR"),
-        );
-    }, [switchableProjects]);
+    const sortedProjects = useSortedProjects(switchableProjects);
+
+    const inactiveProjectCount = useMemo(
+        () => (switchableProjects ?? []).filter((p) => isProjectInactive(p)).length,
+        [switchableProjects],
+    );
 
     const canSwitch =
         !!user &&
         Array.isArray(switchableProjects) &&
-        switchableProjects.length > 1;
+        (sortedProjects.length > 1 || inactiveProjectCount > 0);
 
     return { sortedProjects, canSwitch, currentPid, updateActiveProject };
 }
