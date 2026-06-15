@@ -10,9 +10,10 @@ import {
     Pencil, Loader2, Info, CheckCircle2, Zap, MessageSquare,
     MessageCircle, Terminal, GitBranch,
     AlertCircle, ScrollText, PlayCircle, StopCircle, Eye, RotateCcw,
-    History,
+    History, Ban, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isMigrationObjectInactive } from "@/lib/mock-utils";
 import { MigrationObject, MigrationComment, MasterObject } from "@/app/(dashboard)/objetos/[mockId]/types";
 import {
     formatNumber, formatPercentage, formatDateTime,
@@ -55,6 +56,8 @@ interface ObjectCardProps {
     onOpenCommentDialog: (obj: MigrationObject) => void;
     onOpenQuickDialog: (obj: MigrationObject) => void;
     onToggleCargaStatus: (obj: MigrationObject) => void;
+    onToggleActive: (obj: MigrationObject, activate: boolean) => void;
+    onRemoveFromMock: (obj: MigrationObject) => void;
     onImportLogs: (id: string) => void;
     onViewLogs: (obj: MigrationObject) => void;
     onResetObject: (obj: MigrationObject) => void;
@@ -66,7 +69,7 @@ export function ObjectCard({
     isMockLocked, isMockInProgress, isMockCompleted,
     masterObjects, objComments,
     onSelect, onContextMenu, onOpenDialog, onOpenCommentDialog, onOpenQuickDialog,
-    onToggleCargaStatus, onImportLogs, onViewLogs, onResetObject, renderDuration,
+    onToggleCargaStatus, onToggleActive, onRemoveFromMock, onImportLogs, onViewLogs, onResetObject, renderDuration,
 }: ObjectCardProps) {
     const target = Number(obj.targetRecordsCount) || 0;
     const processed = Number(obj.processedRecordsCount) || 0;
@@ -79,6 +82,7 @@ export function ObjectCard({
     const hasDates = !!(obj.chargeStartTime && obj.chargeEndTime);
     const hasComments = objComments.length > 0;
     const depCount = (obj.displayDependencies ?? []).length;
+    const isInactive = isMigrationObjectInactive(obj);
 
     const calculatePerformanceChange = (current: number, previous: number) => {
         if (!current || !previous) return null;
@@ -87,13 +91,16 @@ export function ObjectCard({
         return { isBetter: diff > 0, percentage: Math.abs(percentage).toFixed(1).replace(".", ",") };
     };
     const perfChange = calculatePerformanceChange(obj.currentChargeDurationMs, obj.previousChargeDurationMs);
-    const loadStatusMeta = getObjectLoadStatusMeta(isInProgress, successPct, hasErrors);
+    const loadStatusMeta = isInactive
+        ? { label: "Inativo", labelClass: "text-[#6a6d70]" }
+        : getObjectLoadStatusMeta(isInProgress, successPct, hasErrors);
 
     return (
         <div
             onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, obj); }}
             className={cn(
                 "fiori-migration-object-card border border-slate-200 flex flex-col gap-0 transition-all duration-300 group cursor-default relative overflow-hidden select-none",
+                isInactive && "fiori-migration-object-card--inactive",
                 isSelected ? "bg-SkyBlue-50/60 border-SkyBlue-400" : isInProgress ? "bg-orange-50/20 hover:border-slate-400" : "bg-white hover:border-slate-400",
                 "shadow-xs hover:shadow-xl"
             )}
@@ -299,6 +306,51 @@ export function ObjectCard({
             {/* Actions footer */}
             <div className="fiori-card-footer flex items-center justify-between px-1.5 py-1 gap-1">
                 <div className="fiori-card-toolbar">
+                    {isInactive ? (
+                        <>
+                            {!isInProgress && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className={CARD_TOOLBAR_BTN} onClick={() => onOpenDialog(obj)}>
+                                            <Eye className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent variant="fiori" side="top">Visualizar detalhamento</TooltipContent>
+                                </Tooltip>
+                            )}
+                            {isAdmin && !isMockLocked && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className={cn(CARD_TOOLBAR_BTN, "fiori-card-toolbar-btn-danger")}
+                                            onClick={(e) => { e.stopPropagation(); onRemoveFromMock(obj); }}
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent variant="fiori" side="top">Remover da mock</TooltipContent>
+                                </Tooltip>
+                            )}
+                            {isAdmin && !isMockLocked && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className={CARD_TOOLBAR_BTN}
+                                            onClick={(e) => { e.stopPropagation(); onToggleActive(obj, true); }}
+                                        >
+                                            <RotateCcw className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent variant="fiori" side="top">Reativar objeto</TooltipContent>
+                                </Tooltip>
+                            )}
+                        </>
+                    ) : (
+                        <>
                     {/* Toggle carga */}
                     {isAdmin && !isMockLocked && isMockInProgress && (
                         <Tooltip>
@@ -394,6 +446,23 @@ export function ObjectCard({
                             </TooltipTrigger>
                             <TooltipContent variant="fiori" side="top">Relatório de erros</TooltipContent>
                         </Tooltip>
+                    )}
+                    {isAdmin && !isMockLocked && !isInProgress && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={CARD_TOOLBAR_BTN}
+                                    onClick={(e) => { e.stopPropagation(); onToggleActive(obj, false); }}
+                                >
+                                    <Ban className="w-3.5 h-3.5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent variant="fiori" side="top">Inativar objeto</TooltipContent>
+                        </Tooltip>
+                    )}
+                        </>
                     )}
                 </div>
             </div>

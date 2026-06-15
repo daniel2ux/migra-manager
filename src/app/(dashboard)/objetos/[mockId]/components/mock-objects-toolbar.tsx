@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import {
   BarChart,
   Download,
@@ -30,6 +33,61 @@ import { cn } from '@/lib/utils';
 const PAGE_TOOLBAR_BTN =
   'fiori-toolbar-btn !rounded-[0.375rem] !size-8 min-h-0 min-w-0';
 
+const SEARCH_DEBOUNCE_MS = 250;
+
+function MockObjectsSearchInput({
+  searchTerm,
+  onSearchTermChange,
+}: {
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState(searchTerm);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    setDraft(searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (draft === searchTerm) return;
+    debounceRef.current = setTimeout(() => {
+      onSearchTermChange(draft);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(debounceRef.current);
+  }, [draft, searchTerm, onSearchTermChange]);
+
+  const commitSearch = () => {
+    clearTimeout(debounceRef.current);
+    onSearchTermChange(draft);
+  };
+
+  const clearSearch = () => {
+    clearTimeout(debounceRef.current);
+    setDraft('');
+    onSearchTermChange('');
+  };
+
+  return (
+    <>
+      <Input
+        placeholder="Nome, grupo ou descrição..."
+        className="fiori-input shadow-none"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value.toUpperCase())}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commitSearch();
+        }}
+      />
+      {draft && (
+        <button type="button" className="fiori-filter-popover-clear mt-2" onClick={clearSearch}>
+          Limpar busca
+        </button>
+      )}
+    </>
+  );
+}
+
 interface MockObjectsToolbarProps {
   isAdmin: boolean;
   isAdminOrMaster: boolean;
@@ -38,8 +96,7 @@ interface MockObjectsToolbarProps {
   isSyncing: boolean;
   isImporting: boolean;
   selectedObjectIds: string[];
-  pendingSearchTerm: string;
-  onPendingSearchTermChange: (value: string) => void;
+  searchTerm: string;
   onSearchTermChange: (value: string) => void;
   performanceFilter: 'all' | 'green' | 'yellow' | 'red';
   onPerformanceFilterChange: (value: 'all' | 'green' | 'yellow' | 'red') => void;
@@ -65,8 +122,7 @@ export function MockObjectsToolbar({
   isSyncing,
   isImporting,
   selectedObjectIds,
-  pendingSearchTerm,
-  onPendingSearchTermChange,
+  searchTerm,
   onSearchTermChange,
   performanceFilter,
   onPerformanceFilterChange,
@@ -135,11 +191,11 @@ export function MockObjectsToolbar({
               size="icon"
               className={cn(
                 PAGE_TOOLBAR_BTN,
-                (pendingSearchTerm || performanceFilter !== 'all') && 'fiori-toolbar-btn-active',
+                (searchTerm || performanceFilter !== 'all') && 'fiori-toolbar-btn-active',
               )}
             >
               <Search className="w-4 h-4" />
-              {(pendingSearchTerm || performanceFilter !== 'all') && (
+              {(searchTerm || performanceFilter !== 'all') && (
                 <span className="fiori-toolbar-dot" />
               )}
             </Button>
@@ -149,29 +205,10 @@ export function MockObjectsToolbar({
               <Search className="w-3.5 h-3.5" />
               Buscar objetos
             </div>
-            <Input
-              placeholder="Nome, grupo ou descrição..."
-              className="fiori-input shadow-none"
-              value={pendingSearchTerm}
-              onChange={(e) => onPendingSearchTermChange(e.target.value.toUpperCase())}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  onSearchTermChange(pendingSearchTerm);
-                }
-              }}
+            <MockObjectsSearchInput
+              searchTerm={searchTerm}
+              onSearchTermChange={onSearchTermChange}
             />
-            {pendingSearchTerm && (
-              <button
-                type="button"
-                className="fiori-filter-popover-clear mt-2"
-                onClick={() => {
-                  onPendingSearchTermChange('');
-                  onSearchTermChange('');
-                }}
-              >
-                Limpar busca
-              </button>
-            )}
             <div className="fiori-filter-popover-section">
               <div className="fiori-filter-popover-section-title">
                 <BarChart className="w-3.5 h-3.5" />

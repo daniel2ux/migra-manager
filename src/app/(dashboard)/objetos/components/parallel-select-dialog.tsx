@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,8 +36,6 @@ interface ParallelSelectDialogProps {
   onToggleId: (id: string) => void;
   onSave: () => void;
   triggerRef?: React.RefObject<HTMLElement>;
-  searchRef?: React.RefObject<HTMLInputElement>;
-  timerRef?: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
   /** Sequência exibida nos cards (posição na grade), quando diferente do valor salvo. */
   displayChargeOrderById?: ReadonlyMap<string, string>;
   /** Abre acima de outro diálogo (ex.: cadastro rápido). */
@@ -54,16 +53,19 @@ export function ParallelSelectDialog({
   onToggleId,
   onSave,
   triggerRef,
-  searchRef,
-  timerRef,
   displayChargeOrderById,
   elevated = false,
 }: ParallelSelectDialogProps) {
+  const [localValue, setLocalValue] = useState("");
+
+  useEffect(() => {
+    setLocalValue(searchTerm);
+  }, [searchTerm]);
+
   const handleClose = (val: boolean) => {
     onOpenChange(val);
     if (!val) {
-      if (searchRef?.current) searchRef.current.value = "";
-      if (timerRef?.current) clearTimeout(timerRef.current);
+      setLocalValue("");
       onSearchChange("");
       setTimeout(() => triggerRef?.current?.focus(), 0);
     }
@@ -111,15 +113,14 @@ export function ParallelSelectDialog({
             <Search className="fiori-search-icon" />
             <input
               type="search"
-              placeholder="Buscar objeto..."
+              placeholder="Buscar objeto... (Enter)"
               className="fiori-search-input uppercase"
-              ref={searchRef}
-              defaultValue=""
-              onChange={(e) => {
-                const val = e.target.value.toUpperCase();
-                if (timerRef?.current) clearTimeout(timerRef.current);
-                if (timerRef) timerRef.current = setTimeout(() => onSearchChange(val), 50);
-                else onSearchChange(val);
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                onSearchChange(localValue);
               }}
             />
           </div>
@@ -205,7 +206,8 @@ export function ParallelSelectDialog({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onSave();
+              handleClose(false);
+              queueMicrotask(() => onSave());
             }}
           >
             {selectedIds.length === 0 ? "Remover paralelismo" : "Salvar grupo"}

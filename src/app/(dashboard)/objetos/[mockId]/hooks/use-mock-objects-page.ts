@@ -29,7 +29,7 @@ import {
   mergeMasterCatalogRows,
 } from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
-import { isEffectiveLocked as isMockEffectiveLocked, isMockInactive } from '@/lib/mock-utils';
+import { isEffectiveLocked as isMockEffectiveLocked, isMockInactive, isMigrationObjectActive } from '@/lib/mock-utils';
 import type { Mock, UserProfile } from '@/types/migration';
 import type { MasterObject, MigrationComment, MigrationObject } from '../types';
 
@@ -111,6 +111,37 @@ export function useMockObjectsPage() {
   const { data: objects, isLoading, refetch: refetchObjects } = useCollection<MigrationObject>(objectsQuery);
 
   const [pendingObjects, setPendingObjects] = useState<MigrationObject[]>([]);
+  /** Overrides otimistas até o realtime confirmar isActive do banco. */
+  const [objectActiveOverrides, setObjectActiveOverrides] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!objects?.length) return;
+    setObjectActiveOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const obj of objects) {
+        if (!(obj.id in next)) continue;
+        const dbActive = obj.isActive !== false && (obj as { is_active?: boolean }).is_active !== false;
+        if (next[obj.id] === dbActive) {
+          delete next[obj.id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [objects]);
+
+  const applyObjectActiveState = useCallback(
+    (obj: MigrationObject): MigrationObject => {
+      if (!(obj.id in objectActiveOverrides)) return obj;
+      return { ...obj, isActive: objectActiveOverrides[obj.id] };
+    },
+    [objectActiveOverrides],
+  );
+
+  const setObjectActiveState = useCallback((objectId: string, isActive: boolean) => {
+    setObjectActiveOverrides((prev) => ({ ...prev, [objectId]: isActive }));
+  }, []);
 
   useEffect(() => {
     if (!objects?.length) return;
@@ -138,8 +169,8 @@ export function useMockObjectsPage() {
         !storedIds.has(pending.id) &&
         (!pending.masterObjectId || !storedMasterIds.has(pending.masterObjectId)),
     );
-    return [...stored, ...extra];
-  }, [objects, pendingObjects]);
+    return [...stored, ...extra].map(applyObjectActiveState);
+  }, [objects, pendingObjects, applyObjectActiveState]);
 
   const addPendingObjects = useCallback((items: MigrationObject[]) => {
     if (!items.length) return;
@@ -176,7 +207,6 @@ export function useMockObjectsPage() {
 
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; obj: MigrationObject } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [pendingSearchTerm, setPendingSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [performanceFilter, setPerformanceFilter] = useState<'all' | 'green' | 'yellow' | 'red'>('all');
   const [showPerformanceTable, setShowPerformanceTable] = useState(false);
@@ -299,6 +329,10 @@ export function useMockObjectsPage() {
         return true;
       })
       .sort((a, b) => {
+        const aInactive = !isMigrationObjectActive(a);
+        const bInactive = !isMigrationObjectActive(b);
+        if (aInactive && !bInactive) return 1;
+        if (!aInactive && bInactive) return -1;
         const aInProgress =
           a.status === 'CARGA_EM_ANDAMENTO' || !!(a.chargeStartTime && !a.chargeEndTime);
         const bInProgress =
@@ -338,6 +372,7 @@ export function useMockObjectsPage() {
     if (!sortedObjects) return { target: 0, processed: 0, success: 0, error: 0 };
     return sortedObjects.reduce(
       (acc, obj) => {
+        if (!isMigrationObjectActive(obj)) return acc;
         const t = Number(obj.targetRecordsCount) || 0;
         const p = Number(obj.processedRecordsCount) || 0;
         const e = Number(obj.errorRecordsCount) || 0;
@@ -373,6 +408,7 @@ export function useMockObjectsPage() {
     mergedObjects,
     addPendingObjects,
     refetchObjects,
+    setObjectActiveState,
     isLoading,
     isMockLoading,
     isMockLocked,
@@ -384,8 +420,6 @@ export function useMockObjectsPage() {
     setCtxMenu,
     searchTerm,
     setSearchTerm,
-    pendingSearchTerm,
-    setPendingSearchTerm,
     performanceFilter,
     setPerformanceFilter,
     showPerformanceTable,

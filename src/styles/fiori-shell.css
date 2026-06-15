@@ -1706,8 +1706,29 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   flex-shrink: 0;
 }
 
+.fiori-migration-object-card--inactive {
+  border-style: dashed;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  opacity: 0.82;
+}
+
+.fiori-migration-object-card--inactive:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target) {
+  border-color: #94a3b8;
+  background: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+.fiori-migration-object-card--inactive .fiori-migration-object-card-name {
+  color: #64748b;
+}
+
+.fiori-migration-object-card--inactive .fiori-migration-object-card-desc {
+  color: #94a3b8;
+}
+
 .fiori-migration-object-card-metrics--inactive {
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
 .fiori-migration-object-card-metric-divider {

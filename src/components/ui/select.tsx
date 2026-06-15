@@ -87,8 +87,9 @@ SelectScrollDownButton.displayName =
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "popper", ...props }, ref) => {
+>(({ className, children, position, onCloseAutoFocus, ...props }, ref) => {
   const fioriContent = isFioriSelectContent(className)
+  const resolvedPosition = position ?? (fioriContent ? "item-aligned" : "popper")
 
   return (
   <SelectPrimitive.Portal>
@@ -102,20 +103,30 @@ const SelectContent = React.forwardRef<
         fioriContent
           ? "rounded-[0.25rem] border border-[#e5e5e5] bg-white p-0 text-[#32363a] shadow-none"
           : "rounded-none border bg-popover text-popover-foreground shadow-md",
-        position === "popper" &&
+        resolvedPosition === "popper" &&
         "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className
       )}
-      position={position}
+      position={resolvedPosition}
+      onCloseAutoFocus={
+        fioriContent
+          ? (event) => {
+              event.preventDefault()
+              onCloseAutoFocus?.(event)
+            }
+          : onCloseAutoFocus
+      }
       {...props}
     >
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(
-          !isFioriSelectContent(className) && "p-1",
-          isFioriSelectContent(className) && "fiori-select-viewport bg-white p-0",
-          position === "popper" &&
-          "h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)"
+          !fioriContent && "p-1",
+          fioriContent && "fiori-select-viewport bg-white p-0",
+          resolvedPosition === "popper" && !fioriContent &&
+          "h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width)",
+          resolvedPosition === "popper" && fioriContent &&
+          "w-full min-w-(--radix-select-trigger-width) max-h-60",
         )}
       >
         {children}

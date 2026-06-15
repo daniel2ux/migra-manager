@@ -280,7 +280,7 @@ export function MigrationObjectFormDialog({
   ) => (
     <div className="fiori-form-field">
       <label className="fiori-field-label">
-        <Clock className="h-3.5 w-3.5 text-[var(--fiori-brand)]" />
+        <Clock className="h-3 w-3 text-[var(--fiori-brand)]" />
         {label}
       </label>
       <div className="fiori-datetime-field">
@@ -388,8 +388,10 @@ export function MigrationObjectFormDialog({
         open={open}
         overlayClassName="fiori-dialog-overlay"
         className={cn(
-          "fiori-dialog flex h-[min(92vh,640px)] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]",
-          editingObject ? "max-w-4xl" : "max-w-3xl",
+          "fiori-dialog flex w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-lg !rounded-[var(--fiori-radius)]",
+          editingObject
+            ? "max-h-[min(92vh,520px)] max-w-3xl"
+            : "h-[min(92vh,640px)] max-w-3xl",
           editingObject && "fiori-dialog--form fiori-dialog--object-exec-form",
         )}
       >
@@ -467,14 +469,11 @@ export function MigrationObjectFormDialog({
                 <div className="fiori-object-exec-summary">
                   <div className="fiori-object-exec-name">
                     <div className="fiori-object-exec-icon">
-                      <Database className="h-4 w-4" />
+                      <Database className="h-3.5 w-3.5" />
                     </div>
-                    <div className="min-w-0">
-                      <span className="fiori-field-label">Objeto técnico</span>
-                      <p className="truncate font-semibold uppercase text-[var(--fiori-text)]">
-                        {formData.name}
-                      </p>
-                    </div>
+                    <p className="truncate font-semibold uppercase text-[var(--fiori-text)]">
+                      {formData.name}
+                    </p>
                   </div>
                   <div className="fiori-object-exec-meta">
                     <div className="fiori-object-exec-field">
@@ -501,10 +500,10 @@ export function MigrationObjectFormDialog({
 
                 <section className="fiori-form-section">
                   <h3 className="fiori-section-title">
-                    <Timer className="h-3.5 w-3.5" />
+                    <Timer className="h-3 w-3" />
                     Monitoramento da carga
                   </h3>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {renderDateTimeField(
                       "chargeStartTime",
                       "Início",
@@ -527,9 +526,9 @@ export function MigrationObjectFormDialog({
                     )}
                   </div>
 
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                     <div className="fiori-form-field">
-                      <label className="fiori-field-label">Total target</label>
+                      <label className="fiori-field-label">Target</label>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -549,9 +548,8 @@ export function MigrationObjectFormDialog({
                       />
                     </div>
                     <div className="fiori-form-field">
-                      <label className="fiori-field-label">
-                        Total carregado
-                        <span className="font-normal text-[var(--fiori-label)]"> (Target − Erro)</span>
+                      <label className="fiori-field-label" title="Target − Erro">
+                        Carregado
                       </label>
                       <Input
                         type="text"
@@ -563,11 +561,8 @@ export function MigrationObjectFormDialog({
                         className="fiori-input tabular-nums readable-disabled shadow-none"
                       />
                     </div>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <div className="fiori-form-field">
-                      <label className="fiori-field-label">Sucesso (auto)</label>
+                      <label className="fiori-field-label">Sucesso</label>
                       <Input
                         type="text"
                         readOnly
@@ -577,7 +572,7 @@ export function MigrationObjectFormDialog({
                       />
                     </div>
                     <div className="fiori-form-field">
-                      <label className="fiori-field-label">Total erro</label>
+                      <label className="fiori-field-label">Erro</label>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -610,12 +605,12 @@ export function MigrationObjectFormDialog({
 
                 <section className="fiori-form-section">
                   <h3 className="fiori-section-title">
-                    <History className="h-3.5 w-3.5" />
-                    Histórico do ciclo anterior
+                    <History className="h-3 w-3" />
+                    Ciclo anterior
                   </h3>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div className="fiori-form-field">
-                      <label className="fiori-field-label">Volume anterior</label>
+                      <label className="fiori-field-label">Volume</label>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -635,10 +630,10 @@ export function MigrationObjectFormDialog({
                       />
                     </div>
                     <div className="fiori-form-field">
-                      <label className="fiori-field-label">Duração anterior</label>
+                      <label className="fiori-field-label">Duração</label>
                       <Input
                         type="text"
-                        placeholder="Ex.: 08H 30M 00S"
+                        placeholder="08H 30M 00S"
                         value={prevDurationInput}
                         onChange={onDurationInputChange}
                         className={cn(

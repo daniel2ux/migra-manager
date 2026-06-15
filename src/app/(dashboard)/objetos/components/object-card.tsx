@@ -36,6 +36,16 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { isValidSequence, normalizeSeqForDisplay, isObjectParallelLoad } from "@/lib/migration/sequence-utils";
 import { ActivityGroupBadges } from "@/components/shared/activity-group-badges";
@@ -756,6 +766,7 @@ export function MigrationObjectCard({
     suggestedChargeGroupOrder = 1,
     onTypeChange,
 }: MigrationObjectCardProps) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const chargeOrderLabel = normalizeSeqForDisplay(displayChargeOrder ?? obj.chargeOrder);
     const chargeGroupLabel = displayChargeGroup || "";
     const canEditChargeOrder =
@@ -772,13 +783,16 @@ export function MigrationObjectCard({
     const isInUse = usageCount > 0;
     const isInactive = obj.status === "INATIVO";
     const descriptionText = obj.description?.trim().replace(/\s+/g, " ") || "";
-    /** Excluir do catálogo só aparece para admin com objeto inativo; continua bloqueado se houver uso em mocks/projetos. */
     const showDeleteButton = isAdmin && isInactive;
-    const canDelete = showDeleteButton && !isInUse;
+    const deleteBlockedReason = isInUse
+          ? `Este objeto está vinculado a ${usageCount} mock(s) ou projeto(s). Remova-o das execuções antes de excluir.`
+          : null;
+    const canConfirmDelete = showDeleteButton && !deleteBlockedReason;
     const { chain, isCircular } = precedenceChain;
     const isParallelLoad = isObjectParallelLoad(obj);
 
     return (
+        <>
         <div
             draggable={isAdmin && isExecutionSort}
             onDragStart={onDragStart}
@@ -790,6 +804,7 @@ export function MigrationObjectCard({
             onClick={() => onSelect?.(obj.id)}
             className={cn(
                 "fiori-migration-object-card group relative border border-slate-200 hover:border-slate-400 transition-colors duration-300 overflow-hidden bg-white p-2.5 flex flex-col gap-2 h-full min-h-0 select-none",
+                isInactive && "fiori-migration-object-card--inactive",
                 isSelected ? "card-static-border z-10" : "",
                 isAdmin && isExecutionSort ? "cursor-move" : "cursor-pointer",
                 isNormalDragging && "fiori-migration-object-card--dragging opacity-30 border-slate-200 grayscale scale-95 cursor-grabbing",
@@ -970,15 +985,11 @@ export function MigrationObjectCard({
                 <div className="fiori-card-footer flex items-center justify-between gap-2">
                     <div className="fiori-card-toolbar">
                         {isAdmin && (
-                            <Tooltip>
+                            <Tooltip delayDuration={0}>
                                 <TooltipTrigger asChild>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                            onSelect?.(obj.id);
-                                        }}
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             if (isMockLocked) {
@@ -1126,14 +1137,13 @@ export function MigrationObjectCard({
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            disabled={!canDelete}
                                             onMouseDown={(e) => {
                                                 e.stopPropagation();
                                                 onSelect?.(obj.id);
                                             }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onDelete(obj.id, obj.name);
+                                                setDeleteDialogOpen(true);
                                             }}
                                             className={cn(CARD_TOOLBAR_BTN, "fiori-card-toolbar-btn-danger")}
                                         >
@@ -1142,9 +1152,9 @@ export function MigrationObjectCard({
                                     </span>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" variant="fiori" className="max-w-[260px]">
-                                    {canDelete
-                                        ? "Excluir permanentemente"
-                                        : `Este objeto está vinculado a ${usageCount} mock(s) ou projeto(s). Remova-o das execuções antes de excluir.`}
+                                    {canConfirmDelete
+                                        ? "Excluir do catálogo"
+                                        : deleteBlockedReason}
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -1152,5 +1162,57 @@ export function MigrationObjectCard({
                 </div>
             </div>
         </div>
+
+        <AlertDialog
+            preserveDashboardScroll
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+        >
+            <AlertDialogContent open={deleteDialogOpen} variant="fiori" className="max-w-md">
+                <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
+                    <div className="flex items-center gap-3">
+                        <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <AlertDialogTitle variant="fiori">
+                                {canConfirmDelete ? "Excluir objeto do catálogo?" : "Exclusão não permitida"}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription variant="fiori" className="truncate pt-0">
+                                {obj.name}
+                            </AlertDialogDescription>
+                        </div>
+                    </div>
+                </AlertDialogHeader>
+
+                <div className="fiori-message-box-body">
+                    <p className="fiori-message-box-text">
+                        {canConfirmDelete
+                            ? "Tem certeza que deseja excluir este objeto mestre? Esta ação não pode ser desfeita."
+                            : deleteBlockedReason}
+                    </p>
+                </div>
+
+                <AlertDialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end sm:space-x-0">
+                    <AlertDialogCancel variant="fiori">
+                        {canConfirmDelete ? "Cancelar" : "Fechar"}
+                    </AlertDialogCancel>
+                    {canConfirmDelete && (
+                        <AlertDialogAction
+                            variant="fiori"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onDelete(obj.id, obj.name);
+                                setDeleteDialogOpen(false);
+                            }}
+                            className="fiori-btn-emphasized--negative"
+                        >
+                            Excluir objeto
+                        </AlertDialogAction>
+                    )}
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }

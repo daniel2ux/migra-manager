@@ -38,6 +38,7 @@ export function calculateMockTotalDuration(
   // Prioriza intervalo start/end do próprio objeto; usa currentChargeDurationMs só como fallback.
   if (objects && objects.length > 0) {
     return objects.reduce((sum, obj) => {
+      if (isMigrationObjectInactive(obj)) return sum;
       let durationMs = 0;
 
       if (obj.chargeStartTime && obj.chargeEndTime) {
@@ -79,6 +80,15 @@ export function isMockActive(mock: { isActive?: boolean }): boolean {
 
 export function isMockInactive(mock: { isActive?: boolean }): boolean {
   return mock.isActive === false;
+}
+
+export function isMigrationObjectActive(obj: { isActive?: boolean; is_active?: boolean }): boolean {
+  const raw = obj.isActive ?? obj.is_active;
+  return raw !== false;
+}
+
+export function isMigrationObjectInactive(obj: { isActive?: boolean; is_active?: boolean }): boolean {
+  return !isMigrationObjectActive(obj);
 }
 
 export function filterActiveMocks<T extends { isActive?: boolean }>(

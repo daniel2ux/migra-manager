@@ -226,7 +226,7 @@ export default function DashboardLayout({
                 </header>
                 )}
 
-                <main className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar overflow-x-hidden relative ${isPasswordChangeRoute ? "pt-0" : "pt-16"}`}>
+                <main className={`dashboard-main-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar overflow-x-hidden relative ${isPasswordChangeRoute ? "pt-0" : "pt-16"}`}>
                     {isAuthenticating ? (
                         <div className="h-full flex items-center justify-center">
                             <div className="flex flex-col items-center gap-4">

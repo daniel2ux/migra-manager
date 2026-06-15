@@ -130,8 +130,6 @@ interface DashboardModalsProps {
     activityGroups: ActivityGroup[];
     precedenceSearchTerm: string;
     setPrecedenceSearchTerm: (v: string) => void;
-    precedenceSearchRef: React.RefObject<HTMLInputElement | null>;
-    precedenceSearchTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }
 
 export function DashboardModals(props: DashboardModalsProps) {
@@ -276,8 +274,6 @@ export function DashboardModals(props: DashboardModalsProps) {
                 activityGroups={props.activityGroups}
                 searchTerm={props.precedenceSearchTerm}
                 onSearchChange={props.setPrecedenceSearchTerm}
-                searchRef={props.precedenceSearchRef}
-                timerRef={props.precedenceSearchTimerRef}
             />
             )}
         </>

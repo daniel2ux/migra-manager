@@ -129,6 +129,13 @@ function ObjetosContent() {
     isBulkResetOpen,
     setIsBulkResetOpen,
         handleToggleObjectCargaStatus,
+    handleToggleObjectActive,
+    handleRequestRemoveFromMock,
+    handleConfirmRemoveFromMock,
+    objectToRemove,
+    setObjectToRemove,
+    isRemoveFromMockOpen,
+    setIsRemoveFromMockOpen,
     handleBulkDelete,
     handleBulkReset,
     handleGlobalReset,
@@ -144,6 +151,7 @@ function ObjetosContent() {
     selectedObjectIds,
     setSelectedObjectIds,
     toast: page.toast,
+    onObjectActiveChange: page.setObjectActiveState,
     });
 
     const { isSyncing, handleExportJson, handleSyncPreviousReferences } = useObjectsExportSync({
@@ -261,8 +269,7 @@ function ObjetosContent() {
               isSyncing={isSyncing}
               isImporting={isImporting}
               selectedObjectIds={selectedObjectIds}
-              pendingSearchTerm={page.pendingSearchTerm}
-              onPendingSearchTermChange={page.setPendingSearchTerm}
+              searchTerm={page.searchTerm}
               onSearchTermChange={page.setSearchTerm}
               performanceFilter={page.performanceFilter}
               onPerformanceFilterChange={page.setPerformanceFilter}
@@ -393,6 +400,8 @@ function ObjetosContent() {
                                                     onOpenCommentDialog={handleOpenCommentDialog}
                                                     onOpenQuickDialog={handleOpenQuickDialog}
                                                     onToggleCargaStatus={handleToggleObjectCargaStatus}
+                                                    onToggleActive={handleToggleObjectActive}
+                                                    onRemoveFromMock={handleRequestRemoveFromMock}
                         onImportLogs={(id: string) => page.setLogImportSingleId(id)}
                         onViewLogs={page.openLogViewer}
                                                     onResetObject={(obj: MigrationObject) => {
@@ -429,6 +438,11 @@ function ObjetosContent() {
                         objectToReset={objectToReset}
                         onClearObjectToReset={() => setObjectToReset(null)}
                         onIndividualReset={handleIndividualReset}
+                        isRemoveFromMockOpen={isRemoveFromMockOpen}
+                        onRemoveFromMockChange={setIsRemoveFromMockOpen}
+                        objectToRemove={objectToRemove}
+                        onClearObjectToRemove={() => setObjectToRemove(null)}
+                        onConfirmRemoveFromMock={handleConfirmRemoveFromMock}
                         isBulkDeleteOpen={isBulkDeleteOpen}
                         onBulkDeleteChange={setIsBulkDeleteOpen}
                         selectedCount={selectedObjectIds.length}
@@ -520,6 +534,8 @@ function ObjetosContent() {
                     setObjectToReset(obj);
                     setIsIndividualResetOpen(true);
                 }}
+                onToggleActive={handleToggleObjectActive}
+                onRemoveFromMock={handleRequestRemoveFromMock}
             />
     </DashboardShell>
     );

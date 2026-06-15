@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -40,16 +40,14 @@ export function ReportDialog({
     empresa,
 }: ReportDialogProps) {
     const [searchTerm, setSearchTerm] = useState('');
-    const inputRef = useRef<HTMLInputElement>(null);
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [localValue, setLocalValue] = useState('');
 
     const mockName =
         mocksByIdMap.get(effectiveMockId || "")?.name || effectiveMockId || undefined;
 
     const handleClose = () => {
         onOpenChange(false);
-        if (inputRef.current) inputRef.current.value = '';
-        if (timerRef.current) clearTimeout(timerRef.current);
+        setLocalValue('');
         setSearchTerm('');
     };
 
@@ -97,15 +95,14 @@ export function ReportDialog({
                         <div className="fiori-dialog-header-search fiori-search-shell">
                             <Search className="fiori-search-icon" />
                             <input
-                                ref={inputRef}
                                 type="search"
-                                placeholder="Buscar objeto..."
-                                defaultValue=""
-                                onChange={(e) => {
-                                    const val = e.target.value.toUpperCase();
-                                    e.target.value = val;
-                                    if (timerRef.current) clearTimeout(timerRef.current);
-                                    timerRef.current = setTimeout(() => setSearchTerm(val), 200);
+                                placeholder="Buscar objeto... (Enter)"
+                                value={localValue}
+                                onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
+                                onKeyDown={(e) => {
+                                    if (e.key !== "Enter") return;
+                                    e.preventDefault();
+                                    setSearchTerm(localValue);
                                 }}
                                 className="fiori-search-input uppercase"
                             />

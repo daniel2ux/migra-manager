@@ -79,9 +79,6 @@ function DashboardContent() {
     const [precedenceMockId, setPrecedenceMockId] = useState<string | null>(null);
     const [precedenceSearchTerm, setPrecedenceSearchTerm] = useState("");
 
-    // Refs para busca em relatórios
-    const precedenceSearchRef = useRef<HTMLInputElement>(null);
-    const precedenceSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const statTableRef = useRef<HTMLDivElement>(null);
 
     // 5. Filtragem e Performance
@@ -588,8 +585,6 @@ function DashboardContent() {
                     activityGroups={activeQueries.activityGroups}
                     precedenceSearchTerm={precedenceSearchTerm}
                     setPrecedenceSearchTerm={setPrecedenceSearchTerm}
-                    precedenceSearchRef={precedenceSearchRef}
-                    precedenceSearchTimerRef={precedenceSearchTimerRef}
                     statTableRef={statTableRef}
                     userProfile={activeQueries.userProfile}
                     user={activeQueries.user}

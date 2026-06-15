@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, startTransition } from 'react';
 import { doc, setDoc, serverTimestamp, writeBatch, type CompatDb } from '@/supabase/compat-db-shim';
 import type { User } from '@/supabase/auth-shim';
 import { deleteDocumentNonBlocking } from '@/supabase/mutations';
@@ -474,47 +474,54 @@ function useEditDialog(
     setOpenState(value);
   }, []);
 
-  const buildFormData = (obj: MasterObject): ObjectFormData => ({
-    name: obj.name, description: obj.description ?? '', chargeGroup: obj.chargeGroup || '',
-    chargeOrder: resolveFormChargeOrder(obj, displayChargeOrderById, extractChargeOrderDisplay),
-    parallelOrder: (obj.parallelOrder && isValidSequence(obj.parallelOrder)) ? String(obj.parallelOrder) : '',
-    dependencyIds: obj.dependencyIds || [], externalDependencies: obj.externalDependencies || [],
-    type: obj.type || 'SCRIPT', status: obj.status || 'ATIVO', isParallel: isObjectParallelLoad(obj), activityGroupIds: obj.activityGroupIds || [],
-    parallelPeerIds: [],
-  });
+  const buildFormData = useCallback(
+    (obj: MasterObject): ObjectFormData =>
+      buildObjectFormFromMaster(obj, displayChargeOrderById, extractChargeOrderDisplay),
+    [displayChargeOrderById, extractChargeOrderDisplay],
+  );
 
-  const handleOpen = async (obj: MasterObject, viewOnly = false) => {
-    if (!isAdmin) return;
-    setEditSaveError(null);
-    if (isMockLocked && !viewOnly) return;
+  const handleOpen = useCallback(
+    (obj: MasterObject, viewOnly = false) => {
+      if (!isAdmin) return;
+      setEditSaveError(null);
+      if (isMockLocked && !viewOnly) return;
 
-    setEditingObject(obj);
-    setEditFormData(buildFormData(obj));
-
-    if (viewOnly) {
+      const seq = ++editOpenSeqRef.current;
+      setEditingObject(obj);
       setOpen(true);
-      return;
-    }
 
-    const seq = ++editOpenSeqRef.current;
-    setOpen(true);
+      startTransition(() => {
+        setEditFormData(buildFormData(obj));
+      });
 
-    const resourceId = `masterObjects/${obj.id}`;
-    const { acquired, lockedByName: blocker } = await acquireLock(resourceId);
+      if (viewOnly) return;
 
-    if (seq !== editOpenSeqRef.current) {
-      if (acquired) releaseLock(resourceId);
-      return;
-    }
-
-    if (!acquired) {
-      setOpen(false);
-      setEditingObject(null);
-      setForceLockTarget(obj);
-      setForceLockBlockerName(blocker || 'Outro usuário');
-      setIsForceLockOpen(true);
-    }
-  };
+      const resourceId = `masterObjects/${obj.id}`;
+      void acquireLock(resourceId).then(({ acquired, lockedByName: blocker }) => {
+        if (seq !== editOpenSeqRef.current) {
+          if (acquired) releaseLock(resourceId);
+          return;
+        }
+        if (!acquired) {
+          setOpen(false);
+          setEditingObject(null);
+          setForceLockTarget(obj);
+          setForceLockBlockerName(blocker || 'Outro usuário');
+          setIsForceLockOpen(true);
+        }
+      });
+    },
+    [
+      isAdmin,
+      isMockLocked,
+      setEditingObject,
+      setEditFormData,
+      buildFormData,
+      setOpen,
+      acquireLock,
+      releaseLock,
+    ],
+  );
 
   const clearEditSaveError = useCallback(() => setEditSaveError(null), []);
 
@@ -527,7 +534,7 @@ function useEditDialog(
       extractChargeOrderDisplay,
     );
     const form = {
-      ...editFormData,
+      ...buildFormData(editingObject),
       ...patch,
       name: editingObject.name,
       chargeGroup: editingObject.chargeGroup || '',

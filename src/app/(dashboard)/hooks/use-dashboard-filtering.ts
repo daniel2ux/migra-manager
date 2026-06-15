@@ -253,6 +253,8 @@ export function useDashboardFiltering({
 
     const filteredAggregatedPerformance = useMemo(() => {
         const mapped = aggregatedPerformance.filter((obj) => {
+            if (obj.isActive === false) return false;
+
             if (selectedMockId !== "all") {
                 const hasSelectedMockHistory = !!obj.history?.some((h) => h.mockId === selectedMockId);
                 const isFromSelectedMock = obj.mockId === selectedMockId;

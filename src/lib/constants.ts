@@ -37,6 +37,7 @@ export const STORAGE_KEYS = {
   DASHBOARD_SHOW_INDICATORS: 'dashboard_show_indicators',
   DASHBOARD_SHOW_COMPARISON: 'dashboard_show_comparison',
   MOCKS_SHOW_INACTIVE: 'mocks_show_inactive',
+  OBJECTS_SHOW_INACTIVE: 'objects_show_inactive',
   RELATORIO_COMPARATIVO_PROJECT: 'relatorio-comparativo-project',
   RELATORIO_COMPARATIVO_MOCK_A: 'relatorio-comparativo-mock-a',
   RELATORIO_COMPARATIVO_MOCK_B: 'relatorio-comparativo-mock-b',

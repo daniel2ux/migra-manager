@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,8 +33,6 @@ interface SelectNextDialogProps {
   onSearchChange: (val: string) => void;
   onConfirm: (obj: MasterObject) => void;
   triggerRef?: React.RefObject<HTMLElement>;
-  searchRef?: React.RefObject<HTMLInputElement>;
-  timerRef?: React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
   /** Sequência exibida nos cards (posição na grade), quando diferente do valor salvo. */
   displayChargeOrderById?: ReadonlyMap<string, string>;
 }
@@ -48,24 +46,17 @@ export function SelectNextDialog({
   onSearchChange,
   onConfirm,
   triggerRef,
-  searchRef,
-  timerRef,
   displayChargeOrderById,
 }: SelectNextDialogProps) {
-  const localSearchRef = useRef<HTMLInputElement>(null);
+  const [localValue, setLocalValue] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const mergeSearchRef = useCallback(
-    (node: HTMLInputElement | null) => {
-      localSearchRef.current = node;
-      if (searchRef) {
-        (searchRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
-      }
-    },
-    [searchRef],
-  );
+  useEffect(() => {
+    setLocalValue(searchTerm);
+  }, [searchTerm]);
 
   const focusSearchField = useCallback(() => {
-    localSearchRef.current?.focus({ preventScroll: true });
+    searchInputRef.current?.focus({ preventScroll: true });
   }, []);
 
   const handleDialogOpenAutoFocus = useCallback(
@@ -91,11 +82,15 @@ export function SelectNextDialog({
   const handleClose = (val: boolean) => {
     onOpenChange(val);
     if (!val) {
-      if (searchRef?.current) searchRef.current.value = "";
-      if (timerRef?.current) clearTimeout(timerRef.current);
+      setLocalValue("");
       onSearchChange("");
       setTimeout(() => triggerRef?.current?.focus(), 0);
     }
+  };
+
+  const handleSelect = (obj: MasterObject) => {
+    handleClose(false);
+    queueMicrotask(() => onConfirm(obj));
   };
 
   return (
@@ -127,15 +122,15 @@ export function SelectNextDialog({
             <Search className="fiori-search-icon" />
             <input
               type="search"
-              placeholder="Buscar objeto..."
+              placeholder="Buscar objeto... (Enter)"
               className="fiori-search-input uppercase"
-              ref={mergeSearchRef}
-              defaultValue=""
-              onChange={(e) => {
-                const val = e.target.value.toUpperCase();
-                if (timerRef?.current) clearTimeout(timerRef.current);
-                if (timerRef) timerRef.current = setTimeout(() => onSearchChange(val), 50);
-                else onSearchChange(val);
+              ref={searchInputRef}
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                onSearchChange(localValue);
               }}
             />
           </div>
@@ -152,7 +147,7 @@ export function SelectNextDialog({
                   <button
                     key={o.id}
                     type="button"
-                    onClick={() => onConfirm(o)}
+                    onClick={() => handleSelect(o)}
                     className="fiori-object-row"
                   >
                     <div className="fiori-object-row-icon">

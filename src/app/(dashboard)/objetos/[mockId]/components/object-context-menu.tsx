@@ -5,9 +5,10 @@ import { createPortal } from "react-dom";
 import {
   Eye, MessageSquare, Pencil, PlayCircle,
   RefreshCcw, ScrollText, StopCircle,
-  Terminal, Zap,
+  Terminal, Zap, Ban, RotateCcw, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isMigrationObjectInactive } from "@/lib/mock-utils";
 import type { MigrationObject } from "@/types/migration";
 
 interface ContextMenuItemProps {
@@ -52,6 +53,8 @@ interface ObjectContextMenuProps {
   onImportLogs: (id: string) => void;
   onViewLogs: (obj: MigrationObject) => void;
   onResetObject: (obj: MigrationObject) => void;
+  onToggleActive: (obj: MigrationObject, activate: boolean) => void;
+  onRemoveFromMock: (obj: MigrationObject) => void;
 }
 
 export function ObjectContextMenu({
@@ -69,6 +72,8 @@ export function ObjectContextMenu({
   onImportLogs,
   onViewLogs,
   onResetObject,
+  onToggleActive,
+  onRemoveFromMock,
 }: ObjectContextMenuProps) {
   const obj = ctxMenu?.obj;
 
@@ -86,6 +91,8 @@ export function ObjectContextMenu({
   }, [obj]);
 
   if (!ctxMenu || !obj) return null;
+
+  const isInactive = isMigrationObjectInactive(obj);
 
   const handleOpenDetail = () => {
     onOpenDialog(obj);
@@ -143,14 +150,41 @@ export function ObjectContextMenu({
         onClick={handleOpenDetail}
         disabled={isInProgress}
       />
+      {!isInactive && (
       <ContextMenuItem
         icon={<MessageSquare className="h-3.5 w-3.5" />}
         label="Registrar comentário"
         onClick={handleOpenComment}
         disabled={isInProgress}
       />
+      )}
 
-      {isAdmin && !isMockLocked && isMockInProgress && (
+      {isInactive && isAdmin && !isMockLocked && (
+        <ContextMenuItem
+          icon={<Trash2 className="h-3.5 w-3.5" />}
+          label="Remover da mock"
+          onClick={() => { onRemoveFromMock(obj); onClose(); }}
+          variant="critical"
+        />
+      )}
+
+      {isInactive && isAdmin && !isMockLocked && (
+        <ContextMenuItem
+          icon={<RotateCcw className="h-3.5 w-3.5" />}
+          label="Reativar objeto"
+          onClick={() => { onToggleActive(obj, true); onClose(); }}
+        />
+      )}
+
+      {!isInactive && isAdmin && !isMockLocked && !isInProgress && (
+        <ContextMenuItem
+          icon={<Ban className="h-3.5 w-3.5" />}
+          label="Inativar objeto"
+          onClick={() => { onToggleActive(obj, false); onClose(); }}
+        />
+      )}
+
+      {!isInactive && isAdmin && !isMockLocked && isMockInProgress && (
         <>
           <div className="my-1 h-px bg-[#e5e5e5]" role="separator" />
           <ContextMenuItem
@@ -177,7 +211,7 @@ export function ObjectContextMenu({
         </>
       )}
 
-      {isAdminOrMaster && !isMockLocked && !isMockCompleted && (
+      {isAdminOrMaster && !isMockLocked && !isMockCompleted && !isInactive && (
         <ContextMenuItem
           icon={<Zap className="h-3.5 w-3.5" />}
           label="Edição rápida"
@@ -186,7 +220,7 @@ export function ObjectContextMenu({
         />
       )}
 
-      {isAdminOrMaster && !isMockLocked && !isMockCompleted && successPct < 100 && (
+      {isAdminOrMaster && !isMockLocked && !isMockCompleted && !isInactive && successPct < 100 && (
         <ContextMenuItem
           icon={<Terminal className="h-3.5 w-3.5" />}
           label="Importar logs"

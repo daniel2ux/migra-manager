@@ -251,8 +251,6 @@ function useSelectNext() {
   const [isSelectNextOpen, setIsSelectNextOpen] = useState(false);
   const [selectNextTargetObject, setSelectNextTargetObject] = useState<MasterObject | null>(null);
   const [selectNextSearchTerm, setSelectNextSearchTerm] = useState('');
-  const selectNextSearchRef = useRef<HTMLInputElement>(null);
-  const selectNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectNextTriggerRef = useRef<HTMLElement | null>(null);
 
   const handleOpenSelectNext = (obj: MasterObject) => {
@@ -262,7 +260,7 @@ function useSelectNext() {
     setIsSelectNextOpen(true);
   };
 
-  return { isSelectNextOpen, setIsSelectNextOpen, selectNextTargetObject, setSelectNextTargetObject, selectNextSearchTerm, setSelectNextSearchTerm, selectNextSearchRef, selectNextTimerRef, selectNextTriggerRef, handleOpenSelectNext };
+  return { isSelectNextOpen, setIsSelectNextOpen, selectNextTargetObject, setSelectNextTargetObject, selectNextSearchTerm, setSelectNextSearchTerm, selectNextTriggerRef, handleOpenSelectNext };
 }
 
 // ── Sub-hook: Parallel select ─────────────────────────────────────────────
@@ -272,8 +270,6 @@ function useParallelSelect(objects: MasterObject[] | null | undefined) {
   const [parallelSelectTarget, setParallelSelectTarget] = useState<MasterObject | null>(null);
   const [parallelSelectSearch, setParallelSelectSearch] = useState('');
   const [parallelSelectedIds, setParallelSelectedIds] = useState<string[]>([]);
-  const parallelSearchRef = useRef<HTMLInputElement>(null);
-  const parallelSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const parallelTriggerRef = useRef<HTMLElement | null>(null);
 
   const handleOpenParallelSelect = (obj: MasterObject) => {
@@ -289,7 +285,7 @@ function useParallelSelect(objects: MasterObject[] | null | undefined) {
     setIsParallelSelectOpen(true);
   };
 
-  return { isParallelSelectOpen, setIsParallelSelectOpen, parallelSelectTarget, setParallelSelectTarget, parallelSelectSearch, setParallelSelectSearch, parallelSelectedIds, setParallelSelectedIds, parallelSearchRef, parallelSearchTimerRef, parallelTriggerRef, handleOpenParallelSelect };
+  return { isParallelSelectOpen, setIsParallelSelectOpen, parallelSelectTarget, setParallelSelectTarget, parallelSelectSearch, setParallelSelectSearch, parallelSelectedIds, setParallelSelectedIds, parallelTriggerRef, handleOpenParallelSelect };
 }
 
 // ── Hook principal composto ───────────────────────────────────────────────
@@ -371,7 +367,7 @@ export function useObjectsReorder({
   };
 
   // ── Select Next confirm ────────────────────────────────────────────────
-  const handleSelectNextConfirm = async (selectedObj: MasterObject) => {
+  const handleSelectNextConfirm = (selectedObj: MasterObject) => {
     if (!selectNext.selectNextTargetObject || !objects?.length || !db) return;
     const target = selectNext.selectNextTargetObject;
 
@@ -380,52 +376,55 @@ export function useObjectsReorder({
       return;
     }
 
-    const orderedList =
-      sortedFilteredObjects.length > 0
-        ? sortedFilteredObjects
-        : [...objects].sort((a, b) => compareGestaoExecutionOrder(a, b));
-
-    const targetIdx = orderedList.findIndex((o) => o.id === target.id);
-    const nextInList = targetIdx !== -1 ? orderedList[targetIdx + 1] : undefined;
-    if (nextInList?.id === selectedObj.id) {
-      selectNext.setIsSelectNextOpen(false);
-      selectNext.setSelectNextTargetObject(null);
-      toast({ description: `"${selectedObj.name}" JÁ É O PRÓXIMO CARD APÓS "${target.name}".` });
-      return;
-    }
-
-    const reordered = buildReorderAfterAnchorInList(
-      objects,
-      orderedList as MasterObject[],
-      selectedObj,
-      target.id,
-    );
-
     selectNext.setIsSelectNextOpen(false);
     selectNext.setSelectNextTargetObject(null);
+    selectNext.setSelectNextSearchTerm('');
 
-    const preview = buildReorderPreviewPayload(reordered);
+    queueMicrotask(() => {
+      void (async () => {
+        const orderedList =
+          sortedFilteredObjects.length > 0
+            ? sortedFilteredObjects
+            : [...objects].sort((a, b) => compareGestaoExecutionOrder(a, b));
 
-    if (preview.changedIds?.length === 0) {
-      notifyReorderMoved(selectedObj.id, undefined, onReorderMoved);
-      return;
-    }
+        const targetIdx = orderedList.findIndex((o) => o.id === target.id);
+        const nextInList = targetIdx !== -1 ? orderedList[targetIdx + 1] : undefined;
+        if (nextInList?.id === selectedObj.id) {
+          toast({ description: `"${selectedObj.name}" JÁ É O PRÓXIMO CARD APÓS "${target.name}".` });
+          return;
+        }
 
-    onReorderPreview?.(preview);
-    notifyReorderMoved(selectedObj.id, undefined, onReorderMoved);
+        const reordered = buildReorderAfterAnchorInList(
+          objects,
+          orderedList as MasterObject[],
+          selectedObj,
+          target.id,
+        );
 
-    const ok = await commitContiguousSequenceRenumber(
-      db,
-      sequenceStore,
-      reordered,
-      toast,
-      'ERRO AO REORDENAR OBJETOS.',
-    );
-    if (ok) {
-      refetchObjects?.();
-    } else {
-      onReorderRollback?.();
-    }
+        const preview = buildReorderPreviewPayload(reordered);
+
+        if (preview.changedIds?.length === 0) {
+          notifyReorderMoved(selectedObj.id, undefined, onReorderMoved);
+          return;
+        }
+
+        onReorderPreview?.(preview);
+        notifyReorderMoved(selectedObj.id, undefined, onReorderMoved);
+
+        const ok = await commitContiguousSequenceRenumber(
+          db,
+          sequenceStore,
+          reordered,
+          toast,
+          'ERRO AO REORDENAR OBJETOS.',
+        );
+        if (ok) {
+          refetchObjects?.();
+        } else {
+          onReorderRollback?.();
+        }
+      })();
+    });
   };
 
   // ── Parallel save ──────────────────────────────────────────────────────
@@ -439,6 +438,9 @@ export function useObjectsReorder({
         toast({ variant: 'destructive', description: 'ERRO AO REMOVER PARALELISMO DO OBJETO.' });
         return;
       }
+      parallel.setIsParallelSelectOpen(false);
+      parallel.setParallelSelectTarget(null);
+      parallel.setParallelSelectSearch('');
       try {
         await writeBatch(db)
           .update(ref as any, { parallelOrder: '', isParallel: false, updatedAt: serverTimestamp() })
@@ -449,8 +451,6 @@ export function useObjectsReorder({
         console.error('[handleSaveParallelSelect] remove', err);
         toast({ variant: 'destructive', description: 'ERRO AO REMOVER PARALELISMO.' });
       }
-      parallel.setIsParallelSelectOpen(false);
-      parallel.setParallelSelectTarget(null);
       return;
     }
 
@@ -499,6 +499,10 @@ export function useObjectsReorder({
       return;
     }
 
+    parallel.setIsParallelSelectOpen(false);
+    parallel.setParallelSelectTarget(null);
+    parallel.setParallelSelectSearch('');
+
     try {
       await batch.commit();
       refetchObjects?.();
@@ -509,8 +513,6 @@ export function useObjectsReorder({
       console.error('[handleSaveParallelSelect] commit', err);
       toast({ variant: 'destructive', description: 'ERRO AO CONFIGURAR PARALELISMO.' });
     }
-    parallel.setIsParallelSelectOpen(false);
-    parallel.setParallelSelectTarget(null);
   };
 
   return {
@@ -518,12 +520,12 @@ export function useObjectsReorder({
     performReorder,
     isSelectNextOpen: selectNext.isSelectNextOpen, setIsSelectNextOpen: selectNext.setIsSelectNextOpen,
     selectNextTargetObject: selectNext.selectNextTargetObject, selectNextSearchTerm: selectNext.selectNextSearchTerm, setSelectNextSearchTerm: selectNext.setSelectNextSearchTerm,
-    selectNextSearchRef: selectNext.selectNextSearchRef, selectNextTimerRef: selectNext.selectNextTimerRef, selectNextTriggerRef: selectNext.selectNextTriggerRef,
+    selectNextTriggerRef: selectNext.selectNextTriggerRef,
     handleOpenSelectNext: selectNext.handleOpenSelectNext, handleSelectNextConfirm,
     isParallelSelectOpen: parallel.isParallelSelectOpen, setIsParallelSelectOpen: parallel.setIsParallelSelectOpen,
     parallelSelectTarget: parallel.parallelSelectTarget, parallelSelectSearch: parallel.parallelSelectSearch, setParallelSelectSearch: parallel.setParallelSelectSearch,
     parallelSelectedIds: parallel.parallelSelectedIds, setParallelSelectedIds: parallel.setParallelSelectedIds,
-    parallelSearchRef: parallel.parallelSearchRef, parallelSearchTimerRef: parallel.parallelSearchTimerRef, parallelTriggerRef: parallel.parallelTriggerRef,
+    parallelTriggerRef: parallel.parallelTriggerRef,
     handleOpenParallelSelect: parallel.handleOpenParallelSelect, handleSaveParallelSelect,
   };
 }

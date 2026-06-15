@@ -15,6 +15,7 @@ import {
   isValidSequence,
   compareGestaoExecutionOrder,
   buildListPositionChargeOrderMap,
+  resolveDisplayChargeOrder,
 } from '@/lib/migration/sequence-utils';
 import { buildPrecedenceMap } from '@/lib/migration/dependency-utils';
 import type { MasterObject } from '@/types/master-object';
@@ -25,7 +26,8 @@ import {
   getConfiguredChargeGroupForObject,
 } from '@/lib/migration/charge-group-sync';
 import { useActiveProjectId } from '@/hooks/use-active-project-id';
-import { SUPERADMIN_UID, idsForDbIn } from '@/lib/constants';
+import { SUPERADMIN_UID, idsForDbIn, STORAGE_KEYS } from '@/lib/constants';
+import { useLocalStorageState } from '@/hooks/use-local-storage-state';
 import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
 import {
   buildMasterCatalogExportPayload,
@@ -236,19 +238,49 @@ function filterMastersByDisplayFilters(
   statusFilter: string,
   activityGroupFilter: string,
   configuredChargeGroupById: ReadonlyMap<string, string>,
+  showInactive: boolean,
 ): MasterObject[] {
   return rows.filter((obj) => {
-    const configuredGroup = getConfiguredChargeGroupForObject(obj.id, configuredChargeGroupById);
-    const matchesSearch =
-      obj.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (obj.description ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      Boolean(configuredGroup && configuredGroup.toLowerCase().includes(searchTerm.toLowerCase()));
-    if (!matchesSearch) return false;
+    if (!matchesMasterSearchTerm(obj, searchTerm, configuredChargeGroupById)) return false;
+    if (
+      !showInactive &&
+      statusFilter !== 'INATIVO' &&
+      obj.status === 'INATIVO'
+    ) {
+      return false;
+    }
     if (statusFilter !== 'ALL' && obj.status !== statusFilter) return false;
     if (activityGroupFilter !== 'ALL' && !(obj.activityGroupIds ?? []).includes(activityGroupFilter))
       return false;
     return true;
   });
+}
+
+function matchesMasterSearchTerm(
+  obj: MasterObject,
+  searchTerm: string,
+  configuredChargeGroupById: ReadonlyMap<string, string>,
+): boolean {
+  if (!searchTerm.trim()) return true;
+  const configuredGroup = getConfiguredChargeGroupForObject(obj.id, configuredChargeGroupById);
+  const term = searchTerm.toLowerCase();
+  return (
+    obj.name.toLowerCase().includes(term) ||
+    (obj.description ?? '').toLowerCase().includes(term) ||
+    Boolean(configuredGroup && configuredGroup.toLowerCase().includes(term))
+  );
+}
+
+function buildGestaoDisplayList(
+  rows: MasterObject[],
+  sortMode: string,
+  reorderPreview: ReorderPreviewPayload | null,
+): MasterObject[] {
+  let sorted = sortMastersGestao(rows, sortMode);
+  if (reorderPreview?.visibleOrder?.length && sortMode === 'EXECUTION') {
+    sorted = applyVisibleOrderToList(sorted, reorderPreview.visibleOrder);
+  }
+  return sorted;
 }
 
 function applyVisibleOrderToList(
@@ -324,9 +356,6 @@ export function useObjectsPage() {
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
-  const depSearch1Ref = useRef<HTMLInputElement>(null);
-  const depSearch2Ref = useRef<HTMLInputElement>(null);
-  const depSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const depTriggerRef = useRef<HTMLElement | null>(null);
 
   // Filter state
@@ -339,6 +368,10 @@ export function useObjectsPage() {
   const [activityGroups, setActivityGroups] = useState<ActivityGroup[]>([]);
   const [chargeGroups, setChargeGroups] = useState<ChargeGroup[]>([]);
   const [activityGroupFilter, setActivityGroupFilter] = useState<string>('ALL');
+  const [showInactive, setShowInactive] = useLocalStorageState<boolean>(
+    STORAGE_KEYS.OBJECTS_SHOW_INACTIVE,
+    false,
+  );
   /** Preview instantâneo da grade após reordenar (antes do refetch). */
   const [reorderPreview, setReorderPreview] = useState<ReorderPreviewPayload | null>(null);
   const refetchSequenceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -546,36 +579,81 @@ export function useObjectsPage() {
     [queries.objects],
   );
 
+  const parallelPeersByObjectId = useMemo(() => {
+    const peersMap = new Map<string, MasterObject[]>();
+    const list = queries.objects ?? [];
+    if (!list.length) return peersMap;
+
+    const byMajor = new Map<number, MasterObject[]>();
+    for (const row of list) {
+      if (!row.parallelOrder) continue;
+      const major = parseSequence(row.parallelOrder).major;
+      if (major <= 0) continue;
+      const bucket = byMajor.get(major);
+      if (bucket) bucket.push(row);
+      else byMajor.set(major, [row]);
+    }
+
+    for (const row of list) {
+      if (!row.parallelOrder) {
+        peersMap.set(row.id, []);
+        continue;
+      }
+      const major = parseSequence(row.parallelOrder).major;
+      if (major <= 0) {
+        peersMap.set(row.id, []);
+        continue;
+      }
+      peersMap.set(
+        row.id,
+        (byMajor.get(major) ?? []).filter((peer) => peer.id !== row.id),
+      );
+    }
+    return peersMap;
+  }, [queries.objects]);
+
   const configuredChargeGroupById = useMemo(
     () => buildConfiguredChargeGroupByObjectId(chargeGroups),
     [chargeGroups],
   );
 
-  const sortedFilteredObjects = useMemo(() => {
+  const inactiveObjectCount = useMemo(
+    () => (sequenceContextRows ?? []).filter((obj) => obj.status === 'INATIVO').length,
+    [sequenceContextRows],
+  );
+
+  const gestaoDisplayList = useMemo(() => {
     const filtered = filterMastersByDisplayFilters(
       sequenceContextRows,
-      searchTerm,
+      '',
       statusFilter,
       activityGroupFilter,
       configuredChargeGroupById,
+      showInactive,
     );
-    let sorted = sortMastersGestao(filtered, sortMode);
-    if (
-      reorderPreview?.visibleOrder?.length &&
-      sortMode === 'EXECUTION'
-    ) {
-      sorted = applyVisibleOrderToList(sorted, reorderPreview.visibleOrder);
-    }
-    return sorted;
+    return buildGestaoDisplayList(filtered, sortMode, reorderPreview);
   }, [
     sequenceContextRows,
-    searchTerm,
     sortMode,
     statusFilter,
     activityGroupFilter,
     configuredChargeGroupById,
     reorderPreview,
+    showInactive,
   ]);
+
+  const sortedFilteredObjects = useMemo(() => {
+    if (!searchTerm.trim()) return gestaoDisplayList;
+    return gestaoDisplayList.filter((obj) =>
+      matchesMasterSearchTerm(obj, searchTerm, configuredChargeGroupById),
+    );
+  }, [gestaoDisplayList, searchTerm, configuredChargeGroupById]);
+
+  useEffect(() => {
+    if (showInactive || !selectedCardId) return;
+    const selected = sortedFilteredObjects.find((obj) => obj.id === selectedCardId);
+    if (!selected) setSelectedCardId(null);
+  }, [showInactive, selectedCardId, sortedFilteredObjects, setSelectedCardId]);
 
   const duplicateMasterNameKeys = useMemo(
     () => computeDuplicateMasterNameKeys(queries.objects ?? undefined),
@@ -661,10 +739,23 @@ export function useObjectsPage() {
   const hasActiveFilters =
     searchTerm !== '' || statusFilter !== 'ALL' || activityGroupFilter !== 'ALL';
 
+  const hasNonSearchDisplayFilters =
+    statusFilter !== 'ALL' || activityGroupFilter !== 'ALL';
+
   const displayChargeOrderById = useMemo(() => {
-    if (sortMode !== 'EXECUTION' || hasActiveFilters) return undefined;
-    return buildListPositionChargeOrderMap(sortedFilteredObjects);
-  }, [sortMode, sortedFilteredObjects, hasActiveFilters]);
+    if (sortMode !== 'EXECUTION' || hasNonSearchDisplayFilters) return undefined;
+    return buildListPositionChargeOrderMap(gestaoDisplayList);
+  }, [sortMode, gestaoDisplayList, hasNonSearchDisplayFilters]);
+
+  const editingChargeOrderDisplay = useMemo(() => {
+    if (!editingObject) return '';
+    const resolved = resolveDisplayChargeOrder(
+      editingObject.id,
+      editingObject.chargeOrder,
+      displayChargeOrderById,
+    );
+    return extractChargeOrderDisplay(resolved ?? editingObject.chargeOrder);
+  }, [editingObject, displayChargeOrderById, extractChargeOrderDisplay]);
 
   const refetchChargeGroups = useCallback(async () => {
     if (!db) return;
@@ -722,7 +813,7 @@ export function useObjectsPage() {
     refetchChargeGroups,
     chargeGroups,
     displayChargeOrderById,
-    reorderDisplayList: sortedFilteredObjects,
+    reorderDisplayList: gestaoDisplayList,
     projectId: selectedProjectId && selectedProjectId !== 'all' ? selectedProjectId : null,
     canRegisterObjects,
   });
@@ -761,16 +852,18 @@ export function useObjectsPage() {
   const handleSaveDependencySelect = async () => {
     if (!dependencyTargetObject || !db) return;
     const targetId = dependencyTargetObject.id;
+    const savedIds = dependencySelectedIds;
+    setIsDependenciesOpen(false);
+    setDependencySearchTerm('');
     try {
       await updateDoc(doc(db, 'masterObjects', targetId), {
-        dependencyIds: dependencySelectedIds,
+        dependencyIds: savedIds,
         updatedAt: serverTimestamp(),
       });
       setDependencyTargetObject((prev) =>
-        prev?.id === targetId ? { ...prev, dependencyIds: dependencySelectedIds } : prev,
+        prev?.id === targetId ? { ...prev, dependencyIds: savedIds } : prev,
       );
       refetchSequenceData();
-      setIsDependenciesOpen(false);
     } catch (err) {
       console.error('[handleSaveDependencySelect]', err);
       const msg = err instanceof Error ? err.message : 'ERRO DESCONHECIDO';
@@ -792,7 +885,7 @@ export function useObjectsPage() {
     return nextSeq;
   };
 
-  const suggestNextParallelOrder = (_currentGroup: string): string => {
+  const suggestNextParallelOrder = (currentGroup: string, currentParallelOrder?: string): string => {
     const rows = sequenceContextRows.length > 0 ? sequenceContextRows : (queries.objects ?? []);
     const withParallel = rows.filter(o => o.parallelOrder && isValidSequence(o.parallelOrder));
     if (!withParallel.length) {
@@ -800,7 +893,7 @@ export function useObjectsPage() {
       setEditFormData((prev) => ({ ...prev, parallelOrder: first }));
       return first;
     }
-    const currentPO = editFormData.parallelOrder;
+    const currentPO = currentParallelOrder ?? editFormData.parallelOrder;
     const currentMajor = currentPO ? parseSequence(currentPO).major : null;
     const sameGroupObjs = currentMajor ? withParallel.filter(o => parseSequence(o.parallelOrder).major === currentMajor) : [];
     if (sameGroupObjs.length > 0) {
@@ -816,7 +909,7 @@ export function useObjectsPage() {
   };
 
   return {
-    fileInputRef, terminalEndRef, depSearch1Ref, depSearch2Ref, depSearchTimerRef, depTriggerRef,
+    fileInputRef, terminalEndRef, depTriggerRef,
     ...crud, ...reorder,
     objects: queries.objects,
     isLoading:
@@ -828,11 +921,12 @@ export function useObjectsPage() {
     isAdminOrMaster: auth.isAdminOrMaster,
     isLockedByOther,
     lockedByName,
-    usageMap, precedenceMap, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, catalogPickerRows,
+    usageMap, precedenceMap, parallelPeersByObjectId, sequenceContextRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, catalogPickerRows,
     canRegisterObjects, objectCatalogBlockedReason,
-    displayChargeOrderById,
+    displayChargeOrderById, editingChargeOrderDisplay,
     searchTerm, setSearchTerm, sortMode, statusFilter, setStatusFilter,
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode, selectedCardId, setSelectedCardId,
+    showInactive, setShowInactive, inactiveObjectCount,
     activityGroups, activityGroupFilter, setActivityGroupFilter, chargeGroups, configuredChargeGroupById, hasActiveFilters,
     chargeGroupCreateSuggestions, handleCreateChargeGroup,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,

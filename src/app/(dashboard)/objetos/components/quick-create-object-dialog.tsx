@@ -260,8 +260,9 @@ export function QuickCreateObjectDialog({
 
   const handleSaveDepSelection = () => {
     suppressParentCloseRef.current = true;
-    patchFormDraft({ dependencyIds: depSelectDraft });
     setIsDepsOpen(false);
+    setDepSearchTerm("");
+    patchFormDraft({ dependencyIds: depSelectDraft });
     window.setTimeout(() => {
       suppressParentCloseRef.current = false;
     }, 0);
@@ -289,13 +290,14 @@ export function QuickCreateObjectDialog({
 
   const handleSaveParallelSelection = () => {
     suppressParentCloseRef.current = true;
+    setIsParallelOpen(false);
+    setParallelSearchTerm("");
     const expanded = expandParallelPeerIds(
       catalogObjects,
       parallelSelectDraft,
       pickerTargetId,
     );
     patchFormDraft({ parallelPeerIds: expanded });
-    setIsParallelOpen(false);
     window.setTimeout(() => {
       suppressParentCloseRef.current = false;
     }, 0);

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useRef, useEffect, useCallback } from 'react';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
 import { Button } from '@/components/ui/button';
 import {
   Loader2, Plus, Search, Network, Database,
   FileUp, Download,
-  Table as TableIcon, Grid3X3, X,
+  Table as TableIcon, Grid3X3, X, Eye, EyeOff,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -15,14 +15,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from '@/lib/utils';
-import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { PageHeader } from '@/components/layout/page-header';
-import {
-  parseSequence,
-  resolveDisplayChargeOrder,
-} from '@/lib/migration/sequence-utils';
-import { getConfiguredChargeGroupForObject, findChargeGroupIdForObject } from '@/lib/migration/charge-group-sync';
+import { getConfiguredChargeGroupForObject } from '@/lib/migration/charge-group-sync';
 import {
   QuickCreateObjectDialog,
   EditObjectDialog,
@@ -33,11 +28,10 @@ import {
   PrecedenceDialog,
   ForceLockDialog,
 } from './components/lazy-dialogs';
-import { MigrationObjectCard } from './components/object-card';
+import { ObjetosCardsGrid } from './components/objetos-cards-grid';
 import type { MasterObject } from '@/types/master-object';
 import { ObjectsTable } from './components/objects-table';
 import { useObjectsPage } from './hooks/use-objects-page';
-import { ObjetosFilters } from './components/objetos-filters';
 
 const PAGE_TOOLBAR_BTN =
   "fiori-toolbar-btn !rounded-[0.375rem] !size-8 min-h-0 min-w-0";
@@ -45,9 +39,9 @@ const PAGE_TOOLBAR_BTN =
 function ObjetosMasterPageContent() {
   const {
     // Refs
-    registerNameInput, fileInputRef, depSearch1Ref, depSearch2Ref, depSearchTimerRef, depTriggerRef,
-    selectNextSearchRef, selectNextTimerRef, selectNextTriggerRef,
-    parallelSearchRef, parallelSearchTimerRef, parallelTriggerRef,
+    registerNameInput, fileInputRef, depTriggerRef,
+    selectNextTriggerRef,
+    parallelTriggerRef,
     terminalEndRef,
     // State
     open, setOpen, isQuickCreateOpen, setIsQuickCreateOpen,
@@ -62,18 +56,19 @@ function ObjetosMasterPageContent() {
     isSelectNextOpen, setIsSelectNextOpen, selectNextTargetObject, selectNextSearchTerm, setSelectNextSearchTerm,
     isParallelSelectOpen, setIsParallelSelectOpen, parallelSelectTarget, parallelSelectSearch, setParallelSelectSearch,
     parallelSelectedIds, setParallelSelectedIds,
-    sortMode, statusFilter, setStatusFilter,
+    sortMode,
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode,
+    showInactive, setShowInactive, inactiveObjectCount,
     isForceLockOpen, setIsForceLockOpen, forceLockTarget, forceLockBlockerName,
-    activityGroups, activityGroupFilter, setActivityGroupFilter,
+    activityGroups,
     chargeGroups, configuredChargeGroupById,
     chargeGroupCreateSuggestions, handleCreateChargeGroup,
     isPrecedenceOpen, setIsPrecedenceOpen, precedenceObject, setPrecedenceObject, precedenceMode,
     // Derived
     objects, isLoading, isAdmin, isAdminOrMaster, isLockedByOther, lockedByName,
-    usageMap, precedenceMap, sequenceContextRows, catalogPickerRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, hasActiveFilters, selectedMockName, isMockLocked,
+    usageMap, precedenceMap, parallelPeersByObjectId, sequenceContextRows, catalogPickerRows, sortedFilteredObjects, duplicateMasterNameKeys, activeProject, hasActiveFilters, selectedMockName, isMockLocked,
     canRegisterObjects, objectCatalogBlockedReason,
-    displayChargeOrderById,
+    displayChargeOrderById, editingChargeOrderDisplay,
     // Handlers
     handleClearFilters, handleOpenDependencies, handleSaveDependencySelect, handleOpenParallelSelect, handleSaveParallelSelect,
     handleOpenSelectNext, handleSelectNextConfirm, handleOpenPrecedence,
@@ -85,10 +80,37 @@ function ObjetosMasterPageContent() {
     releaseLock, editSaveError, clearEditSaveError,
   } = useObjectsPage();
 
-  // Wrapper para visualização (mock bloqueado)
-  const handleOpenViewDialog = (obj: MasterObject) => {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const timer = window.setTimeout(() => {
+      searchInputRef.current?.focus({ preventScroll: true });
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [isSearchOpen]);
+
+  const handleOpenViewDialog = useCallback((obj: MasterObject) => {
     handleOpenEditDialog(obj, true);
-  };
+  }, [handleOpenEditDialog]);
+
+  const handleDragStateChange = useCallback(
+    ({ draggedId, dragOverId }: { draggedId: string | null; dragOverId: string | null }) => {
+      setDraggedObjectId(draggedId);
+      setDragOverObjectId(dragOverId);
+    },
+    [setDraggedObjectId, setDragOverObjectId],
+  );
+
+  const handleSelectCard = useCallback(
+    (id: string) => setSelectedCardId((prev) => (prev === id ? null : id)),
+    [setSelectedCardId],
+  );
+
+  const handleOpenPrecedenceFromCard = useCallback(
+    (obj: MasterObject) => handleOpenPrecedence(obj as any, 'card'),
+    [handleOpenPrecedence],
+  );
 
   return (
     <DashboardShell noPadding>
@@ -119,8 +141,8 @@ function ObjetosMasterPageContent() {
                   <div className="fiori-search-shell">
                     <Search className="fiori-search-icon" aria-hidden />
                     <input
+                      ref={searchInputRef}
                       type="search"
-                      autoFocus={isSearchOpen}
                       placeholder="Pesquisar objetos..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
@@ -165,6 +187,27 @@ function ObjetosMasterPageContent() {
                     {isSearchOpen ? "Fechar busca" : "Pesquisar objetos"}
                   </TooltipContent>
                 </Tooltip>
+
+                {inactiveObjectCount > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(PAGE_TOOLBAR_BTN, showInactive && "fiori-toolbar-btn-active")}
+                        onClick={() => setShowInactive(!showInactive)}
+                        aria-label={showInactive ? "Ocultar objetos inativos" : "Exibir objetos inativos"}
+                      >
+                        {showInactive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" variant="fiori">
+                      {showInactive
+                        ? `Ocultar inativos (${inactiveObjectCount})`
+                        : `Exibir inativos (${inactiveObjectCount})`}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
 
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -268,20 +311,6 @@ function ObjetosMasterPageContent() {
           </div>
         )}
 
-        {/* TIER 2: SEARCH/FILTERS */}
-        <ObjetosFilters
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          activityGroups={activityGroups}
-          activityGroupFilter={activityGroupFilter}
-          setActivityGroupFilter={setActivityGroupFilter}
-          filteredCount={sortedFilteredObjects.length}
-          totalCount={objects?.length || 0}
-          handleClearFilters={handleClearFilters}
-        />
-
         <div className={cn("space-y-4 flex-1", viewMode === 'CARDS' && "px-4 md:px-8 py-4")}>
           <div className="bg-transparent">
             {isLoading ? (
@@ -309,146 +338,39 @@ function ObjetosMasterPageContent() {
                     onSelectParallel={handleOpenParallelSelect}
                   />
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                    {sortedFilteredObjects.map((obj) => {
-                      const myParallelMajor = obj.parallelOrder ? parseSequence(obj.parallelOrder).major : 0;
-                      const otherParallel = (myParallelMajor > 0 ? objects?.filter(o =>
-                        o.id !== obj.id &&
-                        o.parallelOrder &&
-                        parseSequence(o.parallelOrder).major === myParallelMajor
-                      ) : []) || [];
-
-                      return (
-                        <MigrationObjectCard
-                          key={obj.id}
-                          obj={obj as any}
-                          displayChargeOrder={
-                            displayChargeOrderById
-                              ? (resolveDisplayChargeOrder(
-                                  obj.id,
-                                  obj.chargeOrder,
-                                  displayChargeOrderById,
-                                ) ?? undefined)
-                              : undefined
-                          }
-                          displayChargeGroup={getConfiguredChargeGroupForObject(
-                            obj.id,
-                            configuredChargeGroupById,
-                          )}
-                          allChargeGroups={chargeGroups}
-                          selectedChargeGroupId={findChargeGroupIdForObject(obj.id, chargeGroups)}
-                          catalogDuplicateName={duplicateMasterNameKeys.has(normalizeMasterCatalogName(obj.name))}
-                          allGroups={activityGroups}
-                          isAdmin={isAdmin}
-                          isAdminOrMaster={isAdminOrMaster}
-                          isExecutionSort={sortMode === 'EXECUTION'}
-                          isNormalDragging={draggedObjectId === obj.id}
-                          isNormalDragTarget={dragOverObjectId === obj.id}
-                          usageCount={usageMap[obj.id]?.size || 0}
-                          precedenceChain={precedenceMap.get(obj.id) ?? { chain: [], isCircular: false }}
-                          otherParallelObjects={otherParallel as any[]}
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData("text/plain", obj.id);
-                            setDraggedObjectId(obj.id);
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDragOverObjectId(obj.id);
-                          }}
-                          onDragLeave={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDragOverObjectId(null);
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (draggedObjectId && sequenceContextRows.length > 0) {
-                              const moving = sequenceContextRows.find(o => o.id === draggedObjectId);
-                              if (moving) {
-                                const useListPosition = Boolean(displayChargeOrderById);
-                                const targetDisplayOrder = useListPosition
-                                  ? resolveDisplayChargeOrder(
-                                      obj.id,
-                                      obj.chargeOrder,
-                                      displayChargeOrderById,
-                                    )
-                                  : obj.chargeOrder;
-                                void performReorder(
-                                  moving,
-                                  String(targetDisplayOrder || ''),
-                                  useListPosition ? undefined : obj.id,
-                                  {
-                                    orderedList: useListPosition ? sortedFilteredObjects : undefined,
-                                  },
-                                );
-                              }
-                              setDraggedObjectId(null);
-                              setDragOverObjectId(null);
-                            }
-                          }}
-                          isSelected={selectedCardId === obj.id}
-                          onSelect={(id) => setSelectedCardId(prev => prev === id ? null : id)}
-                          onEdit={handleOpenEditDialog}
-                          onView={handleOpenViewDialog}
-                          onDelete={handleDelete}
-                          onOpenPrecedence={(o) => handleOpenPrecedence(o as any, 'card')}
-                          onDependencies={handleOpenDependencies}
-                          onSelectNext={handleOpenSelectNext}
-                          onSelectParallel={handleOpenParallelSelect}
-                          isMockLocked={isMockLocked}
-                          onChargeOrderChange={(target, newOrder) => {
-                            if (!isAdmin || isMockLocked) return;
-                            const displayed = displayChargeOrderById
-                              ? resolveDisplayChargeOrder(target.id, target.chargeOrder, displayChargeOrderById)
-                              : target.chargeOrder;
-                            void performReorder(
-                              { ...target, chargeOrder: displayed ?? target.chargeOrder ?? "" },
-                              newOrder,
-                              undefined,
-                              {
-                                orderedList: displayChargeOrderById ? sortedFilteredObjects : undefined,
-                              },
-                            );
-                          }}
-                          onStatusChange={
-                            isAdminOrMaster
-                              ? (target, status) => {
-                                  void handlePatchMaster(target, { status });
-                                }
-                              : undefined
-                          }
-                          onActivityGroupsChange={
-                            isAdminOrMaster
-                              ? (target, activityGroupIds) => {
-                                  void handlePatchMaster(target, { activityGroupIds });
-                                }
-                              : undefined
-                          }
-                          onChargeGroupChange={
-                            isAdminOrMaster
-                              ? (target, chargeGroupId) => {
-                                  void handlePatchMaster(target, { chargeGroupId });
-                                }
-                              : undefined
-                          }
-                          onCreateChargeGroup={
-                            isAdminOrMaster ? handleCreateChargeGroup : undefined
-                          }
-                          suggestedChargeGroupName={chargeGroupCreateSuggestions.name}
-                          suggestedChargeGroupOrder={chargeGroupCreateSuggestions.order}
-                          onTypeChange={
-                            isAdminOrMaster
-                              ? (target, type) => {
-                                  void handlePatchMaster(target, { type });
-                                }
-                              : undefined
-                          }
-                        />
-                      );
-                    })}
-                  </div>
+                  <ObjetosCardsGrid
+                    objects={objects ?? []}
+                    sortedFilteredObjects={sortedFilteredObjects}
+                    sequenceContextRows={sequenceContextRows}
+                    displayChargeOrderById={displayChargeOrderById}
+                    configuredChargeGroupById={configuredChargeGroupById}
+                    duplicateMasterNameKeys={duplicateMasterNameKeys}
+                    activityGroups={activityGroups}
+                    chargeGroups={chargeGroups}
+                    chargeGroupCreateSuggestions={chargeGroupCreateSuggestions}
+                    isAdmin={isAdmin}
+                    isAdminOrMaster={isAdminOrMaster}
+                    isMockLocked={isMockLocked}
+                    isExecutionSort={sortMode === 'EXECUTION'}
+                    usageMap={usageMap}
+                    precedenceMap={precedenceMap}
+                    parallelPeersByObjectId={parallelPeersByObjectId}
+                    selectedCardId={selectedCardId}
+                    draggedObjectId={draggedObjectId}
+                    dragOverObjectId={dragOverObjectId}
+                    onSelectCard={handleSelectCard}
+                    onEdit={handleOpenEditDialog}
+                    onView={handleOpenViewDialog}
+                    onDelete={handleDelete}
+                    onOpenPrecedence={handleOpenPrecedenceFromCard}
+                    onDependencies={handleOpenDependencies}
+                    onSelectNext={handleOpenSelectNext}
+                    onSelectParallel={handleOpenParallelSelect}
+                    onDragStateChange={handleDragStateChange}
+                    performReorder={performReorder}
+                    handlePatchMaster={handlePatchMaster}
+                    handleCreateChargeGroup={isAdminOrMaster ? handleCreateChargeGroup : undefined}
+                  />
                 )}
               </TooltipProvider>
             ) : (
@@ -502,6 +424,7 @@ function ObjetosMasterPageContent() {
                 ? getConfiguredChargeGroupForObject(editingObject.id, configuredChargeGroupById)
                 : ""
             }
+            chargeOrderDisplay={editingChargeOrderDisplay}
             onSuggestParallelOrder={(group) => suggestNextParallelOrder(group)}
             onReleaseLock={releaseLock}
             saveError={editSaveError}
@@ -551,8 +474,6 @@ function ObjetosMasterPageContent() {
             onToggleId={(id) => setDependencySelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
             onSave={handleSaveDependencySelect}
             triggerRef={depTriggerRef as React.RefObject<HTMLElement>}
-            searchRef={depSearch1Ref as React.RefObject<HTMLInputElement>}
-            timerRef={depSearchTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
           )}
 
@@ -562,8 +483,6 @@ function ObjetosMasterPageContent() {
             onOpenChange={(open) => {
               setIsParallelSelectOpen(open);
               if (!open) {
-                if (parallelSearchRef.current) parallelSearchRef.current.value = '';
-                if (parallelSearchTimerRef.current) clearTimeout(parallelSearchTimerRef.current);
                 setParallelSelectSearch('');
                 setTimeout(() => parallelTriggerRef.current?.focus(), 0);
               }
@@ -577,8 +496,6 @@ function ObjetosMasterPageContent() {
             onToggleId={(id) => setParallelSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
             onSave={handleSaveParallelSelect}
             triggerRef={parallelTriggerRef as React.RefObject<HTMLElement>}
-            searchRef={parallelSearchRef as React.RefObject<HTMLInputElement>}
-            timerRef={parallelSearchTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
           )}
 
@@ -588,8 +505,6 @@ function ObjetosMasterPageContent() {
             onOpenChange={(open) => {
               setIsSelectNextOpen(open);
               if (!open) {
-                if (selectNextSearchRef.current) selectNextSearchRef.current.value = '';
-                if (selectNextTimerRef.current) clearTimeout(selectNextTimerRef.current);
                 setSelectNextSearchTerm('');
                 setTimeout(() => selectNextTriggerRef.current?.focus(), 0);
               }
@@ -601,8 +516,6 @@ function ObjetosMasterPageContent() {
             onSearchChange={setSelectNextSearchTerm}
             onConfirm={(o) => handleSelectNextConfirm(o as any)}
             triggerRef={selectNextTriggerRef as React.RefObject<HTMLElement>}
-            searchRef={selectNextSearchRef as React.RefObject<HTMLInputElement>}
-            timerRef={selectNextTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
           )}
 
@@ -613,9 +526,6 @@ function ObjetosMasterPageContent() {
             precedenceObject={precedenceObject}
             onSetPrecedenceObject={(o) => {
               setPrecedenceObject(o);
-              if (depSearch1Ref.current) depSearch1Ref.current.value = '';
-              if (depSearch2Ref.current) depSearch2Ref.current.value = '';
-              if (depSearchTimerRef.current) clearTimeout(depSearchTimerRef.current);
               setDependencySearchTerm('');
             }}
             precedenceMode={precedenceMode}
@@ -623,8 +533,6 @@ function ObjetosMasterPageContent() {
             activityGroups={activityGroups}
             searchTerm={dependencySearchTerm}
             onSearchChange={setDependencySearchTerm}
-            searchRef={depSearch2Ref as React.RefObject<HTMLInputElement | null>}
-            timerRef={depSearchTimerRef as React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>}
           />
           )}
 

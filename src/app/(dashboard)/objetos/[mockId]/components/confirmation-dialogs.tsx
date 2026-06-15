@@ -59,6 +59,12 @@ interface ConfirmationDialogsProps {
   onClearObjectToReset: () => void;
   onIndividualReset: () => void;
 
+  isRemoveFromMockOpen: boolean;
+  onRemoveFromMockChange: (open: boolean) => void;
+  objectToRemove: { name: string } | null;
+  onClearObjectToRemove: () => void;
+  onConfirmRemoveFromMock: () => void;
+
   isBulkDeleteOpen: boolean;
   onBulkDeleteChange: (open: boolean) => void;
   selectedCount: number;
@@ -73,6 +79,7 @@ export function ConfirmationDialogs({
   isGlobalResetOpen, onGlobalResetChange, onGlobalReset,
   isResetProgressOpen, resetProgress, resetCount,
   isIndividualResetOpen, onIndividualResetChange, objectToReset, onClearObjectToReset, onIndividualReset,
+  isRemoveFromMockOpen, onRemoveFromMockChange, objectToRemove, onClearObjectToRemove, onConfirmRemoveFromMock,
   isBulkDeleteOpen, onBulkDeleteChange, selectedCount, onBulkDelete,
   isBulkResetOpen, onBulkResetChange, onBulkReset,
 }: ConfirmationDialogsProps) {
@@ -205,6 +212,54 @@ export function ConfirmationDialogs({
               className="fiori-btn-emphasized--warning"
             >
               Confirmar reset
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        preserveDashboardScroll
+        open={isRemoveFromMockOpen}
+        onOpenChange={(open) => {
+          onRemoveFromMockChange(open);
+          if (!open) onClearObjectToRemove();
+        }}
+      >
+        <AlertDialogContent open={isRemoveFromMockOpen} variant="fiori" className="max-w-md">
+          <AlertDialogHeader className="fiori-dialog-header shrink-0 space-y-0 text-left">
+            <div className="flex items-center gap-3">
+              <div className="fiori-dialog-icon fiori-dialog-icon--critical shrink-0">
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <AlertDialogTitle variant="fiori">Remover da mock</AlertDialogTitle>
+                <AlertDialogDescription variant="fiori" className="truncate pt-0">
+                  {objectToRemove?.name ?? "—"}
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+
+          <div className="fiori-message-box-body">
+            <p className="fiori-message-box-text">
+              Tem certeza que deseja remover este objeto desta mock?
+              O cadastro mestre no catálogo não será excluído.
+            </p>
+            <ul className="fiori-message-box-effects">
+              {BULK_DELETE_EFFECTS.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <AlertDialogFooter className="fiori-dialog-footer shrink-0 gap-2 sm:justify-end sm:space-x-0">
+            <AlertDialogCancel variant="fiori">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="fiori"
+              onClick={onConfirmRemoveFromMock}
+              className="fiori-btn-emphasized--negative"
+            >
+              Remover agora
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

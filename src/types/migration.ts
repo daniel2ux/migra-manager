@@ -112,6 +112,8 @@ export interface MigrationObject {
   parallelOrder?: string | number;
   status?: MigrationObjectStatus;
   hasTechLogs?: boolean;
+  /** false = inativo nesta mock (soft-disable). */
+  isActive?: boolean;
 
   loadHistory?: LoadHistoryEntry[];
 }
@@ -190,6 +192,7 @@ export interface AggregatedObject {
   mockIsLocked?: boolean;
   status?: MigrationObjectStatus;
   hasTechLogs?: boolean;
+  isActive?: boolean;
   chargeStartTime?: string | null;
   chargeEndTime?: string | null;
   _catalogOrder?: string | number;

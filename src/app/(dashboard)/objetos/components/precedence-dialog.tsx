@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -25,8 +26,6 @@ interface PrecedenceDialogProps {
   activityGroups: any[];
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  searchRef?: React.RefObject<HTMLInputElement | null>;
-  timerRef?: React.MutableRefObject<ReturnType<typeof setTimeout> | null | undefined>;
 }
 
 export function PrecedenceDialog({
@@ -39,9 +38,13 @@ export function PrecedenceDialog({
   activityGroups,
   searchTerm,
   onSearchChange,
-  searchRef,
-  timerRef,
 }: PrecedenceDialogProps) {
+  const [localValue, setLocalValue] = useState("");
+
+  useEffect(() => {
+    setLocalValue(searchTerm);
+  }, [searchTerm]);
+
   const handleClose = () => {
     onOpenChange(false);
   };
@@ -91,16 +94,15 @@ export function PrecedenceDialog({
                 <Search className="fiori-search-icon" />
                 <input
                   type="search"
-                  placeholder="Buscar objeto…"
+                  placeholder="Buscar objeto… (Enter)"
                   className="fiori-search-input uppercase"
-                  ref={searchRef}
-                  defaultValue=""
+                  value={localValue}
                   aria-label="Buscar objeto para explorar precedência"
-                  onChange={(e) => {
-                    const val = e.target.value.toUpperCase();
-                    if (timerRef?.current) clearTimeout(timerRef.current);
-                    if (timerRef) timerRef.current = setTimeout(() => onSearchChange(val), 50);
-                    else onSearchChange(val);
+                  onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    onSearchChange(localValue);
                   }}
                 />
               </div>
@@ -131,8 +133,7 @@ export function PrecedenceDialog({
                     className="fiori-list-item"
                     onClick={() => {
                       onSetPrecedenceObject(o);
-                      if (searchRef?.current) searchRef.current.value = "";
-                      if (timerRef?.current) clearTimeout(timerRef.current);
+                      setLocalValue("");
                       onSearchChange("");
                     }}
                   >

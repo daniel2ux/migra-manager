@@ -490,6 +490,7 @@ export type Database = {
           id: string
           initial_charge_end_time: string | null
           initial_charge_start_time: string | null
+          is_active: boolean
           is_parallel: boolean | null
           load_history: Json
           master_object_id: string | null
@@ -521,6 +522,7 @@ export type Database = {
           id?: string
           initial_charge_end_time?: string | null
           initial_charge_start_time?: string | null
+          is_active?: boolean
           is_parallel?: boolean | null
           load_history?: Json
           master_object_id?: string | null
@@ -552,6 +554,7 @@ export type Database = {
           id?: string
           initial_charge_end_time?: string | null
           initial_charge_start_time?: string | null
+          is_active?: boolean
           is_parallel?: boolean | null
           load_history?: Json
           master_object_id?: string | null

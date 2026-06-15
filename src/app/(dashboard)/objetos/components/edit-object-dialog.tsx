@@ -27,6 +27,7 @@ import { isValidSequence } from "@/lib/migration/sequence-utils";
 import { MASTER_OBJECT_TYPE_OPTIONS, DEFAULT_MASTER_OBJECT_TYPE } from "@/lib/migration/master-object-type";
 import { EditLockAlert } from "@/components/ui/edit-lock-alert";
 import { FioriIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
+import type { MasterObject } from "@/types/master-object";
 
 const STATUS_DOT_CLASS: Record<string, string> = {
   ATIVO: "fiori-select-status-dot--success",
@@ -62,21 +63,44 @@ interface ActivityGroup {
   description?: string;
 }
 
+function buildEditFormDraft(
+  obj: MasterObject,
+  chargeOrderDisplay: string,
+  displayChargeGroup: string,
+): EditFormData {
+  return {
+    name: obj.name,
+    chargeGroup: displayChargeGroup || obj.chargeGroup || "",
+    chargeOrder: chargeOrderDisplay,
+    parallelOrder:
+      obj.parallelOrder && isValidSequence(obj.parallelOrder)
+        ? String(obj.parallelOrder)
+        : "",
+    type: obj.type || DEFAULT_MASTER_OBJECT_TYPE,
+    status: obj.status || "ATIVO",
+    description: obj.description ?? "",
+    externalDependencies: obj.externalDependencies ?? [],
+    activityGroupIds: obj.activityGroupIds ?? [],
+  };
+}
+
 interface EditObjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingObject: { id: string } | null;
+  editingObject: MasterObject | null;
   editFormData: EditFormData;
   isAdmin: boolean;
   isLockedByOther: boolean;
   lockedByName: string | null;
   activityGroups: ActivityGroup[];
   onSave: (patch?: Partial<EditFormData>) => void;
-  onSuggestParallelOrder: (group: string) => string;
+  onSuggestParallelOrder: (group: string, currentParallelOrder?: string) => string;
   onReleaseLock: (path: string) => void;
   isMockLocked?: boolean;
   /** Grupo de carga conforme cadastro em `charge_groups` (vazio se não configurado). */
   displayChargeGroup?: string;
+  /** Ordem de carga exibida na lista (posição ou valor persistido). */
+  chargeOrderDisplay?: string;
   /** Mensagem de erro ao salvar (validação ou conflito de nome). */
   saveError?: string | null;
   onClearSaveError?: () => void;
@@ -114,6 +138,7 @@ export function EditObjectDialog({
   onReleaseLock,
   isMockLocked = false,
   displayChargeGroup = "",
+  chargeOrderDisplay = "",
   saveError,
   onClearSaveError,
 }: EditObjectDialogProps) {
@@ -121,12 +146,15 @@ export function EditObjectDialog({
   const [externalDepsDraft, setExternalDepsDraft] = useState("");
 
   useEffect(() => {
-    if (!open) return;
-    setFormDraft(editFormData);
-    setExternalDepsDraft((editFormData.externalDependencies ?? []).join("\n"));
-  // Sincroniza só ao abrir/trocar objeto — não a cada keystroke no pai.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editingObject?.id]);
+    if (!open || !editingObject) return;
+    const draft = buildEditFormDraft(
+      editingObject,
+      chargeOrderDisplay,
+      displayChargeGroup,
+    );
+    setFormDraft(draft);
+    setExternalDepsDraft((draft.externalDependencies ?? []).join("\n"));
+  }, [open, editingObject, chargeOrderDisplay, displayChargeGroup]);
 
   const clearSaveErrorIfNeeded = useCallback(() => {
     if (saveError) onClearSaveError?.();
@@ -244,6 +272,7 @@ export function EditObjectDialog({
                           patchForm({
                             parallelOrder: onSuggestParallelOrder(
                               chargeGroupLabel || formDraft.chargeGroup,
+                              formDraft.parallelOrder,
                             ),
                           })
                         }

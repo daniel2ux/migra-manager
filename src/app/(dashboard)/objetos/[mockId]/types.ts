@@ -54,6 +54,8 @@ export interface MigrationObject {
     status?: MigrationObjectStatus;
     loadHistory?: LoadHistoryEntry[];
     hasTechLogs?: boolean;
+    /** false = inativo nesta mock (soft-disable). */
+    isActive?: boolean;
     // Enriched display fields (computed from master)
     displayGroup?: string;
     displayOrder?: string | number;
