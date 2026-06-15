@@ -38,12 +38,20 @@ export function useCollection<T = Record<string, unknown>>(
       : memoizedTargetRefOrQuery.path
     : null;
 
+  const targetRef = useRef(memoizedTargetRefOrQuery);
+
+  useEffect(() => {
+    targetRef.current = memoizedTargetRefOrQuery;
+  }, [memoizedTargetRefOrQuery]);
+
   useEffect(() => {
     hasLoadedOnceRef.current = false;
   }, [pathKey]);
 
   useEffect(() => {
     if (isUserLoading) return;
+
+    const memoizedTargetRefOrQuery = targetRef.current;
 
     if (!memoizedTargetRefOrQuery || !pathKey) {
       setData(null);
@@ -109,7 +117,6 @@ export function useCollection<T = Record<string, unknown>>(
       softRefetchRef.current = null;
       unsubscribe();
     };
-    // pathKey já identifica a query; não depender do objeto ref (nova referência a cada render)
   }, [pathKey, isUserLoading]);
 
   return { data, isLoading, error, refetch };

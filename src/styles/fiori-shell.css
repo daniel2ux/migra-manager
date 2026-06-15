@@ -1155,33 +1155,8 @@ body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
   background: var(--fiori-negative);
 }
 
-.fiori-page-header .fiori-toolbar-filter-group,
-.fiori-subtoolbar .fiori-toolbar-filter-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.0625rem;
-}
-
-.fiori-page-header .fiori-toolbar-filter-group--active,
-.fiori-subtoolbar .fiori-toolbar-filter-group--active {
-  padding: 0.0625rem;
-  border: 1px solid var(--fiori-border-light);
-  border-radius: 0.375rem;
-  background: #fff;
-}
-
-.fiori-page-header .fiori-toolbar .fiori-toolbar-btn-clear-filter,
-.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn-clear-filter {
-  color: var(--fiori-label);
-}
-
-.fiori-page-header .fiori-toolbar .fiori-toolbar-btn-clear-filter:hover:not(:disabled),
-.fiori-subtoolbar .fiori-toolbar .fiori-toolbar-btn-clear-filter:hover:not(:disabled) {
-  color: var(--fiori-negative);
-  background: #ffeaf4 !important;
-}
-
-.fiori-page-header .fiori-toolbar-search {
+.fiori-page-header .fiori-toolbar-search,
+.fiori-subtoolbar .fiori-toolbar-search {
   --fiori-border: #d9d9d9;
   --fiori-text: #32363a;
 
@@ -1194,14 +1169,16 @@ body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
   pointer-events: none;
 }
 
-.fiori-page-header .fiori-toolbar-search--open {
+.fiori-page-header .fiori-toolbar-search--open,
+.fiori-subtoolbar .fiori-toolbar-search--open {
   width: 12.5rem;
   opacity: 1;
   margin-right: 0.25rem;
   pointer-events: auto;
 }
 
-.fiori-page-header .fiori-toolbar-search .fiori-search-shell {
+.fiori-page-header .fiori-toolbar-search .fiori-search-shell,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-shell {
   position: relative;
   display: flex;
   align-items: stretch;
@@ -1209,7 +1186,8 @@ body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
   min-width: 0;
 }
 
-.fiori-page-header .fiori-toolbar-search .fiori-search-icon {
+.fiori-page-header .fiori-toolbar-search .fiori-search-icon,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-icon {
   position: absolute;
   left: 0.625rem;
   top: 50%;
@@ -1221,7 +1199,8 @@ body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
   z-index: 1;
 }
 
-.fiori-page-header .fiori-toolbar-search .fiori-search-input {
+.fiori-page-header .fiori-toolbar-search .fiori-search-input,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-input {
   display: block;
   width: 100%;
   min-width: 0;
@@ -1239,32 +1218,39 @@ body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.fiori-page-header .fiori-toolbar-search .fiori-search-input::placeholder {
+.fiori-page-header .fiori-toolbar-search .fiori-search-input::placeholder,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-input::placeholder {
   color: var(--fiori-label);
   text-transform: none;
 }
 
 .fiori-page-header .fiori-toolbar-search .fiori-search-input:focus,
-.fiori-page-header .fiori-toolbar-search .fiori-search-input:focus-visible {
+.fiori-page-header .fiori-toolbar-search .fiori-search-input:focus-visible,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-input:focus,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-input:focus-visible {
   border-color: var(--fiori-brand);
   box-shadow: 0 0 0 1px var(--fiori-brand);
   outline: none;
 }
 
 .fiori-page-header .fiori-toolbar-search .fiori-search-input::-webkit-search-cancel-button,
-.fiori-page-header .fiori-toolbar-search .fiori-search-input::-webkit-search-decoration {
+.fiori-page-header .fiori-toolbar-search .fiori-search-input::-webkit-search-decoration,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-input::-webkit-search-cancel-button,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-input::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
   display: none;
 }
 
-.fiori-page-header .fiori-toolbar-search .fiori-search-input::-ms-clear {
+.fiori-page-header .fiori-toolbar-search .fiori-search-input::-ms-clear,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-input::-ms-clear {
   display: none;
   width: 0;
   height: 0;
 }
 
-.fiori-page-header .fiori-toolbar-search .fiori-search-clear {
+.fiori-page-header .fiori-toolbar-search .fiori-search-clear,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-clear {
   position: absolute;
   right: 0.25rem;
   top: 50%;
@@ -1282,7 +1268,8 @@ body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
   cursor: pointer;
 }
 
-.fiori-page-header .fiori-toolbar-search .fiori-search-clear:hover {
+.fiori-page-header .fiori-toolbar-search .fiori-search-clear:hover,
+.fiori-subtoolbar .fiori-toolbar-search .fiori-search-clear:hover {
   color: var(--fiori-text);
   background: #f5f6f7;
 }
@@ -1391,13 +1378,20 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
   line-height: 1;
 }
 
-.fiori-migration-object-card:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target),
+.fiori-migration-object-card:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target) {
+  background: #f7f7f7 !important;
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow:
+    0 0 0 1px rgba(0, 112, 242, 0.28),
+    0 2px 4px 0 rgba(0, 112, 242, 0.1);
+}
+
 .fiori-dashboard-object-card:hover:not(.card-static-border) {
   background: #f7f7f7 !important;
-  border-color: #c5c9cf;
+  border-color: var(--fiori-brand, #0070f2);
   box-shadow:
-    0 0 0 1px rgba(197, 201, 207, 0.35),
-    0 2px 4px 0 rgba(85, 107, 130, 0.08);
+    0 0 0 1px rgba(0, 112, 242, 0.28),
+    0 2px 4px 0 rgba(0, 112, 242, 0.1);
 }
 
 .fiori-dashboard-object-card {
@@ -1475,12 +1469,18 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
 }
 
 .fiori-migration-object-card-name {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   text-transform: uppercase;
   line-height: 1.2;
   color: var(--fiori-text, #32363a);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  align-self: start;
 }
 
 .fiori-migration-object-card-header {
@@ -1492,28 +1492,60 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
 }
 
 .fiori-migration-object-card-header-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  column-gap: 0.5rem;
+  align-items: start;
   min-width: 0;
   width: 100%;
 }
 
 .fiori-migration-object-card-header-main {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto;
+  column-gap: 0.625rem;
+  align-items: start;
   min-width: 0;
-  flex: 1 1 auto;
+  grid-column: 1;
+  grid-row: 1;
 }
 
-.fiori-migration-object-card-title-row {
+.fiori-migration-object-card-header-main > .fiori-migration-object-card-type-slot,
+.fiori-migration-object-card-header-main > .fiori-migration-object-card-icon {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+}
+
+.fiori-migration-object-card-desc-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 0.375rem;
   min-width: 0;
+  width: 100%;
+}
+
+.fiori-migration-object-card-desc-spacer {
   flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fiori-migration-object-card-desc-badges {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  gap: 0.375rem;
+  margin-left: auto;
+}
+
+.fiori-migration-object-card-desc-row .fiori-migration-object-card-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none;
 }
 
 .fiori-migration-object-card-desc {
@@ -1537,16 +1569,34 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
 
 .fiori-migration-object-card-header-meta {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 0.375rem;
   flex-shrink: 0;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
 }
 
 .fiori-migration-object-card-header-meta .fiori-activity-group-badge {
   height: 1rem;
   padding: 0 0.25rem 0 0.1875rem;
+}
+
+.fiori-migration-object-card-header-meta .fiori-card-activity-groups-trigger {
+  align-self: flex-start;
+}
+
+.fiori-migration-object-card-header-meta .fiori-project-card-status-label {
+  align-self: flex-start;
+  line-height: 1.2;
+}
+
+.fiori-migration-object-card-header-meta .fiori-project-card-status-label.fiori-card-meta-editable {
+  min-height: 0;
+  padding: 0;
+  margin: 0;
 }
 
 .fiori-card-meta-editable {
@@ -1714,7 +1764,7 @@ body.dashboard-plaque-focus .dashboard-card-shell:not(.fiori-card-plaque-active)
 }
 
 .fiori-migration-object-card--inactive:hover:not(.card-static-border):not(.fiori-migration-object-card--dragging):not(.fiori-migration-object-card--drag-target) {
-  border-color: #94a3b8;
+  border-color: var(--fiori-brand, #0070f2);
   background: #f1f5f9 !important;
   box-shadow: none !important;
 }
@@ -3233,13 +3283,17 @@ body.dashboard-plaque-focus .fiori-card-plaque {
     0 0.25rem 0.625rem rgba(85, 107, 130, 0.14);
 }
 
+.fiori-project-card--neutral-hover {
+  border: 1px solid #dde1e6;
+  background: var(--fiori-shell, #ffffff);
+  box-shadow: none;
+}
+
 .fiori-project-card--neutral-hover:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging),
 .fiori-project-card--neutral-hover[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
-  background: var(--fiori-shell);
-  border-color: var(--fiori-border);
-  box-shadow:
-    0 0 0.125rem 0 rgba(85, 107, 130, 0.12),
-    0 0.25rem 0.625rem rgba(85, 107, 130, 0.14);
+  background: var(--fiori-shell, #ffffff);
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: none;
 }
 
 .fiori-project-card--neutral-hover:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
@@ -3256,8 +3310,18 @@ body.dashboard-plaque-focus .fiori-card-plaque {
 }
 
 /* Menu de status aberto: mantém aparência do card (evita “encolhimento” ao perder :hover) */
-.fiori-project-card--neutral-hover:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging),
-.fiori-project-card:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+.fiori-project-card--neutral-hover:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+  background: var(--fiori-shell, #ffffff);
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: none;
+}
+
+.fiori-project-card--neutral-hover:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-drag {
+  background: #f5f6f7;
+  color: var(--fiori-label);
+}
+
+.fiori-project-card:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging):not(.fiori-project-card--neutral-hover):not(.fiori-mock-card) {
   background: var(--fiori-shell);
   border-color: var(--fiori-border);
   box-shadow:
@@ -3265,19 +3329,17 @@ body.dashboard-plaque-focus .fiori-card-plaque {
     0 0.25rem 0.625rem rgba(85, 107, 130, 0.14);
 }
 
-.fiori-project-card--neutral-hover:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-drag,
-.fiori-project-card:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-drag {
+.fiori-project-card:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging):not(.fiori-project-card--neutral-hover):not(.fiori-mock-card) .fiori-project-card-drag {
   background: #f5f6f7;
   color: var(--fiori-label);
 }
 
+.fiori-project-card--neutral-hover.fiori-project-card--active,
 .fiori-project-card--neutral-hover.fiori-project-card--active:hover:not(.fiori-project-card--dragging),
 .fiori-project-card--neutral-hover.fiori-project-card--active[data-state="open"]:not(.fiori-project-card--dragging) {
-  background: var(--fiori-shell);
-  border-color: var(--fiori-brand);
-  box-shadow:
-    0 0 0 1px var(--fiori-brand),
-    0 0.25rem 0.875rem rgba(0, 112, 242, 0.16);
+  background: var(--fiori-shell, #ffffff);
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: none;
 }
 
 .fiori-project-card--neutral-hover.fiori-project-card--active:hover:not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
@@ -3294,16 +3356,19 @@ body.dashboard-plaque-focus .fiori-card-plaque {
 }
 
 .fiori-project-card--neutral-hover.fiori-project-card--active:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--dragging) {
-  background: var(--fiori-shell);
-  border-color: var(--fiori-brand);
-  box-shadow:
-    0 0 0 1px var(--fiori-brand),
-    0 0.25rem 0.875rem rgba(0, 112, 242, 0.16);
+  background: var(--fiori-shell, #ffffff);
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: none;
 }
 
 .fiori-project-card--neutral-hover.fiori-project-card--active:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--dragging) .fiori-project-card-drag {
   background: #f5f6f7;
   color: var(--fiori-label);
+}
+
+.fiori-project-card--neutral-hover.fiori-project-card--dragging {
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: none;
 }
 
 .fiori-project-card:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging) .fiori-project-card-metrics--panel,
@@ -3331,7 +3396,12 @@ body.dashboard-plaque-focus .fiori-card-plaque {
   box-shadow: 0 0 0 1px var(--fiori-brand);
 }
 
-body:has([role="alertdialog"][data-state="open"]) .fiori-project-card--active {
+body:has([role="alertdialog"][data-state="open"]) .fiori-project-card--neutral-hover.fiori-project-card--active {
+  box-shadow: none;
+  border-color: var(--fiori-brand, #0070f2);
+}
+
+body:has([role="alertdialog"][data-state="open"]) .fiori-project-card--active:not(.fiori-project-card--neutral-hover) {
   box-shadow:
     0 0 0 1px var(--fiori-brand),
     0 0.25rem 0.875rem rgba(0, 112, 242, 0.14);
@@ -5692,6 +5762,47 @@ button.fiori-project-card-metric--editable[data-state="open"] {
   background: #f5f6f7;
   border-radius: 0.25rem;
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── Cards de mock (lista) ── */
+.fiori-project-card.fiori-mock-card {
+  border: 1px solid #dde1e6;
+  background: var(--fiori-shell, #ffffff);
+  box-shadow: none;
+}
+
+.fiori-project-card.fiori-mock-card:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging),
+.fiori-project-card.fiori-mock-card[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+  background: #f7f7f7 !important;
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: 0 0.25rem 0.625rem rgba(85, 107, 130, 0.12);
+}
+
+.fiori-project-card.fiori-mock-card:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+  background: #f7f7f7;
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: 0 0.25rem 0.625rem rgba(85, 107, 130, 0.12);
+}
+
+.fiori-project-card.fiori-mock-card.fiori-project-card--active,
+.fiori-project-card.fiori-mock-card.fiori-project-card--active:hover:not(.fiori-project-card--dragging),
+.fiori-project-card.fiori-mock-card.fiori-project-card--active[data-state="open"]:not(.fiori-project-card--dragging),
+.fiori-project-card.fiori-mock-card.fiori-project-card--active:has(.fiori-card-meta-editable[data-state="open"]):not(.fiori-project-card--dragging) {
+  background: var(--fiori-shell, #ffffff);
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: none;
+}
+
+.fiori-project-card.fiori-mock-card.fiori-project-card--active:hover:not(.fiori-project-card--dragging),
+.fiori-project-card.fiori-mock-card.fiori-project-card--active[data-state="open"]:not(.fiori-project-card--dragging) {
+  box-shadow: 0 0.25rem 0.625rem rgba(0, 112, 242, 0.14);
+}
+
+.fiori-project-card.fiori-mock-card.fiori-project-card--readonly:hover:not(.fiori-project-card--active):not(.fiori-project-card--dragging),
+.fiori-project-card.fiori-mock-card.fiori-project-card--readonly[data-state="open"]:not(.fiori-project-card--active):not(.fiori-project-card--dragging) {
+  background: #f8fafc;
+  border-color: var(--fiori-brand, #0070f2);
+  box-shadow: 0 0.25rem 0.625rem rgba(85, 107, 130, 0.1);
 }
 
 /* ── Cards de mock (janela) ── */

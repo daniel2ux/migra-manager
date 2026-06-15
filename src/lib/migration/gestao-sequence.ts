@@ -28,7 +28,7 @@ function resolveGestaoRowSequenceFields(
   };
 }
 
-function buildGestaoDisplayOrderIndex(
+export function buildGestaoDisplayOrderIndex(
   rows: readonly Pick<MasterObject, "id" | "name">[],
 ): Map<string, number> {
   const index = new Map<string, number>();
@@ -180,6 +180,257 @@ export function lookupMockChargeSequence(
   const name = String(objectName || "").trim();
   if (name && lookup.has(`name:${name}`)) return lookup.get(`name:${name}`);
   return undefined;
+}
+
+export type GestaoSortMode = "EXECUTION" | "ALPHABETICAL" | "UPDATED";
+
+export type GestaoReorderPreview = {
+  visibleOrder?: readonly string[];
+} | null;
+
+/** Lista mestres utilizados neste projeto (e opcionalmente mock); sem filtros de busca/status. */
+export function filterMastersByProjectMockUsage(
+  objects: MasterObject[] | null | undefined,
+  selectedProjectId: string | null,
+  selectedMockId: string | null,
+  usageMap: Record<string, Set<string>>,
+): MasterObject[] {
+  if (!objects?.length) return [];
+  return objects.filter((obj) => {
+    if (!selectedProjectId) return true;
+    const usage = usageMap[obj.id];
+    if (!usage?.size) return false;
+    if (selectedMockId) return usage.has(`${selectedProjectId}:${selectedMockId}`);
+    return [...usage].some((e) => e.startsWith(`${selectedProjectId}:`));
+  });
+}
+
+/** Sobrepõe campos vindos dos migrationObjects quando o escopo vem só do projeto. */
+export function mergeMockSequencesOntoScopedMasters(
+  mastersInScope: MasterObject[],
+  migrations: MigrationObject[] | null | undefined,
+  applyMerge: boolean,
+  opts?: { overlayChargeSequence?: boolean },
+): MasterObject[] {
+  if (!applyMerge || !migrations?.length) return mastersInScope;
+  const overlayChargeSequence = opts?.overlayChargeSequence ?? true;
+  const byMasterId = new Map<string, MigrationObject>();
+  for (const m of migrations) {
+    if (m.masterObjectId) byMasterId.set(m.masterObjectId, m);
+  }
+  return mastersInScope.map((mast) => {
+    const mig = byMasterId.get(mast.id);
+    if (!mig) return { ...mast };
+    return {
+      ...mast,
+      ...(overlayChargeSequence
+        ? {
+            chargeGroup: mig.chargeGroup ?? mast.chargeGroup,
+            chargeOrder: mig.chargeOrder ?? mast.chargeOrder,
+            parallelOrder: mig.parallelOrder ?? mast.parallelOrder,
+            isParallel: mig.isParallel ?? mast.isParallel,
+          }
+        : {}),
+      dependencyIds: mig.dependencyIds ?? mast.dependencyIds,
+      _migrationDocId: mig.id,
+    };
+  });
+}
+
+/** Mesma base de linhas usada na gestão de objetos (mock + catálogo). */
+export function buildGestaoSequenceContextRows(params: {
+  allMasters: MasterObject[];
+  migrationsInSelectedMock: MigrationObject[] | null | undefined;
+  isAdmin: boolean;
+  mockScopedSequences: boolean;
+  catalogScopeFiltered: MasterObject[];
+  projectUsageFiltered: MasterObject[];
+}): MasterObject[] {
+  const {
+    allMasters,
+    migrationsInSelectedMock,
+    isAdmin,
+    mockScopedSequences,
+    catalogScopeFiltered,
+    projectUsageFiltered,
+  } = params;
+
+  if (isAdmin) {
+    if (!mockScopedSequences) return allMasters;
+    return mergeMockSequencesOntoScopedMasters(
+      allMasters,
+      migrationsInSelectedMock ?? undefined,
+      Boolean(migrationsInSelectedMock?.length),
+      { overlayChargeSequence: false },
+    );
+  }
+
+  if (mockScopedSequences) {
+    if (migrationsInSelectedMock === null) return [];
+    const fromMock = buildGestaoRowsFromMockMigrations(migrationsInSelectedMock, allMasters);
+    return fromMock.length > 0 ? fromMock : projectUsageFiltered;
+  }
+
+  return mergeMockSequencesOntoScopedMasters(
+    catalogScopeFiltered,
+    migrationsInSelectedMock ?? undefined,
+    false,
+  );
+}
+
+export function sortMastersGestao(
+  rows: MasterObject[],
+  sortMode: GestaoSortMode,
+): MasterObject[] {
+  return [...rows].sort((a, b) => {
+    if (sortMode === "EXECUTION") {
+      return compareGestaoExecutionOrder(a, b);
+    }
+    const aInactive = a.status === "INATIVO";
+    const bInactive = b.status === "INATIVO";
+    if (aInactive && !bInactive) return 1;
+    if (!aInactive && bInactive) return -1;
+    if (sortMode === "ALPHABETICAL") {
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    }
+    if (sortMode === "UPDATED") {
+      const dateA =
+        a.updatedAt instanceof Date
+          ? a.updatedAt
+          : (a.updatedAt as { toDate?: () => Date })?.toDate?.() || new Date(0);
+      const dateB =
+        b.updatedAt instanceof Date
+          ? b.updatedAt
+          : (b.updatedAt as { toDate?: () => Date })?.toDate?.() || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    }
+    return 0;
+  });
+}
+
+function applyVisibleOrderToList(
+  rows: MasterObject[],
+  visibleOrder: readonly string[],
+): MasterObject[] {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const seen = new Set<string>();
+  const ordered: MasterObject[] = [];
+  for (const id of visibleOrder) {
+    const row = byId.get(id);
+    if (row) {
+      ordered.push(row);
+      seen.add(id);
+    }
+  }
+  for (const row of rows) {
+    if (!seen.has(row.id)) ordered.push(row);
+  }
+  return ordered;
+}
+
+/** Lista exibida na gestão após ordenação (modo execução por padrão). */
+export function buildGestaoDisplayList(
+  rows: MasterObject[],
+  sortMode: GestaoSortMode,
+  reorderPreview?: GestaoReorderPreview,
+): MasterObject[] {
+  let sorted = sortMastersGestao(rows, sortMode);
+  if (reorderPreview?.visibleOrder?.length && sortMode === "EXECUTION") {
+    sorted = applyVisibleOrderToList(sorted, reorderPreview.visibleOrder);
+  }
+  return sorted;
+}
+
+export function buildUsageMapFromMigrations(
+  migrations: readonly MigrationObject[],
+): Record<string, Set<string>> {
+  const map: Record<string, Set<string>> = {};
+  for (const mo of migrations) {
+    if (!mo.masterObjectId) continue;
+    const path = (mo as MigrationObject & { __path?: string }).__path?.split("/") ?? [];
+    const projectId =
+      mo.projectId || (path[0] === "projects" && path[2] === "mocks" ? path[1] : "");
+    const mockId =
+      mo.mockId || (path[0] === "projects" && path[2] === "mocks" ? path[3] : "");
+    if (!projectId || !mockId) continue;
+    const key = `${projectId}:${mockId}`;
+    if (!map[mo.masterObjectId]) map[mo.masterObjectId] = new Set();
+    map[mo.masterObjectId].add(key);
+  }
+  return map;
+}
+
+export type BuildGestaoPageDisplayParams = {
+  masters: MasterObject[] | null | undefined;
+  migrationsInSelectedMock: MigrationObject[] | null | undefined;
+  isAdmin: boolean;
+  selectedProjectId: string;
+  selectedMockId: string;
+  usageMap: Record<string, Set<string>>;
+  sortMode?: GestaoSortMode;
+  showInactive?: boolean;
+};
+
+function resolveGestaoPageScope(selectedProjectId: string, selectedMockId: string) {
+  const projectId = selectedProjectId === "all" ? null : selectedProjectId;
+  const mockId = selectedMockId === "all" ? null : selectedMockId;
+  const mockScopedSequences = Boolean(projectId && mockId);
+  return { projectId, mockId, mockScopedSequences };
+}
+
+/** Lista na mesma ordem da gestão de objetos (sem busca/filtros de status da UI). */
+export function buildGestaoPageDisplayList(params: BuildGestaoPageDisplayParams): MasterObject[] {
+  const {
+    masters,
+    migrationsInSelectedMock,
+    isAdmin,
+    selectedProjectId,
+    selectedMockId,
+    usageMap,
+    sortMode = "EXECUTION",
+    showInactive = false,
+  } = params;
+
+  if (!masters?.length) return [];
+
+  const { projectId, mockId, mockScopedSequences } = resolveGestaoPageScope(
+    selectedProjectId,
+    selectedMockId,
+  );
+
+  const catalogScopeFiltered = isAdmin
+    ? masters
+    : filterMastersByProjectMockUsage(masters, projectId, mockId, usageMap);
+
+  const projectUsageFiltered = filterMastersByProjectMockUsage(
+    masters,
+    projectId,
+    mockId,
+    usageMap,
+  );
+
+  const sequenceContextRows = buildGestaoSequenceContextRows({
+    allMasters: masters,
+    migrationsInSelectedMock,
+    isAdmin,
+    mockScopedSequences,
+    catalogScopeFiltered,
+    projectUsageFiltered,
+  });
+
+  const displayRows = sequenceContextRows.filter((obj) => {
+    if (!showInactive && obj.status === "INATIVO") return false;
+    return true;
+  });
+
+  return buildGestaoDisplayList(displayRows, sortMode, null);
+}
+
+/** Índice id/nome → posição na gestão de objetos (mesma ordem dos cards da gestão). */
+export function buildGestaoPageDisplayOrderIndex(
+  params: BuildGestaoPageDisplayParams,
+): Map<string, number> {
+  return buildGestaoDisplayOrderIndex(buildGestaoPageDisplayList(params));
 }
 
 /** Sequência no dashboard com mock filtrada — mesma regra da gestão de objetos. */

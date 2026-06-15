@@ -103,13 +103,42 @@ export function findActiveMenuItemId(
     menuItems: SidebarMenuItem[],
     pathname: string,
 ): string | undefined {
-    return menuItems.find(i => {
-        if (i.href === "/") return pathname === "/";
-        if (i.href && pathname.startsWith(i.href)) return true;
-        if (i.alsoActiveOn?.some(p => pathname.startsWith(p))) return true;
-        if (i.subItems?.some(s => pathname.startsWith(s.href))) return true;
-        return false;
-    })?.id;
+    let bestId: string | undefined;
+    let bestScore = -1;
+
+    const scorePrefix = (prefix: string, isPrimaryHref: boolean): number => {
+        if (prefix === "/") {
+            return pathname === "/" ? 1 : -1;
+        }
+        if (pathname === prefix) {
+            return prefix.length + 10_000 + (isPrimaryHref ? 1_000 : 0);
+        }
+        if (pathname.startsWith(`${prefix}/`)) {
+            return prefix.length + (isPrimaryHref ? 1_000 : 0);
+        }
+        return -1;
+    };
+
+    for (const item of menuItems) {
+        const candidates: Array<{ prefix: string; isPrimaryHref: boolean }> = [];
+        if (item.href) candidates.push({ prefix: item.href, isPrimaryHref: true });
+        for (const prefix of item.alsoActiveOn ?? []) {
+            candidates.push({ prefix, isPrimaryHref: false });
+        }
+        for (const sub of item.subItems ?? []) {
+            candidates.push({ prefix: sub.href, isPrimaryHref: true });
+        }
+
+        for (const { prefix, isPrimaryHref } of candidates) {
+            const score = scorePrefix(prefix, isPrimaryHref);
+            if (score > bestScore) {
+                bestScore = score;
+                bestId = item.id;
+            }
+        }
+    }
+
+    return bestId;
 }
 
 export function isMenuItemDisabled(

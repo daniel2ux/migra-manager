@@ -790,6 +790,11 @@ export function MigrationObjectCard({
     const canConfirmDelete = showDeleteButton && !deleteBlockedReason;
     const { chain, isCircular } = precedenceChain;
     const isParallelLoad = isObjectParallelLoad(obj);
+    const hasDependencyBadges =
+        catalogDuplicateName ||
+        (obj.dependencyIds && obj.dependencyIds.length > 0) ||
+        (obj.externalDependencies && obj.externalDependencies.length > 0) ||
+        (otherParallelObjects && otherParallelObjects.length > 0);
 
     return (
         <>
@@ -803,7 +808,7 @@ export function MigrationObjectCard({
             tabIndex={0}
             onClick={() => onSelect?.(obj.id)}
             className={cn(
-                "fiori-migration-object-card group relative border border-slate-200 hover:border-slate-400 transition-colors duration-300 overflow-hidden bg-white p-2.5 flex flex-col gap-2 h-full min-h-0 select-none",
+                "fiori-migration-object-card group relative border border-slate-200 transition-colors duration-300 overflow-hidden bg-white p-2.5 flex flex-col gap-2 h-full min-h-0 select-none",
                 isInactive && "fiori-migration-object-card--inactive",
                 isSelected ? "card-static-border z-10" : "",
                 isAdmin && isExecutionSort ? "cursor-move" : "cursor-pointer",
@@ -814,28 +819,56 @@ export function MigrationObjectCard({
             <div className="fiori-migration-object-card-header">
                 <div className="fiori-migration-object-card-header-top">
                     <div className="fiori-migration-object-card-header-main">
-                        <CardObjectTypeControl
-                            type={obj.type}
-                            editable={canEditCardMeta && !!onTypeChange}
-                            onChange={(nextType) => onTypeChange?.(obj, nextType)}
+                        <div className="fiori-migration-object-card-type-slot">
+                            <CardObjectTypeControl
+                                type={obj.type}
+                                editable={canEditCardMeta && !!onTypeChange}
+                                onChange={(nextType) => onTypeChange?.(obj, nextType)}
+                            />
+                        </div>
+                        <span className="fiori-migration-object-card-name">{obj.name}</span>
+                    </div>
+
+                    <div className="fiori-migration-object-card-header-meta">
+                        <CardActivityGroupsControl
+                            groupIds={obj.activityGroupIds}
+                            allGroups={allGroups}
+                            editable={canEditCardMeta && !!onActivityGroupsChange}
+                            onChange={(ids) => onActivityGroupsChange?.(obj, ids)}
                         />
-                        <div className="fiori-migration-object-card-title-row">
-                            <span className="fiori-migration-object-card-name truncate">{obj.name}</span>
-                            {catalogDuplicateName && (
-                                <span
-                                    className="inline-flex shrink-0"
-                                    aria-label="Existe outro objeto mestre com o mesmo nome"
-                                >
-                                    <AlertTriangle className="w-3 h-3 text-amber-500" aria-hidden />
-                                </span>
-                            )}
-                            {obj.dependencyIds && obj.dependencyIds.length > 0 && (
-                                <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                        <span className="flex items-center gap-1 text-slate-500 font-bold text-[10px] shrink-0 ml-0.5 cursor-help hover:text-slate-900 transition-colors">
-                                            <Link2 className="w-2.5 h-2.5" aria-hidden /> ({chain.length})
-                                        </span>
-                                    </TooltipTrigger>
+                        <CardStatusControl
+                            status={obj.status}
+                            editable={canEditCardMeta && !!onStatusChange}
+                            onChange={(nextStatus) => onStatusChange?.(obj, nextStatus)}
+                        />
+                    </div>
+                </div>
+                {(descriptionText || hasDependencyBadges) && (
+                    <div className="fiori-migration-object-card-desc-row">
+                        {descriptionText ? (
+                            <p className="fiori-migration-object-card-desc">
+                                {descriptionText}
+                            </p>
+                        ) : (
+                            <span className="fiori-migration-object-card-desc-spacer" aria-hidden />
+                        )}
+                        {hasDependencyBadges && (
+                        <div className="fiori-migration-object-card-desc-badges">
+                        {catalogDuplicateName && (
+                            <span
+                                className="inline-flex shrink-0"
+                                aria-label="Existe outro objeto mestre com o mesmo nome"
+                            >
+                                <AlertTriangle className="w-3 h-3 text-amber-500" aria-hidden />
+                            </span>
+                        )}
+                        {obj.dependencyIds && obj.dependencyIds.length > 0 && (
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <span className="flex items-center gap-1 text-slate-500 font-bold text-[10px] shrink-0 cursor-help hover:text-slate-900 transition-colors">
+                                        <Link2 className="w-2.5 h-2.5" aria-hidden /> ({chain.length})
+                                    </span>
+                                </TooltipTrigger>
                                     <TooltipContent variant="fiori-panel" side="top" className="w-64 z-[200]">
                                         <div className="fiori-tooltip-panel-body">
                                             <div className="fiori-tooltip-panel-section-title">
@@ -869,7 +902,7 @@ export function MigrationObjectCard({
                             {obj.externalDependencies && obj.externalDependencies.length > 0 && (
                                 <Tooltip delayDuration={0}>
                                     <TooltipTrigger asChild>
-                                        <span className="flex items-center gap-1 text-amber-500 font-bold text-[10px] shrink-0 ml-1.5 cursor-help hover:text-amber-600 transition-colors">
+                                        <span className="flex items-center gap-1 text-amber-500 font-bold text-[10px] shrink-0 cursor-help hover:text-amber-600 transition-colors">
                                             <Network className="w-2.5 h-2.5" aria-hidden /> ({obj.externalDependencies.length})
                                         </span>
                                     </TooltipTrigger>
@@ -896,7 +929,7 @@ export function MigrationObjectCard({
                             {otherParallelObjects && otherParallelObjects.length > 0 && (
                                 <Tooltip delayDuration={0}>
                                     <TooltipTrigger asChild>
-                                        <span className="flex items-center gap-1 text-slate-500 font-bold text-[10px] shrink-0 ml-1.5 cursor-help hover:text-slate-600 transition-colors">
+                                        <span className="flex items-center gap-1 text-slate-500 font-bold text-[10px] shrink-0 cursor-help hover:text-slate-600 transition-colors">
                                             <GitFork className="w-2.5 h-2.5" aria-hidden /> ({otherParallelObjects.length})
                                         </span>
                                     </TooltipTrigger>
@@ -921,26 +954,8 @@ export function MigrationObjectCard({
                                 </Tooltip>
                             )}
                         </div>
+                        )}
                     </div>
-
-                    <div className="fiori-migration-object-card-header-meta">
-                        <CardActivityGroupsControl
-                            groupIds={obj.activityGroupIds}
-                            allGroups={allGroups}
-                            editable={canEditCardMeta && !!onActivityGroupsChange}
-                            onChange={(ids) => onActivityGroupsChange?.(obj, ids)}
-                        />
-                        <CardStatusControl
-                            status={obj.status}
-                            editable={canEditCardMeta && !!onStatusChange}
-                            onChange={(nextStatus) => onStatusChange?.(obj, nextStatus)}
-                        />
-                    </div>
-                </div>
-                {descriptionText && (
-                    <p className="fiori-migration-object-card-desc">
-                        {descriptionText}
-                    </p>
                 )}
             </div>
 

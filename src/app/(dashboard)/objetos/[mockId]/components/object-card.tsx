@@ -118,7 +118,7 @@ export function ObjectCard({
                 {/* Name + badges */}
                 <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="fiori-migration-object-card-name truncate">
+                        <span className="fiori-migration-object-card-name">
                             {obj.name}
                         </span>
 

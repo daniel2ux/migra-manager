@@ -30,6 +30,12 @@ import {
 } from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { isEffectiveLocked as isMockEffectiveLocked, isMockInactive, isMigrationObjectActive } from '@/lib/mock-utils';
+import {
+  buildGestaoDisplayOrderIndex,
+  buildGestaoPageDisplayList,
+  buildUsageMapFromMigrations,
+  sortByGestaoDisplayOrder,
+} from '@/lib/migration/gestao-sequence';
 import type { Mock, UserProfile } from '@/types/migration';
 import type { MasterObject, MigrationComment, MigrationObject } from '../types';
 
@@ -296,6 +302,25 @@ export function useMockObjectsPage() {
     [masterObjectsById, masterObjectsByName, scopedMasterByName],
   );
 
+  const usageMap = useMemo(
+    () => buildUsageMapFromMigrations(mergedObjects),
+    [mergedObjects],
+  );
+
+  const gestaoDisplayOrderIndex = useMemo(() => {
+    if (!projectId || !mockId || !masterObjects?.length) return new Map<string, number>();
+    return buildGestaoDisplayOrderIndex(
+      buildGestaoPageDisplayList({
+        masters: masterObjects,
+        migrationsInSelectedMock: objects ?? null,
+        isAdmin: !!isAdmin,
+        selectedProjectId: projectId,
+        selectedMockId: mockId,
+        usageMap,
+      }),
+    );
+  }, [masterObjects, objects, isAdmin, projectId, mockId, usageMap]);
+
   const sortedObjects = useMemo(() => {
     if (!mergedObjects.length) return [];
 
@@ -311,8 +336,7 @@ export function useMockObjectsPage() {
         };
       });
 
-    return enriched
-      .filter((o) => {
+    const filtered = enriched.filter((o) => {
         const matchesSearch =
           (o.name || '').toLowerCase().includes(deferredSearchTerm.toLowerCase()) ||
           (o.displayGroup && o.displayGroup.toLowerCase().includes(deferredSearchTerm.toLowerCase())) ||
@@ -327,46 +351,28 @@ export function useMockObjectsPage() {
         if (performanceFilter === 'yellow') return pct >= 50 && pct < 100;
         if (performanceFilter === 'red') return pct < 50;
         return true;
-      })
-      .sort((a, b) => {
-        const aInactive = !isMigrationObjectActive(a);
-        const bInactive = !isMigrationObjectActive(b);
-        if (aInactive && !bInactive) return 1;
-        if (!aInactive && bInactive) return -1;
-        const aInProgress =
-          a.status === 'CARGA_EM_ANDAMENTO' || !!(a.chargeStartTime && !a.chargeEndTime);
-        const bInProgress =
-          b.status === 'CARGA_EM_ANDAMENTO' || !!(b.chargeStartTime && !b.chargeEndTime);
-        if (aInProgress && !bInProgress) return -1;
-        if (!aInProgress && bInProgress) return 1;
-        if (aInProgress && bInProgress) {
-          const aUpdate = a.updatedAt?.seconds || 0;
-          const bUpdate = b.updatedAt?.seconds || 0;
-          if (aUpdate !== bUpdate) return bUpdate - aUpdate;
-          return (a.name || '').localeCompare(b.name || '');
-        }
-        const parseSeqLocal = (v: string | number | null | undefined) => {
-          const s = String(v ?? '').trim();
-          if (s.includes('.')) {
-            const [maj, min] = s.split('.');
-            return { major: parseInt(maj) || 0, minor: parseInt(min) || 0 };
-          }
-          return { major: parseInt(s) || 0, minor: 0 };
-        };
-        const aSeq = parseSeqLocal(a.displayOrder);
-        const bSeq = parseSeqLocal(b.displayOrder);
-        const aHasSeq = aSeq.major > 0;
-        const bHasSeq = bSeq.major > 0;
-        if (aHasSeq && !bHasSeq) return -1;
-        if (!aHasSeq && bHasSeq) return 1;
-        if (aHasSeq && bHasSeq) {
-          if (aSeq.major !== bSeq.major) return aSeq.major - bSeq.major;
-          if (aSeq.minor !== bSeq.minor) return aSeq.minor - bSeq.minor;
-          return (a.name || '').localeCompare(b.name || '');
-        }
-        return (a.name || '').localeCompare(b.name || '');
       });
-  }, [mergedObjects, masterLookupMaps, deferredSearchTerm, performanceFilter]);
+
+    const toSortFields = (o: (typeof enriched)[number]) => ({
+      ...o,
+      chargeGroup: o.displayGroup,
+      chargeOrder: o.displayOrder,
+    });
+
+    const active = filtered.filter((o) => isMigrationObjectActive(o));
+    const inactive = filtered.filter((o) => !isMigrationObjectActive(o));
+
+    return [
+      ...sortByGestaoDisplayOrder(active.map(toSortFields), gestaoDisplayOrderIndex),
+      ...sortByGestaoDisplayOrder(inactive.map(toSortFields), gestaoDisplayOrderIndex),
+    ];
+  }, [
+    mergedObjects,
+    masterLookupMaps,
+    deferredSearchTerm,
+    performanceFilter,
+    gestaoDisplayOrderIndex,
+  ]);
 
   const totals = useMemo(() => {
     if (!sortedObjects) return { target: 0, processed: 0, success: 0, error: 0 };

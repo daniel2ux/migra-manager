@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import {
   Mail,
   Phone,
@@ -225,12 +226,15 @@ export function UserCard({
             className={cn("fiori-user-card-avatar", isMe && "cursor-pointer")}
             onClick={() => isMe && fileInputRef.current?.click()}
           >
-            <div className="fiori-user-card-avatar-inner" aria-hidden>
+            <div className="fiori-user-card-avatar-inner relative" aria-hidden>
               {avatarSrc ? (
-                <img
+                <Image
                   src={avatarSrc}
                   alt=""
+                  fill
+                  sizes="32px"
                   className="fiori-user-card-avatar-img"
+                  unoptimized
                   draggable={false}
                 />
               ) : (

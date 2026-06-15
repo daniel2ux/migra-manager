@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from "react";
 import {
   collection,
   getDocs,
@@ -234,7 +234,7 @@ export const PerfisManager = forwardRef<PerfisManagerRef, object>((_props, ref) 
     openNewProfile: () => setProfileDialog({ open: true, initial: null }),
   }));
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!db) return;
     setLoading(true);
     const snap = await getDocs(query(collection(db, "accessProfiles"), orderBy("name")));
@@ -269,9 +269,9 @@ export const PerfisManager = forwardRef<PerfisManagerRef, object>((_props, ref) 
 
     setProfiles([...mergedSystem, ...customProfiles].sort((a, b) => a.name.localeCompare(b.name)));
     setLoading(false);
-  }
+  }, [db]);
 
-  useEffect(() => { void load(); }, [db]);
+  useEffect(() => { void load(); }, [load]);
 
   async function upsertSystemProfile(
     systemName: string,

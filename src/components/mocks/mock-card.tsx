@@ -281,7 +281,7 @@ export const MockCard = forwardRef<MockCardHandle, Omit<MockCardProps, 'currentU
         onContextMenu={(e) => onContextMenu(e, mock)}
         onClick={() => onSelect(mock.id)}
         className={cn(
-          "fiori-project-card fiori-project-card--neutral-hover group relative overflow-hidden p-3 flex flex-col gap-2.5 select-none",
+          "fiori-project-card fiori-mock-card group relative overflow-hidden p-3 flex flex-col gap-2.5 select-none",
           isInactive ? "fiori-project-card--readonly cursor-default" : "cursor-pointer",
           isSelected && "fiori-project-card--active"
         )}

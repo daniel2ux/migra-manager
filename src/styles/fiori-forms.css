@@ -3395,11 +3395,6 @@ body[data-scroll-locked] {
   background: #fff;
 }
 
-.fiori-dialog .fiori-project-picker-info {
-  flex-shrink: 0;
-  margin: 1rem 1.25rem 0;
-}
-
 .fiori-dialog .fiori-project-picker-list {
   flex: 1;
   min-height: 0;

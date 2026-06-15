@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { Activity, Filter, Table2, BarChart2, MoreHorizontal, X } from "lucide-react";
+import { Activity, Filter, Table2, BarChart2, MoreHorizontal, Search, X } from "lucide-react";
 import type { ActivityGroup } from "@/types/activity-group";
 
 const TOOLBAR_BTN = "fiori-toolbar-btn fiori-toolbar-btn--labeled !rounded-[0.375rem] !h-8 min-h-0 !w-auto !px-2.5";
@@ -91,7 +91,7 @@ function DashboardFilterPanel({
     const handleApply = () => {
         onApply({
             ...draft,
-            objectSearchTerm: draft.objectSearchTerm.trim().toUpperCase(),
+            objectSearchTerm: values.objectSearchTerm,
         });
         onClose();
     };
@@ -128,22 +128,6 @@ function DashboardFilterPanel({
                     </button>
                 )}
             </div>
-
-            <Input
-                placeholder="Nome do objeto..."
-                className="fiori-input shadow-none uppercase"
-                value={draft.objectSearchTerm}
-                onChange={(e) => updateDraft("objectSearchTerm", e.target.value.toUpperCase())}
-            />
-            {draft.objectSearchTerm && (
-                <button
-                    type="button"
-                    className="fiori-filter-popover-clear mt-2"
-                    onClick={() => updateDraft("objectSearchTerm", "")}
-                >
-                    Limpar busca
-                </button>
-            )}
 
             <div className="fiori-filter-popover-section">
                 <div className="fiori-filter-popover-section-title">
@@ -271,6 +255,16 @@ export function DashboardFilters({
     onOpenStatReport
 }: DashboardFiltersProps) {
     const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!isSearchOpen) return;
+        const frame = requestAnimationFrame(() => {
+            searchInputRef.current?.focus({ preventScroll: true });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [isSearchOpen]);
 
     const appliedFilters: FilterValues = {
         objectSearchTerm,
@@ -286,6 +280,8 @@ export function DashboardFilters({
         (inProgressOnly ? 1 : 0) +
         (chargePercentValue !== "" ? 1 : 0) +
         (dashboardGroupFilter !== "all" ? 1 : 0);
+
+    const advancedFiltersCount = activeFiltersCount - (objectSearchTerm !== "" ? 1 : 0);
 
     const handleApplyFilters = (values: FilterValues) => {
         setObjectSearchTerm(values.objectSearchTerm);
@@ -304,6 +300,7 @@ export function DashboardFilters({
         setChargePercentOp(">=");
         setDashboardGroupFilter("all");
         setFilterPopoverOpen(false);
+        setIsSearchOpen(false);
     };
 
     const filterPanelProps: FilterPanelProps = {
@@ -346,36 +343,65 @@ export function DashboardFilters({
 
                     <div className="hidden lg:flex items-center gap-1 ml-auto">
                             <div className="fiori-toolbar">
-                                <div className={cn("fiori-toolbar-filter-group", activeFiltersCount > 0 && "fiori-toolbar-filter-group--active")}>
-                                    {filterPopover(
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                className={cn(
-                                                    TOOLBAR_BTN,
-                                                    activeFiltersCount > 0 && "fiori-toolbar-btn-active"
-                                                )}
+                                <div className={cn("fiori-toolbar-search", isSearchOpen && "fiori-toolbar-search--open")}>
+                                    <div className="fiori-search-shell">
+                                        <Search className="fiori-search-icon" aria-hidden />
+                                        <input
+                                            ref={searchInputRef}
+                                            type="search"
+                                            placeholder="Pesquisar objetos..."
+                                            value={objectSearchTerm}
+                                            onChange={(e) => setObjectSearchTerm(e.target.value.toUpperCase())}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Escape") setIsSearchOpen(false);
+                                            }}
+                                            className="fiori-search-input"
+                                            aria-label="Pesquisar objetos"
+                                        />
+                                        {objectSearchTerm && (
+                                            <button
+                                                type="button"
+                                                className="fiori-search-clear"
+                                                onClick={() => setObjectSearchTerm("")}
+                                                aria-label="Limpar busca"
                                             >
-                                                <Filter className="w-4 h-4 shrink-0" />
-                                                <span>Filtros</span>
-                                                {activeFiltersCount > 0 && (
-                                                    <span className="fiori-toolbar-dot" />
-                                                )}
-                                            </Button>
-                                        </PopoverTrigger>
-                                    )}
-                                    {activeFiltersCount > 0 && (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className={cn(TOOLBAR_BTN, "fiori-toolbar-btn-clear-filter")}
-                                            onClick={handleClearAll}
-                                        >
-                                            <X className="w-4 h-4 shrink-0" />
-                                            <span>Limpar</span>
-                                        </Button>
-                                    )}
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setIsSearchOpen(!isSearchOpen)}
+                                    className={cn(
+                                        TOOLBAR_BTN_ICON,
+                                        (isSearchOpen || objectSearchTerm) && "fiori-toolbar-btn-active",
+                                    )}
+                                    aria-label={isSearchOpen ? "Fechar busca" : "Pesquisar objetos"}
+                                >
+                                    <Search className="w-4 h-4" />
+                                </Button>
+
+                                {filterPopover(
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className={cn(
+                                                TOOLBAR_BTN_ICON,
+                                                advancedFiltersCount > 0 && "fiori-toolbar-btn-active",
+                                            )}
+                                            aria-label="Filtros avançados"
+                                        >
+                                            <Filter className="w-4 h-4" />
+                                            {advancedFiltersCount > 0 && !filterPopoverOpen && (
+                                                <span className="fiori-toolbar-dot" />
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                )}
 
                                 <Button
                                     variant="ghost"

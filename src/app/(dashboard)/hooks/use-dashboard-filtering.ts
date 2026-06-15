@@ -9,12 +9,14 @@ import {
 } from "@/lib/dashboard/object-filters";
 import {
     resolveDashboardCardChargeSequence,
+    buildListPositionChargeOrderMap,
     type ResolvedChargeSequence,
 } from "@/lib/migration/sequence-utils";
 import {
-    buildCatalogMasterOrderIndex,
-    buildGestaoMasterOrderIndex,
+    buildGestaoDisplayOrderIndex,
+    buildGestaoPageDisplayList,
     buildMockChargeSequenceLookup,
+    buildUsageMapFromMigrations,
     resolveDashboardChargeSequence,
     sortByGestaoDisplayOrder,
 } from "@/lib/migration/gestao-sequence";
@@ -82,15 +84,35 @@ export function useDashboardFiltering({
         );
     }, [mockScopedSequences, objects, masterObjects, selectedMockId]);
 
-    const gestaoDisplayOrderIndex = useMemo(() => {
-        if (mockScopedSequences && selectedMockId !== "all") {
-            return buildGestaoMasterOrderIndex(
-                objects?.filter((o) => o.mockId === selectedMockId),
-                masterObjects,
-            );
-        }
-        return buildCatalogMasterOrderIndex(masterObjects);
-    }, [mockScopedSequences, selectedMockId, objects, masterObjects]);
+    const usageMap = useMemo(
+        () => buildUsageMapFromMigrations(objects ?? []),
+        [objects],
+    );
+
+    const migrationsInSelectedMock = useMemo(() => {
+        if (selectedMockId === "all") return null;
+        return objects?.filter((o) => o.mockId === selectedMockId) ?? null;
+    }, [objects, selectedMockId]);
+
+    const gestaoPageDisplayParams = useMemo(
+        () => ({
+            masters: masterObjects,
+            migrationsInSelectedMock,
+            isAdmin: _isAdmin,
+            selectedProjectId,
+            selectedMockId,
+            usageMap,
+        }),
+        [masterObjects, migrationsInSelectedMock, _isAdmin, selectedProjectId, selectedMockId, usageMap],
+    );
+
+    const { gestaoDisplayOrderIndex, gestaoDisplayChargeOrderById } = useMemo(() => {
+        const list = buildGestaoPageDisplayList(gestaoPageDisplayParams);
+        return {
+            gestaoDisplayOrderIndex: buildGestaoDisplayOrderIndex(list),
+            gestaoDisplayChargeOrderById: buildListPositionChargeOrderMap(list),
+        };
+    }, [gestaoPageDisplayParams]);
 
     const mocksByIdMap = useMemo(() => new Map(allMocks?.map((m) => [m.id, m])), [allMocks]);
 
@@ -497,6 +519,7 @@ export function useDashboardFiltering({
         filteredObjectStats,
         effectiveMockId,
         previousMockId,
-        mocksByIdMap
+        mocksByIdMap,
+        gestaoDisplayChargeOrderById,
     };
 }

@@ -252,7 +252,7 @@ export function EditUserDialog({
     if (lastInitUserIdRef.current === userId) return;
     lastInitUserIdRef.current = userId;
     setFormData(initialFormFromUser(user));
-  }, [open, userId]);
+  }, [open, userId, user]);
 
   const updateField = <T extends keyof UserFormData>(field: T, value: UserFormData[T]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

@@ -13,8 +13,6 @@ export * from './env';
 export * from './query-builder';
 export * from './auth-compat';
 export * from './storage-compat';
-export { getSupabaseAdmin, adminAuth, adminDb } from './admin';
-export { getAdminStorageBucket } from './admin-storage';
 export * from './config';
 export { SupabaseClientProvider } from './client-provider';
 export { createSupabaseBrowserClient } from './client';

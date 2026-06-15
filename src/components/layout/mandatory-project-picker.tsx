@@ -258,12 +258,6 @@ export function MandatoryProjectPicker() {
           </DialogHeader>
 
           <div className="fiori-project-picker-body">
-            <p className="fiori-dialog-info fiori-project-picker-info">
-              Dashboard, mocks, objetos e demais telas usarão apenas este projeto até você alterar
-              na página{" "}
-              <span className="font-semibold text-[var(--fiori-text)]">Projetos</span>.
-            </p>
-
             <div className="fiori-project-picker-list custom-scrollbar">
               <ul className="fiori-project-picker-items">
                 {sortedProjects.map((p) => (

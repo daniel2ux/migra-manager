@@ -51,10 +51,6 @@ export function ProjectPickerDialog({
                 </DialogHeader>
 
                 <div className="fiori-project-picker-body">
-                    <p className="fiori-dialog-info fiori-project-picker-info">
-                        O escopo das telas (mocks, objetos, relatórios) seguirá o projeto escolhido até você alterar novamente.
-                    </p>
-
                     <div className="fiori-project-picker-list custom-scrollbar">
                         <ul className="fiori-project-picker-items">
                             {sortedProjects.map((p) => {

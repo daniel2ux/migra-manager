@@ -31,7 +31,7 @@ import { getProjectCompanyName, getProjectNameForContext } from "@/lib/migration
 import type { AggregatedObject } from "@/types/migration";
 import type { MasterObject } from "@/types/master-object";
 import { getDashboardCardKey } from "@/lib/dashboard/card-key";
-import { formatSequence } from "@/lib/migration/sequence-utils";
+import { resolveDisplayChargeOrder } from "@/lib/migration/sequence-utils";
 import { useDashboardCardSelection } from "./hooks/use-dashboard-card-selection";
 
 // Subcomponentes de UI
@@ -434,19 +434,27 @@ function DashboardContent() {
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
                                 {filtering.filteredAggregatedPerformance.length > 0 ? (
-                                    filtering.filteredAggregatedPerformance.map((obj, index) => (
+                                    filtering.filteredAggregatedPerformance.map((obj) => (
                                         (() => {
                                             const objectIsRunning =
                                                 obj.status === "CARGA_EM_ANDAMENTO" ||
                                                 !!obj.isInProgress ||
                                                 !!(obj.chargeStartTime && !obj.chargeEndTime);
                                             const cardIsLocked = (obj.mockIsLocked || isProjectLocked) && !objectIsRunning;
+                                            const masterObjectId = String((obj as AggregatedObject & { masterObjectId?: string }).masterObjectId || "");
+                                            const displayChargeOrder = String(
+                                                resolveDisplayChargeOrder(
+                                                    masterObjectId,
+                                                    obj.chargeOrder,
+                                                    filtering.gestaoDisplayChargeOrderById,
+                                                ) ?? obj.chargeOrder ?? "",
+                                            );
                                             return (
                                         <DashboardCard
                                             key={getDashboardCardKey(obj)}
                                             cardKey={getDashboardCardKey(obj)}
                                             obj={obj}
-                                            displayChargeOrder={formatSequence(index + 1, 0)}
+                                            displayChargeOrder={displayChargeOrder}
                                             selectedMockId={filtering.effectiveMockId || nav.selectedMockId}
                                             isSelected={isCardSelected(obj)}
                                             onSelect={selectCard}

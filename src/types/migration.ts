@@ -156,7 +156,6 @@ export interface Mock {
   startDate: string;
   endDate: string;
   isLocked: boolean;
-  isLoaded?: boolean;
   lockedByMaster?: boolean;
   lockedByUid?: string;
   lockedByName?: string;

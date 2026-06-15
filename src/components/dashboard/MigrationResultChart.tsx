@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  Rectangle,
 } from "recharts";
 import { Timer, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,6 +43,7 @@ function minBarPixelSize(count: number): number {
 }
 
 interface ChartDataRow {
+  key: string;
   name: string;
   sucesso: number;
   erro: number;
@@ -50,6 +52,8 @@ interface ChartDataRow {
 }
 
 interface BarLabelPosition {
+  key: string;
+  barIndex: number;
   name: string;
   series: BarSeries;
   value: number;
@@ -105,6 +109,55 @@ function StaticBarValueLabel({
   );
 }
 
+interface BarShapeProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  index?: number;
+  fill?: string;
+  payload?: ChartDataRow;
+}
+
+function createSeriesBarShape(series: BarSeries) {
+  return function SeriesBarShape(props: BarShapeProps) {
+    const { x, y, width, height, index, fill, payload } = props;
+    if (x == null || y == null || width == null || height == null || index == null) {
+      return null;
+    }
+
+    return (
+      <g
+        className="migration-chart-bar"
+        data-bar-index={index}
+        data-bar-series={series}
+        data-bar-key={payload?.key ?? ""}
+      >
+        <Rectangle
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={fill}
+          radius={[2, 2, 0, 0]}
+        />
+      </g>
+    );
+  };
+}
+
+function dedupeBarLabelPositions(positions: BarLabelPosition[]): BarLabelPosition[] {
+  const bySeriesKey = new Map<string, BarLabelPosition>();
+  for (const pos of positions) {
+    const id = `${pos.key}-${pos.series}`;
+    const existing = bySeriesKey.get(id);
+    if (!existing || pos.height > existing.height) {
+      bySeriesKey.set(id, pos);
+    }
+  }
+  return Array.from(bySeriesKey.values());
+}
+
 function measureBarLabelPositions(
   root: HTMLElement,
   data: ChartDataRow[],
@@ -114,82 +167,42 @@ function measureBarLabelPositions(
   const rootRect = root.getBoundingClientRect();
   const positions: BarLabelPosition[] = [];
 
-  const tickEls = root.querySelectorAll(
-    ".recharts-xAxis .recharts-cartesian-axis-tick text, .recharts-xAxis .recharts-cartesian-axis-tick tspan",
-  );
-  const ticks = Array.from(tickEls)
-    .map((el) => {
-      const rect = el.getBoundingClientRect();
-      return {
-        name: el.textContent?.trim() ?? "",
-        x: rect.left + rect.width / 2,
-      };
-    })
-    .filter((t) => t.name)
-    .sort((a, b) => a.x - b.x);
+  root.querySelectorAll("g.migration-chart-bar[data-bar-index][data-bar-series]").forEach((el) => {
+    const series = el.getAttribute("data-bar-series") as BarSeries | null;
+    if (series !== "sucesso" && series !== "erro") return;
 
-  const uniqueTicks: typeof ticks = [];
-  ticks.forEach((tick) => {
-    if (!uniqueTicks.some((t) => t.name === tick.name)) {
-      uniqueTicks.push(tick);
-    }
-  });
+    const rowKey = el.getAttribute("data-bar-key");
+    const barIndexFromDom = Number(el.getAttribute("data-bar-index"));
+    const barIndex = rowKey
+      ? data.findIndex((row) => row.key === rowKey)
+      : barIndexFromDom;
+    if (barIndex < 0) return;
 
-  const barGroups = Array.from(
-    root.querySelectorAll("g.recharts-bar, g.recharts-layer.recharts-bar"),
-  );
+    const row = data[barIndex];
+    if (!row) return;
 
-  barGroups.forEach((barGroup, groupIndex) => {
-    const series: BarSeries = groupIndex === 0 ? "sucesso" : "erro";
-    const fill = series === "sucesso" ? sucessoFill : erroFill;
     const labelKey = series === "sucesso" ? "sucesso_label" : "erro_label";
+    const value = row[labelKey];
+    if (!value || value <= 0) return;
 
-    const shapes = Array.from(
-      barGroup.querySelectorAll(
-        "g.recharts-bar-rectangle path, g.recharts-bar-rectangle rect, .recharts-rectangle",
-      ),
-    ).filter((el) => el.getBoundingClientRect().height >= 1);
+    const box = el.getBoundingClientRect();
+    if (box.width < 1 || box.height < 1) return;
 
-    const rects = shapes
-      .map((shape) => {
-        const box = shape.getBoundingClientRect();
-        return {
-          centerX: box.left + box.width / 2,
-          box,
-        };
-      })
-      .sort((a, b) => a.centerX - b.centerX);
-
-    rects.forEach((rect, index) => {
-      const tick =
-        uniqueTicks.find((t) => {
-          const dist = Math.abs(t.x - rect.centerX);
-          return dist < 60;
-        }) ?? uniqueTicks[index];
-
-      const name = tick?.name ?? data[index]?.name;
-      if (!name) return;
-
-      const row = data.find((d) => d.name === name);
-      if (!row) return;
-
-      const value = row[labelKey];
-      if (!value || value <= 0) return;
-
-      positions.push({
-        name,
-        series,
-        value,
-        fill,
-        x: rect.box.left - rootRect.left,
-        y: rect.box.top - rootRect.top,
-        width: rect.box.width,
-        height: rect.box.height,
-      });
+    positions.push({
+      key: row.key,
+      barIndex,
+      name: row.name,
+      series,
+      value,
+      fill: series === "sucesso" ? sucessoFill : erroFill,
+      x: box.left - rootRect.left,
+      y: box.top - rootRect.top,
+      width: box.width,
+      height: box.height,
     });
   });
 
-  return positions;
+  return dedupeBarLabelPositions(positions);
 }
 
 function BarHoverOverlay({
@@ -254,10 +267,11 @@ function BarHoverOverlay({
         const hitW = Math.max(28, text.length * labelFontSize * 0.65);
         const hitH = labelFontSize + 8;
         const zoomFontSize = Math.round(labelFontSize * 1.45);
+        const overlayKey = `${pos.key}-${pos.series}-${pos.barIndex}`;
 
         return (
           <div
-            key={`${pos.name}-${pos.series}`}
+            key={overlayKey}
             className="group/bar-zoom absolute pointer-events-auto"
             style={{
               left: Math.min(pos.x, cx - hitW / 2),
@@ -306,6 +320,7 @@ export const MigrationResultChart = ({
 
   const migrationResultData = useMemo(() => {
     return aggregatedPerformance.map((obj) => ({
+      key: obj.id,
       name: obj.name,
       sucesso: Number(obj.successfulRecordsCount) || 0,
       erro: Number(obj.errorRecordsCount) || 0,
@@ -314,6 +329,7 @@ export const MigrationResultChart = ({
 
   const migrationResultChartData = useMemo((): ChartDataRow[] => {
     return migrationResultData.map((d) => ({
+      key: d.key,
       name: d.name,
       sucesso: toLogBarValue(d.sucesso),
       erro: toLogBarValue(d.erro),
@@ -387,6 +403,9 @@ export const MigrationResultChart = ({
     }),
     [chartTopMargin],
   );
+
+  const sucessoBarShape = useMemo(() => createSeriesBarShape("sucesso"), []);
+  const erroBarShape = useMemo(() => createSeriesBarShape("erro"), []);
 
   return (
     <Card
@@ -529,7 +548,6 @@ export const MigrationResultChart = ({
                     />
                     <Bar
                       dataKey="sucesso"
-                      radius={[2, 2, 0, 0]}
                       maxBarSize={28}
                       minPointSize={(_value, index) =>
                         minBarPixelSize(displayedChartData[index]?.sucesso_label ?? 0)
@@ -537,11 +555,11 @@ export const MigrationResultChart = ({
                       fill={chartConfig.sucesso.color}
                       fillOpacity={0.9}
                       isAnimationActive={false}
+                      shape={sucessoBarShape}
                       label={sucessoLabelConfig as React.ComponentProps<typeof Bar>["label"]}
                     />
                     <Bar
                       dataKey="erro"
-                      radius={[2, 2, 0, 0]}
                       maxBarSize={28}
                       minPointSize={(_value, index) =>
                         minBarPixelSize(displayedChartData[index]?.erro_label ?? 0)
@@ -549,6 +567,7 @@ export const MigrationResultChart = ({
                       fill={chartConfig.erro.color}
                       fillOpacity={0.9}
                       isAnimationActive={false}
+                      shape={erroBarShape}
                       label={erroLabelConfig as React.ComponentProps<typeof Bar>["label"]}
                     />
                   </BarChart>

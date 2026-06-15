@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { DocumentReference } from '@/supabase/query-builder';
 import { subscribeDoc } from '@/supabase/query-builder';
 import { toCamelRow } from '@/supabase/field-map';
@@ -22,10 +22,18 @@ export function useDoc<T = Record<string, unknown>>(
   const [isLoading, setIsLoading] = useState<boolean>(!!memoizedDocRef);
   const [error, setError] = useState<Error | null>(null);
   const refPath = memoizedDocRef?.path ?? null;
+  const docRef = useRef(memoizedDocRef);
   const { isUserLoading } = useSupabase();
 
   useEffect(() => {
+    docRef.current = memoizedDocRef;
+  }, [memoizedDocRef]);
+
+  useEffect(() => {
     if (isUserLoading) return;
+
+    const memoizedDocRef = docRef.current;
+
     if (!memoizedDocRef || !refPath) {
       setData(null);
       setIsLoading(false);
@@ -66,7 +74,6 @@ export function useDoc<T = Record<string, unknown>>(
     );
 
     return () => unsub();
-    // refPath é estável; não depender de memoizedDocRef (nova referência a cada render quebra o hook)
   }, [refPath, isUserLoading]);
 
   return { data, isLoading, error };

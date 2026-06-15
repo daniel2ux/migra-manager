@@ -28,4 +28,4 @@ export const HORIZONTAL_NAV_ITEM =
     "fiori-horizontal-nav-item flex items-center gap-2 px-4 py-2 text-[0.875rem] font-semibold";
 export const HORIZONTAL_NAV_ACTIVE = "fiori-horizontal-nav-item--active";
 export const HORIZONTAL_NAV_INACTIVE = "";
-export const HORIZONTAL_NAV_HOVER_CLOSE_MS = 180;
+export const HORIZONTAL_NAV_HOVER_CLOSE_MS = 320;

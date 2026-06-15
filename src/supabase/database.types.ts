@@ -604,7 +604,6 @@ export type Database = {
           end_date: string | null
           explanatory_text: string | null
           id: string
-          is_loaded: boolean | null
           is_locked: boolean
           is_running: boolean | null
           load_history: Json
@@ -626,7 +625,6 @@ export type Database = {
           end_date?: string | null
           explanatory_text?: string | null
           id?: string
-          is_loaded?: boolean | null
           is_locked?: boolean
           is_running?: boolean | null
           load_history?: Json
@@ -648,7 +646,6 @@ export type Database = {
           end_date?: string | null
           explanatory_text?: string | null
           id?: string
-          is_loaded?: boolean | null
           is_locked?: boolean
           is_running?: boolean | null
           load_history?: Json
@@ -753,36 +750,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      project_members: {
-        Row: {
-          project_id: string
-          user_id: string
-        }
-        Insert: {
-          project_id: string
-          user_id: string
-        }
-        Update: {
-          project_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       projects: {
         Row: {

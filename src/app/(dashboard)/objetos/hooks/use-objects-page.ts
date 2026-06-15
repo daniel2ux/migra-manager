@@ -13,10 +13,14 @@ import {
   parseSequence,
   formatSequence,
   isValidSequence,
-  compareGestaoExecutionOrder,
   buildListPositionChargeOrderMap,
   resolveDisplayChargeOrder,
 } from '@/lib/migration/sequence-utils';
+import {
+  buildGestaoDisplayList,
+  buildGestaoSequenceContextRows,
+  filterMastersByProjectMockUsage,
+} from '@/lib/migration/gestao-sequence';
 import { buildPrecedenceMap } from '@/lib/migration/dependency-utils';
 import type { MasterObject } from '@/types/master-object';
 import type { ActivityGroup } from '@/types/activity-group';
@@ -47,7 +51,6 @@ import {
   nextAvailableDisplayOrder,
   suggestedChargeGroupName,
 } from '@/components/configuracoes/charge-groups/constants';
-import { buildGestaoRowsFromMockMigrations } from '@/lib/migration/gestao-sequence';
 import { useObjectsMockSync } from './use-objects-mock-sync';
 import { useObjectsImport } from './use-objects-import';
 import {
@@ -183,55 +186,6 @@ function computeDuplicateMasterNameKeys(objects: MasterObject[] | null | undefin
   return new Set([...counts.entries()].filter(([, n]) => n > 1).map(([k]) => k));
 }
 
-/** Lista mestres utilizados neste projeto (e opcionalmente mock); sem filtros de busca/status. */
-function filterMastersByProjectMockUsage(
-  objects: MasterObject[] | null | undefined,
-  selectedProjectId: string | null,
-  selectedMockId: string | null,
-  usageMap: Record<string, Set<string>>,
-): MasterObject[] {
-  if (!objects?.length) return [];
-  return objects.filter((obj) => {
-    if (!selectedProjectId) return true;
-    const usage = usageMap[obj.id];
-    if (!usage?.size) return false;
-    if (selectedMockId) return usage.has(`${selectedProjectId}:${selectedMockId}`);
-    return [...usage].some((e) => e.startsWith(`${selectedProjectId}:`));
-  });
-}
-
-/** Sobrepõe campos vindos dos `migrationObjects` quando o escopo vem só do projeto. */
-function mergeMockSequencesOntoScopedMasters(
-  mastersInScope: MasterObject[],
-  migrations: MigrationObject[] | null | undefined,
-  applyMerge: boolean,
-  opts?: { overlayChargeSequence?: boolean },
-): MasterObject[] {
-  if (!applyMerge || !migrations?.length) return mastersInScope;
-  const overlayChargeSequence = opts?.overlayChargeSequence ?? true;
-  const byMasterId = new Map<string, MigrationObject>();
-  for (const m of migrations) {
-    if (m.masterObjectId) byMasterId.set(m.masterObjectId, m);
-  }
-  return mastersInScope.map((mast) => {
-    const mig = byMasterId.get(mast.id);
-    if (!mig) return { ...mast };
-    return {
-      ...mast,
-      ...(overlayChargeSequence
-        ? {
-            chargeGroup: mig.chargeGroup ?? mast.chargeGroup,
-            chargeOrder: mig.chargeOrder ?? mast.chargeOrder,
-            parallelOrder: mig.parallelOrder ?? mast.parallelOrder,
-            isParallel: mig.isParallel ?? mast.isParallel,
-          }
-        : {}),
-      dependencyIds: mig.dependencyIds ?? mast.dependencyIds,
-      _migrationDocId: mig.id,
-    };
-  });
-}
-
 function filterMastersByDisplayFilters(
   rows: MasterObject[],
   searchTerm: string,
@@ -269,59 +223,6 @@ function matchesMasterSearchTerm(
     (obj.description ?? '').toLowerCase().includes(term) ||
     Boolean(configuredGroup && configuredGroup.toLowerCase().includes(term))
   );
-}
-
-function buildGestaoDisplayList(
-  rows: MasterObject[],
-  sortMode: string,
-  reorderPreview: ReorderPreviewPayload | null,
-): MasterObject[] {
-  let sorted = sortMastersGestao(rows, sortMode);
-  if (reorderPreview?.visibleOrder?.length && sortMode === 'EXECUTION') {
-    sorted = applyVisibleOrderToList(sorted, reorderPreview.visibleOrder);
-  }
-  return sorted;
-}
-
-function applyVisibleOrderToList(
-  rows: MasterObject[],
-  visibleOrder: readonly string[],
-): MasterObject[] {
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  const seen = new Set<string>();
-  const ordered: MasterObject[] = [];
-  for (const id of visibleOrder) {
-    const row = byId.get(id);
-    if (row) {
-      ordered.push(row);
-      seen.add(id);
-    }
-  }
-  for (const row of rows) {
-    if (!seen.has(row.id)) ordered.push(row);
-  }
-  return ordered;
-}
-
-function sortMastersGestao(rows: MasterObject[], sortMode: string): MasterObject[] {
-  return [...rows].sort((a, b) => {
-    if (sortMode === 'EXECUTION') {
-      return compareGestaoExecutionOrder(a, b);
-    }
-    const aInactive = a.status === 'INATIVO';
-    const bInactive = b.status === 'INATIVO';
-    if (aInactive && !bInactive) return 1;
-    if (!aInactive && bInactive) return -1;
-    if (sortMode === 'ALPHABETICAL') return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-    if (sortMode === 'UPDATED') {
-      const dateA =
-        a.updatedAt instanceof Date ? a.updatedAt : (a.updatedAt as any)?.toDate?.() || new Date(0);
-      const dateB =
-        b.updatedAt instanceof Date ? b.updatedAt : (b.updatedAt as any)?.toDate?.() || new Date(0);
-      return dateB.getTime() - dateA.getTime();
-    }
-    return 0;
-  });
 }
 
 // ── Sub-hook: Dialog effects ──────────────────────────────────────────────
@@ -447,7 +348,7 @@ export function useObjectsPage() {
     if (mockScopedSequences && !auth.isAdmin) {
       refetchMigrationsInMock();
     }
-  }, [queries.refetchMasterCatalog, mockScopedSequences, auth.isAdmin, refetchMigrationsInMock]);
+  }, [queries, mockScopedSequences, auth.isAdmin, refetchMigrationsInMock]);
 
   const scheduleSequenceRefetch = useCallback(() => {
     if (refetchSequenceTimerRef.current) {
@@ -525,36 +426,14 @@ export function useObjectsPage() {
   const sequenceContextRows = useMemo(() => {
     const allMasters = queries.objects ?? [];
 
-    let rows: MasterObject[];
-
-    if (auth.isAdmin) {
-      if (!mockScopedSequences) {
-        rows = allMasters;
-      } else {
-        rows = mergeMockSequencesOntoScopedMasters(
-          allMasters,
-          migrationsInSelectedMock ?? undefined,
-          Boolean(migrationsInSelectedMock?.length),
-          { overlayChargeSequence: false },
-        );
-      }
-    } else if (mockScopedSequences) {
-      if (migrationsInSelectedMock === null || !queries.objects) {
-        rows = [];
-      } else {
-        const fromMock = buildGestaoRowsFromMockMigrations(
-          migrationsInSelectedMock,
-          queries.objects,
-        );
-        rows = fromMock.length > 0 ? fromMock : projectUsageFiltered;
-      }
-    } else {
-      rows = mergeMockSequencesOntoScopedMasters(
-        catalogScopeFiltered,
-        migrationsInSelectedMock ?? undefined,
-        false,
-      );
-    }
+    let rows = buildGestaoSequenceContextRows({
+      allMasters,
+      migrationsInSelectedMock,
+      isAdmin: auth.isAdmin,
+      mockScopedSequences,
+      catalogScopeFiltered,
+      projectUsageFiltered,
+    });
 
     if (!reorderPreview?.chargeOrders.size) return rows;
     return rows.map((row) => {
