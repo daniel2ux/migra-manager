@@ -47,16 +47,6 @@ export function useProjectStatusActions({
     [canEdit, db, toast],
   );
 
-  const toggleStatus = useCallback(
-    async (project: Project, hasMocksInProgress: boolean) => {
-      const current = resolveProjectExecutionStatus(project, hasMocksInProgress);
-      const nextStatus: ProjectExecutionStatus =
-        current === "EM_EXECUCAO" ? "ENCERRADO" : "EM_EXECUCAO";
-      await changeProjectStatus(project, nextStatus);
-    },
-    [changeProjectStatus],
-  );
-
   const handleToggleActive = useCallback(
     async (project: Project, activate: boolean, hasMocksInProgress: boolean) => {
       if (!canEdit || project.isLocked || !db) return;
@@ -101,7 +91,6 @@ export function useProjectStatusActions({
   return {
     statusTogglingId,
     changeProjectStatus,
-    toggleStatus,
     handleToggleActive,
   };
 }

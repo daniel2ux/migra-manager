@@ -405,6 +405,7 @@ function DashboardContent() {
                 {/* 2. FILTROS & CONTROLE */}
                 <DashboardFilters
                     {...filtersState}
+                    objectCount={filtering.filteredAggregatedPerformance.length}
                     activityGroups={activeQueries.activityGroups}
                     onOpenReport={() => setIsReportOpen(true)}
                     onOpenStatReport={() => {

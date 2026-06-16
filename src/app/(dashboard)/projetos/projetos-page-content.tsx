@@ -102,7 +102,6 @@ export default function ProjetosPageContent() {
     const {
         statusTogglingId,
         changeProjectStatus,
-        toggleStatus,
         handleToggleActive,
     } = useProjectStatusActions({
         db: db as CompatDb | null,
@@ -615,7 +614,6 @@ export default function ProjetosPageContent() {
                                                     onDelete={() => setProjectToDelete(project)}
                                                     onReset={() => setProjectToReset(project)}
                                                     onToggleLock={() => toggleLock(project)}
-                                                    onToggleStatus={() => toggleStatus(project, hasMocksInProgress)}
                                                     onStatusChange={(status) => changeProjectStatus(project, status)}
                                                     onToggleActive={(activate) =>
                                                         handleToggleActive(project, activate, hasMocksInProgress)

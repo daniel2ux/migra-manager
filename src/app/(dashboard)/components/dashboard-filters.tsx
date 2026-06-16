@@ -46,6 +46,7 @@ interface DashboardFiltersProps {
     dashboardGroupFilter: string;
     setDashboardGroupFilter: (v: string) => void;
     activityGroups: ActivityGroup[];
+    objectCount: number;
     onOpenReport: () => void;
     onOpenStatReport: () => void;
 }
@@ -251,6 +252,7 @@ export function DashboardFilters({
     dashboardGroupFilter,
     setDashboardGroupFilter,
     activityGroups,
+    objectCount,
     onOpenReport,
     onOpenStatReport
 }: DashboardFiltersProps) {
@@ -339,6 +341,12 @@ export function DashboardFilters({
                     >
                         <Activity className="w-4 h-4 shrink-0" />
                         Performance por objeto
+                        <span
+                            className="fiori-subtoolbar-count-badge"
+                            aria-label={`${objectCount} objeto${objectCount === 1 ? "" : "s"}`}
+                        >
+                            {objectCount > 99 ? "99+" : objectCount}
+                        </span>
                     </button>
 
                     <div className="hidden lg:flex items-center gap-1 ml-auto">

@@ -3,7 +3,7 @@
 import {
   Lock, Unlock, RotateCcw, ExternalLink, Pencil, Trash2,
   FolderOpen, Zap, CheckCircle2,
-  PlayCircle, StopCircle, Loader2, ChevronDown, Ban,
+  Loader2, ChevronDown, Ban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -39,7 +39,6 @@ interface ProjectCardProps {
   onDelete: () => void;
   onReset: () => void;
   onToggleLock: () => void;
-  onToggleStatus?: () => void;
   onStatusChange?: (status: ProjectExecutionStatus) => void;
   onToggleActive?: (activate: boolean) => void;
   isToggling?: boolean;
@@ -207,7 +206,6 @@ export function ProjectCard({
   onDelete,
   onReset,
   onToggleLock,
-  onToggleStatus,
   onStatusChange,
   onToggleActive,
   isToggling = false,
@@ -336,34 +334,6 @@ export function ProjectCard({
                 )
               ) : (
                 <>
-              {canEditStatus && (
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      CARD_TOOLBAR_BTN,
-                      isExecuting && "fiori-card-toolbar-btn-active",
-                    )}
-                    disabled={isToggling}
-                    onClick={(e) => { e.stopPropagation(); onToggleStatus?.(); }}
-                  >
-                    {isToggling ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : isExecuting ? (
-                      <StopCircle className="w-3.5 h-3.5" />
-                    ) : (
-                      <PlayCircle className="w-3.5 h-3.5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent variant="fiori">
-                  {isExecuting ? "Concluir execução" : "Iniciar execução"}
-                </TooltipContent>
-              </Tooltip>
-              )}
-
               {canEdit && (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>

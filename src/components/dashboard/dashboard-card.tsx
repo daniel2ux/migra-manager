@@ -603,51 +603,6 @@ export const DashboardCard = memo(({
                                             </Tooltip>
                                         )}
 
-                                        {isAdmin && (
-                                            <Tooltip delayDuration={0}>
-                                                <TooltipTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon-xs"
-                                                        disabled={controlsLocked || isTogglingLoad === obj.id}
-                                                        className={cn(
-                                                            "h-6 w-6 hover:bg-SkyBlue-50 transition-all active:scale-95 flex items-center justify-center shrink-0",
-                                                            controlsLocked
-                                                                ? "text-slate-300 cursor-not-allowed"
-                                                                : objectIsConcluida
-                                                                    ? "text-amber-500 hover:text-amber-600"
-                                                                    : objectIsRunning
-                                                                        ? "text-orange-600 hover:text-emerald-600"
-                                                                        : "text-slate-400 hover:text-SkyBlue-600"
-                                                        )}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (!controlsLocked) handleToggleObjectLoad?.(obj);
-                                                        }}
-                                                    >
-                                                        {isTogglingLoad === obj.id ? (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        ) : objectIsConcluida ? (
-                                                            <RefreshCcw className="w-3.5 h-3.5" />
-                                                        ) : objectIsRunning ? (
-                                                            <StopCircle className="w-3.5 h-3.5" />
-                                                        ) : (
-                                                            <PlayCircle className="w-3.5 h-3.5" />
-                                                        )}
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top" variant="fiori" className="z-210">
-                                                    {controlsLocked
-                                                        ? "Mock/projeto bloqueado"
-                                                        : objectIsConcluida
-                                                            ? "Reiniciar carga"
-                                                            : objectIsRunning
-                                                                ? "Finalizar carga"
-                                                                : "Iniciar carga"}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        )}
-
                                     </div>
                                 </div>
                     </Card>
