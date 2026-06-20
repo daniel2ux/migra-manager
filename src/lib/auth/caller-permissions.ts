@@ -10,7 +10,7 @@ import { getSupabaseAdmin } from "@/supabase/admin";
 
 export type { PermissionKey };
 
-export async function loadCallerPermissions(uid: string): Promise<Set<PermissionKey>> {
+async function loadCallerPermissions(uid: string): Promise<Set<PermissionKey>> {
   if (process.env.SUPERADMIN_UID && uid === process.env.SUPERADMIN_UID) {
     return new Set(ALL_PERMISSION_KEYS);
   }

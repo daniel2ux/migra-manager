@@ -37,7 +37,7 @@ export function nextAvailableDisplayOrder(groups: { displayOrder?: number }[]): 
   return maxOrder + 1;
 }
 
-export function sortActivityGroupsByDisplayOrder<
+function sortActivityGroupsByDisplayOrder<
   T extends { displayOrder?: number; name: string },
 >(groups: T[]): T[] {
   return [...groups].sort(

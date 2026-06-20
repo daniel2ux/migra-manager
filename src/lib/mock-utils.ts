@@ -8,7 +8,7 @@ import type { Mock, MigrationObject } from '@/types/migration';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export function asUuidOrNull(value: unknown): string | null {
+function asUuidOrNull(value: unknown): string | null {
   return typeof value === 'string' && UUID_RE.test(value) ? value : null;
 }
 
@@ -129,7 +129,7 @@ export function isEffectiveLocked(mock: Mock, projectIsLocked: boolean): boolean
 /**
  * Extrai número da sequência de nome (ex: "MOCK-10" -> 10)
  */
-export function extractMockSequence(name: string): number {
+function extractMockSequence(name: string): number {
   const match = name.match(/(\d+)$/);
   return match ? parseInt(match[1], 10) : 0;
 }

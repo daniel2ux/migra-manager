@@ -8,7 +8,7 @@ export function nextAvailableDisplayOrder(groups: { displayOrder?: number }[]): 
   return maxOrder + 1;
 }
 
-export function sortChargeGroupsByDisplayOrder<
+function sortChargeGroupsByDisplayOrder<
   T extends { displayOrder?: number; name: string },
 >(groups: T[]): T[] {
   return [...groups].sort(

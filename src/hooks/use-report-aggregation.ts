@@ -114,7 +114,7 @@ function formatChargeOrder(chargeOrderRaw: any): string | undefined {
 }
 
 /** Índice por nome normalizado; em duplicatas no catálogo, prefere registro ATIVO. */
-export function buildMasterCatalogByName(masters: any[] | null | undefined): Map<string, any> {
+function buildMasterCatalogByName(masters: any[] | null | undefined): Map<string, any> {
   const map = new Map<string, any>();
   if (!masters) return map;
 

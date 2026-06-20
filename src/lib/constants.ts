@@ -4,7 +4,7 @@
 
 // Operações em lote no banco
 export const DB_BATCH_SIZE = 400;
-export const DB_IN_QUERY_LIMIT = 30; // limite de cláusula "in"
+const DB_IN_QUERY_LIMIT = 30; // limite de cláusula "in"
 
 /** IDs válidos para `where(campo, 'in', ids)` — exige array não vazio (máx. 30). */
 export function idsForDbIn(

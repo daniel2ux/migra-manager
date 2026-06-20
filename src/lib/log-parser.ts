@@ -37,7 +37,7 @@ function stripTrailingCountToken(message: string): string {
  * Format: OBJECT  OLD_KEY  STATUS  ERROR_ID  ERROR_NUMBER  MESSAGE...
  * Columns are separated by 2+ spaces or tabs.
  */
-export function parseErrLine(
+function parseErrLine(
   line: string,
   objectName: string,
   lineNo: number,
@@ -64,7 +64,7 @@ export function parseErrLine(
  * Format: OBJECT\tSEQ\tSTATUS\tMESSAGE...
  * Columns are tab-separated.
  */
-export function parseLogLine(
+function parseLogLine(
   line: string,
   objectName: string,
   lineNo: number,

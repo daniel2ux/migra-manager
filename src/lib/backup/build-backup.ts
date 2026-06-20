@@ -8,14 +8,14 @@ export function parseBackupDestination(value: unknown): BackupDestination {
   return value === 'local' ? 'local' : 'storage';
 }
 
-export function buildBackupTimestamp(): string {
+function buildBackupTimestamp(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
 /** Nome seguro para uso em arquivos de backup. */
-export function slugifyBackupName(name: string): string {
+function slugifyBackupName(name: string): string {
   return (
     name
       .normalize('NFD')

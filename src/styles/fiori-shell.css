@@ -6747,7 +6747,7 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
   cursor: not-allowed;
 }
 
-/* Login — SAP Fiori Horizon */
+/* Login — SAP Fiori Horizon (enterprise split layout) */
 .fiori-login-page {
   --fiori-brand: #0070f2;
   --fiori-brand-hover: #0064d9;
@@ -6758,20 +6758,19 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
   --fiori-text: #32363a;
   --fiori-label: #6a6d70;
   --fiori-negative: #bb0000;
-  --fiori-radius: 0.5rem;
-  --fiori-radius-button: var(--fiori-radius);
+  --fiori-radius: 0.75rem;
+  --fiori-radius-button: 0.5rem;
 
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   min-height: 100vh;
   width: 100%;
-  padding: 1.5rem 1rem;
   overflow: hidden;
   font-family: var(--font-72);
-  background: linear-gradient(to bottom right, var(--color-SkyBlue-600), var(--color-SkyBlue-700), #0f172a);
+  background: #0b1628;
 }
 
 .fiori-login-page-bg {
@@ -6781,48 +6780,116 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
   pointer-events: none;
 }
 
+.fiori-login-page-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: radial-gradient(ellipse 80% 70% at 30% 50%, black 20%, transparent 75%);
+}
+
 .fiori-login-page-bg-glow {
   position: absolute;
-  width: 40%;
-  height: 40%;
   border-radius: 50%;
-  filter: blur(120px);
+  filter: blur(100px);
 }
 
 .fiori-login-page-bg-glow--top {
-  top: -10%;
-  left: -10%;
-  background: color-mix(in srgb, var(--color-SkyBlue-400) 20%, transparent);
+  top: -15%;
+  left: -5%;
+  width: 50%;
+  height: 55%;
+  background: color-mix(in srgb, var(--color-SkyBlue-500) 35%, transparent);
 }
 
 .fiori-login-page-bg-glow--bottom {
   right: -10%;
-  bottom: -10%;
-  background: rgb(148 163 184 / 0.1);
+  bottom: -15%;
+  width: 45%;
+  height: 50%;
+  background: color-mix(in srgb, var(--color-SkyBlue-700) 25%, transparent);
+}
+
+.fiori-login-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  flex: 1;
+  width: 100%;
+  min-height: 100vh;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-layout {
+    grid-template-columns: minmax(22rem, 1fr) minmax(24rem, 1.1fr);
+  }
 }
 
 .fiori-login-brand {
   position: relative;
-  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.5rem 1.5rem 1.5rem;
+  text-align: center;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-brand {
+    align-items: flex-start;
+    padding: 3.5rem 3rem 3.5rem 4rem;
+    text-align: left;
+    border-right: 1px solid rgb(255 255 255 / 0.06);
+  }
+}
+
+.fiori-login-brand-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 2.5rem;
-  text-align: center;
+  max-width: 28rem;
+  animation: fiori-login-fade-in 0.6s ease-out both;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-brand-content {
+    align-items: flex-start;
+  }
+}
+
+.fiori-login-brand-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fiori-login-brand-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
 .fiori-login-brand-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 4rem;
-  height: 4rem;
-  margin-bottom: 1.25rem;
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 0;
   color: #fff;
-  background: rgb(255 255 255 / 0.1);
+  background: linear-gradient(135deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.06));
+  border: 1px solid rgb(255 255 255 / 0.12);
   border-radius: 1rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.15);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 0.5rem 2rem rgb(0 0 0 / 0.2),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
 }
 
 .fiori-login-brand-icon svg {
@@ -6831,89 +6898,160 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
 
 .fiori-login-brand-title {
   margin: 0;
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-weight: 600;
   color: #fff;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
 .fiori-login-brand-subtitle {
-  margin: 0.5rem 0 0;
+  margin: 0;
   font-size: 0.6875rem;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--color-SkyBlue-100) 80%, transparent);
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-SkyBlue-200) 90%, transparent);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.fiori-login-brand-tagline {
+  display: none;
+  margin: 1.5rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: rgb(255 255 255 / 0.72);
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-brand-tagline {
+    display: block;
+  }
+}
+
+.fiori-login-brand-features {
+  display: none;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-brand-features {
+    display: flex;
+  }
+}
+
+.fiori-login-brand-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: rgb(255 255 255 / 0.65);
+  line-height: 1.4;
+}
+
+.fiori-login-brand-feature-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: var(--color-SkyBlue-300);
+}
+
+.fiori-login-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem 2.5rem;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-panel {
+    padding: 2.5rem 3rem;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  }
 }
 
 .fiori-login-card {
   position: relative;
-  z-index: 1;
   width: 100%;
-  max-width: 27.5rem;
+  max-width: 26rem;
   background: var(--fiori-shell);
-  border: 1px solid var(--fiori-border-light);
-  border-radius: 0.5rem;
+  border: 1px solid rgb(0 0 0 / 0.06);
+  border-radius: var(--fiori-radius);
   box-shadow:
-    0 0 0.125rem 0 rgba(85, 107, 130, 0.12),
-    0 0.25rem 0.75rem rgba(50, 54, 58, 0.08);
+    0 0 0 1px rgb(255 255 255 / 0.8) inset,
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 8px 24px rgb(15 23 42 / 0.08),
+    0 24px 48px rgb(15 23 42 / 0.04);
   overflow: hidden;
+  animation: fiori-login-slide-up 0.5s ease-out 0.1s both;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-card {
+    max-width: 24rem;
+  }
 }
 
 .fiori-login-header {
-  padding: 1.5rem 1.5rem 0;
+  padding: 2rem 2rem 0;
 }
 
 .fiori-login-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: var(--fiori-text);
-  letter-spacing: 0;
-  line-height: 1.25;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .fiori-login-subtitle {
-  margin: 0.25rem 0 0;
-  font-size: 0.75rem;
+  margin: 0.375rem 0 0;
+  font-size: 0.8125rem;
   font-weight: 400;
   color: var(--fiori-label);
   letter-spacing: 0;
-  line-height: 1.3;
+  line-height: 1.45;
 }
 
 .fiori-login-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem 1.5rem;
+  gap: 1.125rem;
+  padding: 1.5rem 2rem 2rem;
 }
 
 .fiori-login-field {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.4375rem;
 }
 
 .fiori-login-label {
   font-size: 0.75rem;
-  font-weight: 400;
-  color: var(--fiori-label);
-  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--fiori-text);
+  letter-spacing: 0.01em;
 }
 
 .fiori-login-input-shell {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  height: 2.5rem;
-  padding: 0 0.75rem;
-  background: var(--fiori-shell);
+  gap: 0.625rem;
+  height: 2.75rem;
+  padding: 0 0.875rem;
+  background: #fafbfc;
   border: 1px solid var(--fiori-border-light);
-  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
-  box-shadow: 0 0 0.0625rem 0 rgba(85, 107, 130, 0.06);
+  border-radius: var(--fiori-radius-button);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease,
@@ -6921,20 +7059,28 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
 }
 
 .fiori-login-input-shell:hover:not(:focus-within) {
-  border-color: var(--fiori-border);
+  border-color: #c5c9ce;
+  background: #fff;
 }
 
 .fiori-login-input-shell:focus-within {
   border-color: var(--fiori-brand);
-  box-shadow: 0 0 0 1px var(--fiori-brand);
-  background: var(--fiori-shell);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--fiori-brand) 18%, transparent),
+    0 1px 2px rgb(15 23 42 / 0.03);
+  background: #fff;
 }
 
 .fiori-login-input-icon {
-  width: 1rem;
-  height: 1rem;
+  width: 1.0625rem;
+  height: 1.0625rem;
   flex-shrink: 0;
-  color: var(--fiori-label);
+  color: #8b949e;
+  transition: color 0.15s ease;
+}
+
+.fiori-login-input-shell:focus-within .fiori-login-input-icon {
+  color: var(--fiori-brand);
 }
 
 .fiori-login-input {
@@ -6961,31 +7107,31 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
   padding: 0;
   color: var(--fiori-label);
   background: transparent;
   border: none;
-  border-radius: calc(var(--fiori-radius-button, 0.5rem) - 0.125rem);
+  border-radius: calc(var(--fiori-radius-button) - 0.125rem);
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
 .fiori-login-input-action:hover {
   color: var(--fiori-text);
-  background: #f5f6f7;
+  background: #eef0f2;
 }
 
 .fiori-login-message {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.625rem 0.75rem;
+  padding: 0.75rem 0.875rem;
   font-size: 0.75rem;
   font-weight: 400;
-  line-height: 1.4;
-  border-radius: var(--fiori-radius-button, var(--fiori-radius, 0.5rem));
+  line-height: 1.45;
+  border-radius: var(--fiori-radius-button);
   letter-spacing: 0;
 }
 
@@ -6994,15 +7140,15 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
 }
 
 .fiori-login-message--info {
-  color: #0064d9;
+  color: #0057b8;
   background: var(--fiori-brand-light);
-  border: 1px solid #d4e8ff;
+  border: 1px solid #c8e0ff;
 }
 
 .fiori-login-message--error {
   color: var(--fiori-negative);
-  background: #fff8f8;
-  border: 1px solid #ffc2c2;
+  background: #fff5f5;
+  border: 1px solid #f5c2c2;
 }
 
 .fiori-login-submit {
@@ -7011,24 +7157,38 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
-  height: 2.25rem;
+  height: 2.75rem;
   margin-top: 0.25rem;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
   font-family: var(--font-72);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #fff;
-  background: var(--fiori-brand);
-  border: 1px solid var(--fiori-brand);
-  border-radius: var(--fiori-radius-button, 0.5rem);
+  background: linear-gradient(180deg, #0078f0 0%, var(--fiori-brand) 50%, #0062d0 100%);
+  border: 1px solid #005bb5;
+  border-radius: var(--fiori-radius-button);
   cursor: pointer;
-  letter-spacing: 0;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 1px 2px rgb(0 80 180 / 0.2),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
 
 .fiori-login-submit:hover:not(:disabled) {
-  background: var(--fiori-brand-hover);
-  border-color: var(--fiori-brand-hover);
+  background: linear-gradient(180deg, #0080ff 0%, var(--fiori-brand-hover) 50%, #005bb5 100%);
+  border-color: #004fa0;
+  box-shadow:
+    0 2px 8px rgb(0 80 180 / 0.3),
+    inset 0 1px 0 rgb(255 255 255 / 0.15);
+}
+
+.fiori-login-submit:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .fiori-login-submit:disabled {
@@ -7037,29 +7197,80 @@ body:has(.fiori-page-header--tall) .fiori-mock-summary--sticky {
 }
 
 .fiori-login-footer {
-  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  padding: 0.875rem 2rem;
   text-align: center;
-  background: #fafafa;
+  background: #f7f8f9;
   border-top: 1px solid var(--fiori-border-light);
+}
+
+.fiori-login-footer-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: #8b949e;
 }
 
 .fiori-login-footer p {
   margin: 0;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--fiori-label);
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
 }
 
 .fiori-login-credit {
   position: relative;
   z-index: 1;
-  margin: 2rem 0 0;
-  font-size: 0.5625rem;
+  flex-shrink: 0;
+  padding: 1rem 1.5rem 1.25rem;
+  font-size: 0.625rem;
   font-weight: 500;
-  color: rgb(255 255 255 / 0.5);
-  letter-spacing: 0.3em;
+  color: rgb(255 255 255 / 0.35);
+  letter-spacing: 0.12em;
+  text-align: center;
   text-transform: uppercase;
+}
+
+.fiori-login-credit-by {
+  text-transform: lowercase;
+  letter-spacing: 0.18em;
+  opacity: 0.9;
+}
+
+@media (min-width: 960px) {
+  .fiori-login-credit {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 4rem;
+    padding: 0;
+    text-align: left;
+  }
+}
+
+@keyframes fiori-login-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fiori-login-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fiori-login-message--warning {

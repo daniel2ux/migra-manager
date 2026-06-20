@@ -417,6 +417,10 @@
         border-radius: var(--fiori-radius-button, 0.5rem) !important;
     }
 
+    .dashboard-no-rounded .fiori-login-page .fiori-login-card {
+        border-radius: var(--fiori-radius, 0.75rem) !important;
+    }
+
     .dashboard-no-rounded .fiori-login-page .fiori-login-input-action {
         border-radius: calc(var(--fiori-radius-button, 0.5rem) - 0.125rem) !important;
     }

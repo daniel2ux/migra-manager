@@ -7,7 +7,7 @@ import {
 
 export type { VerifyResult, PermissionKey };
 
-export function extractCallerToken(
+function extractCallerToken(
   body: Record<string, unknown> | null | undefined,
   req?: Request,
 ): string {
@@ -18,7 +18,7 @@ export function extractCallerToken(
   return header.replace(/^Bearer\s+/i, '').trim();
 }
 
-export async function verifyAuthenticatedCaller(token: string): Promise<VerifyResult> {
+async function verifyAuthenticatedCaller(token: string): Promise<VerifyResult> {
   try {
     const normalizedToken = token.replace(/^Bearer\s+/i, '').trim();
     if (!normalizedToken) {

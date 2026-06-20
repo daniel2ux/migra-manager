@@ -1,0 +1,36 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "scripts/**/*.{js,mjs,ts}",
+    "src/ai/dev.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.{js,mjs,ts}"
+  ],
+  "ignore": [
+    "src/supabase/database.types.ts"
+  ],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  "ignoreIssues": {
+    "src/components/ui/**": ["exports", "types", "duplicates"],
+    "src/components/**/index.ts": ["exports", "types"]
+  },
+  "ignoreDependencies": [
+    "tailwindcss",
+    "tailwindcss-animate"
+  ],
+  "ignoreBinaries": [
+    "genkit",
+    "supabase"
+  ],
+  "eslint": {
+    "config": ["eslint.config.mjs"]
+  },
+  "postcss": {
+    "config": ["postcss.config.mjs"]
+  }
+}

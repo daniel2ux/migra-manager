@@ -7,7 +7,7 @@ const SUMMARY_HEADERS = ["Migrador", "Data Migr.", "HrExecMig", "Empresa", "Obj.
 const SUMMARY_COL_WIDTHS = [18, 12, 11, 22, 14, 18, 12, 14, 60];
 
 /** Colunas dos registros individuais de log importado. */
-export const ERROR_ITEM_HEADERS = [
+const ERROR_ITEM_HEADERS = [
   "Migrador",
   "Data Migr.",
   "HrExecMig",
@@ -40,7 +40,7 @@ export interface ErrorItemRow {
   importedAt: string;
 }
 
-export function errorTypeKeyFromParts(errorNumber?: string | null, errorId?: string | null): string {
+function errorTypeKeyFromParts(errorNumber?: string | null, errorId?: string | null): string {
   const n = String(errorNumber || "").trim();
   const id = String(errorId || "").trim();
   if (n && n !== "–") return n;
@@ -73,7 +73,7 @@ function formatPtBrDateTime(d: Date): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export function sanitizeExcelSheetName(raw: string): string {
+function sanitizeExcelSheetName(raw: string): string {
   const INVALID = new Set<string>(["\\", "/", ":", "*", "?", "[", "]"]);
   let s = String(raw)
     .split("")
@@ -192,7 +192,7 @@ function addItemSheet(wb: { addWorksheet: (name: string) => any }, sheetTitle: s
   });
 }
 
-export function groupItemRowsByErrorType(items: ErrorItemRow[]): Map<string, ErrorItemRow[]> {
+function groupItemRowsByErrorType(items: ErrorItemRow[]): Map<string, ErrorItemRow[]> {
   const map = new Map<string, ErrorItemRow[]>();
   for (const it of items) {
     const key = errorTypeKeyFromParts(it.errorNumber, it.errorId);

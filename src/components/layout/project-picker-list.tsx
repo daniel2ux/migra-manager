@@ -21,7 +21,7 @@ export function useSortedProjects(projects: ProjectPickerItem[] | null | undefin
   }, [projects]);
 }
 
-export function useProjectPickerDisplay(
+function useProjectPickerDisplay(
   projects: ProjectPickerItem[] | null | undefined,
   showInactive: boolean,
 ) {

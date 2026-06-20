@@ -1,10 +1,6 @@
-import {
-  downloadJsonFile,
-  MASTER_CATALOG_JSON_ACCEPT,
-  buildJsonExportFilename,
-} from '@/lib/migration/master-catalog-export';
+import { buildJsonExportFilename, downloadJsonFile } from '@/lib/migration/master-catalog-export';
 
-export { downloadJsonFile, MASTER_CATALOG_JSON_ACCEPT, buildJsonExportFilename };
+export { downloadJsonFile };
 
 export const MIGRATION_OBJECTS_EXPORT_VERSION = 1 as const;
 

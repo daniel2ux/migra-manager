@@ -11,6 +11,3 @@ export * from './env';
 export * from './query-builder';
 export * from './auth-compat';
 export * from './storage-compat';
-export * from './config';
-export { SupabaseClientProvider } from './client-provider';
-export { createSupabaseBrowserClient } from './client';

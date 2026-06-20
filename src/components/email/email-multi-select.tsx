@@ -460,5 +460,3 @@ export function EmailMultiSelect({
     </div>
   );
 }
-
-export default EmailMultiSelect;

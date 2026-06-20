@@ -30,7 +30,7 @@ import {
     HORIZONTAL_NAV_HOVER_CLOSE_MS,
 } from "./types";
 
-export function formatSubNavLabel(label: string): string {
+function formatSubNavLabel(label: string): string {
     return label.charAt(0) + label.slice(1).toLowerCase();
 }
 

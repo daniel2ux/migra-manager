@@ -4,11 +4,11 @@ export function getDashboardScrollContainer(): HTMLElement | null {
   return document.querySelector("main.flex-1.min-h-0.overflow-y-auto");
 }
 
-export function getDashboardScrollTop(): number {
+function getDashboardScrollTop(): number {
   return getDashboardScrollContainer()?.scrollTop ?? window.scrollY;
 }
 
-export function setDashboardScrollTop(top: number) {
+function setDashboardScrollTop(top: number) {
   const container = getDashboardScrollContainer();
   if (container) {
     container.scrollTop = top;
@@ -52,7 +52,7 @@ export function isDashboardDialogScrollLocked(): boolean {
   return activeScrollLock !== null;
 }
 
-export function lockDashboardScrollPosition(initialTop?: number): DashboardScrollLock {
+function lockDashboardScrollPosition(initialTop?: number): DashboardScrollLock {
   const main = getDashboardScrollContainer();
   if (!main) {
     return {
@@ -93,7 +93,7 @@ function getDashboardViewportTopOffset(): number {
   return 72;
 }
 
-export function isDashboardCardInViewport(cardKey: string): boolean {
+function isDashboardCardInViewport(cardKey: string): boolean {
   const el = document.getElementById(getDashboardCardDomId(cardKey));
   if (!el) return false;
 

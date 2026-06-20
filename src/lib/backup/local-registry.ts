@@ -33,7 +33,7 @@ function writeAll(records: LocalBackupRecord[]): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 }
 
-export function listLocalBackups(projectId?: string | null): LocalBackupRecord[] {
+function listLocalBackups(projectId?: string | null): LocalBackupRecord[] {
   const records = readAll();
   if (!projectId) return records;
   return records.filter((record) => record.projectId === projectId);
@@ -56,7 +56,7 @@ export function removeLocalBackup(id: string): void {
   writeAll(readAll().filter((record) => record.id !== id));
 }
 
-export function localBackupToListItem(record: LocalBackupRecord): BackupListItem {
+function localBackupToListItem(record: LocalBackupRecord): BackupListItem {
   return {
     filename: record.filename,
     storagePath: `local://${record.id}`,

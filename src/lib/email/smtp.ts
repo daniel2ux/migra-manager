@@ -11,7 +11,7 @@ export interface SmtpConfig {
 }
 
 /** Ajusta porta/SSL conforme convenções SMTP (465 = TLS implícito, 587 = STARTTLS). */
-export function normalizeSmtpConfig(raw: {
+function normalizeSmtpConfig(raw: {
   host: unknown;
   port?: unknown;
   secure?: unknown;

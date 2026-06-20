@@ -12,7 +12,7 @@ const TOAST_LIMIT = 1
 /** Tempo visível do toast antes de fechar (ms). */
 export const TOAST_DURATION_MS = 5000
 /** Toasts de erro permanecem um pouco mais para leitura. */
-export const TOAST_DURATION_ERROR_MS = 8000
+const TOAST_DURATION_ERROR_MS = 8000
 /** Aguarda animação de saída antes de remover do DOM. */
 const TOAST_REMOVE_DELAY = 500
 
@@ -99,7 +99,7 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
-export const reducer = (state: State, action: Action): State => {
+const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
       return {
@@ -228,4 +228,4 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+export { useToast }

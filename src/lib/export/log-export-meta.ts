@@ -44,7 +44,7 @@ export function buildLogExportMeta(params: {
 }
 
 /** Segmento seguro para nome de arquivo (preserva letras, números, hífen e underscore). */
-export function sanitizeExportFileSegment(value: string | undefined | null): string {
+function sanitizeExportFileSegment(value: string | undefined | null): string {
   const trimmed = String(value ?? "").trim();
   if (!trimmed) return "";
   return trimmed

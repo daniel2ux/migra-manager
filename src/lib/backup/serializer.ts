@@ -1,4 +1,4 @@
-export function serializeValue(value: unknown): unknown {
+function serializeValue(value: unknown): unknown {
   if (value === null || value === undefined) return value;
 
   if (value instanceof Date) {
@@ -22,7 +22,7 @@ export function serializeDoc(data: Record<string, unknown>): Record<string, unkn
   return serializeValue(data) as Record<string, unknown>;
 }
 
-export function deserializeValue(value: unknown): unknown {
+function deserializeValue(value: unknown): unknown {
   if (value === null || value === undefined) return value;
 
   if (Array.isArray(value)) {

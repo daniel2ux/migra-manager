@@ -3,8 +3,8 @@ import type { MasterObject } from '@/types/master-object';
 export const MASTER_CATALOG_EXPORT_VERSION = 1 as const;
 
 /** Extensão e MIME do formato padrão de exportação/importação do catálogo mestre. */
-export const MASTER_CATALOG_JSON_EXTENSION = '.json';
-export const MASTER_CATALOG_JSON_MIME = 'application/json;charset=utf-8';
+const MASTER_CATALOG_JSON_EXTENSION = '.json';
+const MASTER_CATALOG_JSON_MIME = 'application/json;charset=utf-8';
 export const MASTER_CATALOG_JSON_ACCEPT = `${MASTER_CATALOG_JSON_EXTENSION},application/json`;
 
 export interface MasterCatalogExportPayload {
@@ -63,7 +63,7 @@ function serializeUpdatedAt(value: MasterObject['updatedAt']): string | undefine
   return String(value);
 }
 
-export function serializeMasterObjectForExport(
+function serializeMasterObjectForExport(
   obj: MasterObject & { __path?: string },
 ): MasterCatalogExportRow {
   const updatedAt = serializeUpdatedAt(obj.updatedAt);

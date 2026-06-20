@@ -6,7 +6,7 @@ function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
 
-export function parseRecipientList(raw: string): string[] {
+function parseRecipientList(raw: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
 

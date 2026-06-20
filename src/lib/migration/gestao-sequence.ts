@@ -77,7 +77,7 @@ export function sortByGestaoDisplayOrder<
 }
 
 /** Lista alinhada ao dashboard da mock (subcoleção + master ATIVO). */
-export function buildGestaoRowsFromMockMigrations(
+function buildGestaoRowsFromMockMigrations(
   migrationsInMock: MigrationObject[] | null | undefined,
   masters: MasterObject[] | null | undefined,
 ): MasterObject[] {
@@ -150,7 +150,7 @@ export function buildMockChargeSequenceLookup(
   return map;
 }
 
-export function lookupMockChargeSequence(
+function lookupMockChargeSequence(
   lookup: Map<string, ChargeSequenceFields> | null | undefined,
   masterObjectId?: string | null,
   objectName?: string | null,
@@ -187,7 +187,7 @@ export function filterMastersByProjectMockUsage(
 }
 
 /** Sobrepõe campos vindos dos migrationObjects quando o escopo vem só do projeto. */
-export function mergeMockSequencesOntoScopedMasters(
+function mergeMockSequencesOntoScopedMasters(
   mastersInScope: MasterObject[],
   migrations: MigrationObject[] | null | undefined,
   applyMerge: boolean,
@@ -259,7 +259,7 @@ export function buildGestaoSequenceContextRows(params: {
   );
 }
 
-export function sortMastersGestao(
+function sortMastersGestao(
   rows: MasterObject[],
   sortMode: GestaoSortMode,
 ): MasterObject[] {

@@ -34,7 +34,7 @@ export function stripNavigationQueryParams(): void {
   window.history.replaceState(window.history.state, "", next);
 }
 
-export function setLoginFlash(flash: LoginFlash): void {
+function setLoginFlash(flash: LoginFlash): void {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(SESSION_KEYS.LOGIN_FLASH, flash);
 }

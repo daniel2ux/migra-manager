@@ -1,7 +1,7 @@
 import type { MasterObject } from "@/types/master-object";
 import { compareSequences } from "./sequence-utils";
 
-export function getPrecedenceChain(
+function getPrecedenceChain(
     obj: MasterObject,
     allObjects: MasterObject[]
 ): { chain: MasterObject[]; isCircular: boolean } {
