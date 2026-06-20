@@ -9,6 +9,7 @@ import { isSupabaseEnvComplete } from '@/supabase/env';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, Auth } from '@/supabase/auth-shim';
 import { doc, getDoc, type CompatDb } from '@/supabase/compat-db-shim';
 import { consumeLoginFlash, stripNavigationQueryParams } from '@/lib/auth/app-session';
+import { FioriIconButtonHint } from '@/components/ui/fiori-icon-button-hint';
 
 function LoginForm() {
   const router = useRouter();
@@ -39,6 +40,12 @@ function LoginForm() {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
       setError('Informe um e-mail válido.');
+      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError('Informe sua senha.');
       setLoading(false);
       return;
     }
@@ -150,10 +157,10 @@ function LoginForm() {
         <div className="fiori-login-card">
           <div className="fiori-login-header">
             <h2 className="fiori-login-title">Entrar na plataforma</h2>
-            <p className="fiori-login-subtitle">Use suas credenciais de acesso</p>
+            <p className="fiori-field-hint fiori-login-header-hint">Use suas credenciais de acesso</p>
           </div>
 
-          <form onSubmit={handleLogin} className="fiori-login-form">
+          <form onSubmit={handleLogin} className="fiori-login-form" noValidate>
             <div className="fiori-login-field">
               <label htmlFor="login-email" className="fiori-login-label">E-mail</label>
               <div className="fiori-login-input-shell">
@@ -163,8 +170,7 @@ function LoginForm() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="seu@email.com"
-                  required
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="fiori-login-input"
@@ -181,24 +187,22 @@ function LoginForm() {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  placeholder="Digite sua senha"
-                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="fiori-login-input"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                <FioriIconButtonHint
+                  hint={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  side="left"
                   className="fiori-login-input-action"
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" aria-hidden />
                   ) : (
                     <Eye className="w-4 h-4" aria-hidden />
                   )}
-                </button>
+                </FioriIconButtonHint>
               </div>
             </div>
 

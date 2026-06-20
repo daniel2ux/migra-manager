@@ -18,6 +18,7 @@ import { signOutAndRedirect } from "@/lib/auth/sign-out";
 import { doc } from "@/supabase/compat-db-shim";
 import type { UserProfile } from "@/types/migration";
 import { PASSWORD_MIN_LENGTH, validatePasswordPolicy } from "@/lib/security/password-policy";
+import { FioriIconButtonHint } from "@/components/ui/fiori-icon-button-hint";
 
 export function ChangePasswordPageClient() {
   const router = useRouter();
@@ -157,10 +158,10 @@ export function ChangePasswordPageClient() {
       <div className="fiori-login-card">
         <div className="fiori-login-header">
           <h2 className="fiori-login-title">Definir nova senha</h2>
-          <p className="fiori-login-subtitle">Primeiro acesso — troca obrigatória</p>
+          <p className="fiori-field-hint fiori-login-header-hint">Primeiro acesso — troca obrigatória</p>
         </div>
 
-        <form onSubmit={handleChangePassword} className="fiori-login-form">
+        <form onSubmit={handleChangePassword} className="fiori-login-form" noValidate>
           <div className="fiori-login-message fiori-login-message--warning" role="status">
             <ShieldAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <p>
@@ -173,6 +174,7 @@ export function ChangePasswordPageClient() {
             <label htmlFor="new-password" className="fiori-login-label">
               Nova senha
             </label>
+            <p className="fiori-field-hint">Mínimo {PASSWORD_MIN_LENGTH} caracteres</p>
             <div className="fiori-login-input-shell">
               <Lock className="fiori-login-input-icon" aria-hidden />
               <input
@@ -180,18 +182,16 @@ export function ChangePasswordPageClient() {
                 name="new-password"
                 type={showNewPassword ? "text" : "password"}
                 autoComplete="new-password"
-                placeholder={`Mínimo ${PASSWORD_MIN_LENGTH} caracteres`}
-                required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={loading}
                 className="fiori-login-input"
               />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword((v) => !v)}
+              <FioriIconButtonHint
+                hint={showNewPassword ? "Ocultar senha" : "Mostrar senha"}
+                side="left"
                 className="fiori-login-input-action"
-                aria-label={showNewPassword ? "Ocultar senha" : "Mostrar senha"}
+                onClick={() => setShowNewPassword((v) => !v)}
                 disabled={loading}
               >
                 {showNewPassword ? (
@@ -199,7 +199,7 @@ export function ChangePasswordPageClient() {
                 ) : (
                   <Eye className="h-4 w-4" aria-hidden />
                 )}
-              </button>
+              </FioriIconButtonHint>
             </div>
           </div>
 
@@ -207,6 +207,7 @@ export function ChangePasswordPageClient() {
             <label htmlFor="confirm-password" className="fiori-login-label">
               Confirmar nova senha
             </label>
+            <p className="fiori-field-hint">Repita a nova senha para confirmar</p>
             <div className="fiori-login-input-shell">
               <KeyRound className="fiori-login-input-icon" aria-hidden />
               <input
@@ -214,18 +215,16 @@ export function ChangePasswordPageClient() {
                 name="confirm-password"
                 type={showConfirmPassword ? "text" : "password"}
                 autoComplete="new-password"
-                placeholder="Repita a nova senha"
-                required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
                 className="fiori-login-input"
               />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((v) => !v)}
+              <FioriIconButtonHint
+                hint={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                side="left"
                 className="fiori-login-input-action"
-                aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                onClick={() => setShowConfirmPassword((v) => !v)}
                 disabled={loading}
               >
                 {showConfirmPassword ? (
@@ -233,7 +232,7 @@ export function ChangePasswordPageClient() {
                 ) : (
                   <Eye className="h-4 w-4" aria-hidden />
                 )}
-              </button>
+              </FioriIconButtonHint>
             </div>
           </div>
 
