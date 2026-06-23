@@ -1,7 +1,7 @@
 import { getDashboardCardDomId } from "@/lib/dashboard/card-key";
 
 export function getDashboardScrollContainer(): HTMLElement | null {
-  return document.querySelector("main.flex-1.min-h-0.overflow-y-auto");
+  return document.querySelector("main.dashboard-main-scroll");
 }
 
 function getDashboardScrollTop(): number {
@@ -61,7 +61,6 @@ function lockDashboardScrollPosition(initialTop?: number): DashboardScrollLock {
   }
 
   const lockedTop = initialTop ?? main.scrollTop;
-  const previousOverflow = main.style.overflow;
   setDashboardScrollTop(lockedTop);
   main.style.overflow = "hidden";
 
@@ -78,7 +77,7 @@ function lockDashboardScrollPosition(initialTop?: number): DashboardScrollLock {
     unlock(restore = true) {
       main.removeEventListener("scroll", enforce);
       window.clearInterval(intervalId);
-      main.style.overflow = previousOverflow;
+      main.style.removeProperty("overflow");
       if (restore) setDashboardScrollTop(lockedTop);
       return lockedTop;
     },

@@ -186,12 +186,7 @@ export const DashboardCard = memo(({
     const suppressOutsideCloseRef = useRef(false);
 
     const closePanel = useCallback(() => {
-        setOpenPanel((prev) => {
-            if (prev !== null) {
-                endDashboardDialogScroll(true);
-            }
-            return null;
-        });
+        setOpenPanel(null);
     }, []);
 
     const openPanelState = useCallback((panel: CardPopoverPanel) => {
@@ -216,6 +211,15 @@ export const DashboardCard = memo(({
     }, [isSelected, closePanel]);
 
     useEffect(() => {
+        if (openPanel === null || !SCROLL_LOCK_PANELS.includes(openPanel)) return;
+
+        beginDashboardDialogScroll();
+        return () => {
+            endDashboardDialogScroll(true);
+        };
+    }, [openPanel]);
+
+    useEffect(() => {
         if (!openPanel) return;
 
         const handlePointerDown = (event: PointerEvent) => {
@@ -235,9 +239,6 @@ export const DashboardCard = memo(({
         event.stopPropagation();
         suppressOutsideCloseRef.current = true;
         onSelect?.(obj);
-        if (openPanel === null && SCROLL_LOCK_PANELS.includes(panel)) {
-            beginDashboardDialogScroll();
-        }
         openPanelState(panel);
         requestAnimationFrame(() => {
             suppressOutsideCloseRef.current = false;
