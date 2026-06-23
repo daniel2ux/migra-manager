@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Dialog,
     DialogContent,
@@ -16,14 +16,19 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Mail, Copy, ExternalLink, Send, Loader2, ChevronLeft } from "lucide-react";
+import { Mail, Copy, ExternalLink, Send, Loader2, ChevronLeft, Paperclip, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDb, useDoc, useMemoDb, useUser } from "@/supabase";
 import { doc, type CompatDb } from "@/supabase/compat-db-shim";
 import type { EmailSignature } from "@/types/migration";
 import { EmailMultiSelect } from "@/components/email/email-multi-select";
-import type { EmailRecipientSelection } from "@/types/email";
+import type { EmailRecipientSelection, EmailAttachmentPayload } from "@/types/email";
 import { useEmailRecipients } from "@/hooks/use-email-contacts";
+import {
+    MAX_EMAIL_ATTACHMENTS,
+    MAX_EMAIL_ATTACHMENT_BYTES,
+    MAX_EMAIL_ATTACHMENTS_TOTAL_BYTES,
+} from "@/lib/email/attachments";
 import { cn } from "@/lib/utils";
 
 export type { EmailSignature };
@@ -101,6 +106,34 @@ function escapeHtml(value: unknown): string {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+interface ComposeAttachment {
+    id: string;
+    file: File;
+}
+
+function formatFileSize(bytes: number): string {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${bytes} B`;
+}
+
+function readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result;
+            if (typeof result !== "string") {
+                reject(new Error(`Falha ao ler "${file.name}".`));
+                return;
+            }
+            const base64 = result.split(",")[1] ?? "";
+            resolve(base64);
+        };
+        reader.onerror = () => reject(new Error(`Falha ao ler "${file.name}".`));
+        reader.readAsDataURL(file);
+    });
 }
 
 function rowToArray(r: StatEmailRow): string[] {
@@ -193,12 +226,15 @@ export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, 
     const [subject, setSubject] = useState("");
     const [selectedSigId, setSelectedSigId] = useState("__none__");
     const [isSending, setIsSending] = useState(false);
+    const [attachments, setAttachments] = useState<ComposeAttachment[]>([]);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (open) {
             setSubject(defaultSubject());
             setRecipientSelections([]);
             setFrom(authUser?.email || fromEmail || smtpUser || "");
+            setAttachments([]);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Intencionalmente omite defaultSubject/fromEmail para evitar loops; reage via open + authUser + smtpUser
     }, [open, authUser, smtpUser]);
@@ -263,6 +299,63 @@ export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, 
         return `<div style="margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0;">${nameHtml}${restHtml}${imgHtml}</div>`;
     };
 
+    const totalAttachmentBytes = attachments.reduce((sum, item) => sum + item.file.size, 0);
+
+    const handleAttachmentSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files ?? []);
+        event.target.value = "";
+
+        if (files.length === 0) return;
+
+        const remainingSlots = MAX_EMAIL_ATTACHMENTS - attachments.length;
+        if (remainingSlots <= 0) {
+            toast({
+                variant: "destructive",
+                description: `Máximo de ${MAX_EMAIL_ATTACHMENTS} anexos por e-mail.`,
+            });
+            return;
+        }
+
+        const accepted: ComposeAttachment[] = [];
+        let nextTotal = totalAttachmentBytes;
+
+        for (const file of files.slice(0, remainingSlots)) {
+            if (file.size > MAX_EMAIL_ATTACHMENT_BYTES) {
+                toast({
+                    variant: "destructive",
+                    description: `"${file.name}" excede ${formatFileSize(MAX_EMAIL_ATTACHMENT_BYTES)}.`,
+                });
+                continue;
+            }
+
+            if (nextTotal + file.size > MAX_EMAIL_ATTACHMENTS_TOTAL_BYTES) {
+                toast({
+                    variant: "destructive",
+                    description: `Tamanho total dos anexos excede ${formatFileSize(MAX_EMAIL_ATTACHMENTS_TOTAL_BYTES)}.`,
+                });
+                break;
+            }
+
+            nextTotal += file.size;
+            accepted.push({ id: crypto.randomUUID(), file });
+        }
+
+        if (files.length > remainingSlots) {
+            toast({
+                variant: "destructive",
+                description: `Somente ${remainingSlots} anexo(s) adicionado(s) — limite de ${MAX_EMAIL_ATTACHMENTS}.`,
+            });
+        }
+
+        if (accepted.length > 0) {
+            setAttachments(prev => [...prev, ...accepted]);
+        }
+    };
+
+    const handleRemoveAttachment = (id: string) => {
+        setAttachments(prev => prev.filter(item => item.id !== id));
+    };
+
     const handleSend = async () => {
         if (recipientSelections.length === 0) {
             toast({ variant: "destructive", description: "Selecione pelo menos um destinatário." });
@@ -284,6 +377,17 @@ export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, 
             const sigHtml = buildSigHtml(selectedSig);
             const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:16px;background:#ffffff;font-family:Calibri,sans-serif;font-size:11pt;color:#1e293b;"><p style="margin:0 0 8px 0;">${escapeHtml(greeting)}.</p><p style="margin:0 0 16px 0;">${escapeHtml(bodyIntro)}</p>${buildHtmlTable(rows)}${errorTableHtml}${sigHtml}</body></html>`;
 
+            let attachmentPayload: EmailAttachmentPayload[] = [];
+            if (attachments.length > 0) {
+                attachmentPayload = await Promise.all(
+                    attachments.map(async (item) => ({
+                        filename: item.file.name,
+                        content: await readFileAsBase64(item.file),
+                        contentType: item.file.type || undefined,
+                    })),
+                );
+            }
+
             const res = await fetch("/api/email/send", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -294,7 +398,8 @@ export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, 
                     to: to.trim(),
                     subject,
                     html,
-                    text: buildPlainBody()
+                    text: buildPlainBody(),
+                    attachments: attachmentPayload.length > 0 ? attachmentPayload : undefined,
                 }),
             });
             let data: any = {};
@@ -427,6 +532,55 @@ export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, 
                                 ))}
                             </SelectContent>
                         </Select>
+                    </FieldRow>
+                    <FieldRow label="Anexos" tall>
+                        <div className="fiori-email-attachments">
+                            <input
+                                ref={attachmentInputRef}
+                                type="file"
+                                multiple
+                                className="sr-only"
+                                onChange={handleAttachmentSelect}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={attachments.length >= MAX_EMAIL_ATTACHMENTS}
+                                onClick={() => attachmentInputRef.current?.click()}
+                                className="fiori-btn-transparent fiori-email-attachment-add shadow-none"
+                            >
+                                <Paperclip className="w-3.5 h-3.5" />
+                                Adicionar anexo
+                            </Button>
+                            {attachments.length > 0 ? (
+                                <ul className="fiori-email-attachment-list">
+                                    {attachments.map(item => (
+                                        <li key={item.id} className="fiori-email-attachment-item">
+                                            <Paperclip className="fiori-email-attachment-icon" aria-hidden />
+                                            <span className="fiori-email-attachment-name" title={item.file.name}>
+                                                {item.file.name}
+                                            </span>
+                                            <span className="fiori-email-attachment-size">
+                                                {formatFileSize(item.file.size)}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveAttachment(item.id)}
+                                                className="fiori-email-attachment-remove"
+                                                aria-label={`Remover anexo ${item.file.name}`}
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="fiori-email-attachment-hint">
+                                    Até {MAX_EMAIL_ATTACHMENTS} arquivos · máx. {formatFileSize(MAX_EMAIL_ATTACHMENT_BYTES)} cada · {formatFileSize(MAX_EMAIL_ATTACHMENTS_TOTAL_BYTES)} no total
+                                </p>
+                            )}
+                        </div>
                     </FieldRow>
                 </div>
 

@@ -76,6 +76,12 @@ export async function getSmtpConfig(): Promise<SmtpConfig | null> {
   });
 }
 
+export interface SendSmtpMailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 export interface SendSmtpMailOptions {
   to: string;
   subject: string;
@@ -85,6 +91,7 @@ export interface SendSmtpMailOptions {
   replyTo?: string;
   /** Cópia oculta para auditoria (ex.: mailbox do remetente). */
   bcc?: string;
+  attachments?: SendSmtpMailAttachment[];
 }
 
 export interface SendSmtpMailResult {
@@ -107,6 +114,12 @@ export async function sendSmtpMail(options: SendSmtpMailOptions): Promise<SendSm
   const bcc = options.bcc?.trim() ? normalizeRecipientEmail(options.bcc) : undefined;
 
   try {
+    const attachments = options.attachments?.map((attachment) => ({
+      filename: attachment.filename,
+      content: attachment.content,
+      contentType: attachment.contentType,
+    }));
+
     const info = await transporter.sendMail({
       from: `"${finalName}" <${smtp.user}>`,
       replyTo,
@@ -115,6 +128,7 @@ export async function sendSmtpMail(options: SendSmtpMailOptions): Promise<SendSm
       subject: options.subject,
       html: options.html,
       text: options.text,
+      attachments: attachments?.length ? attachments : undefined,
       headers: {
         'X-Mailer': 'Migra Manager',
         'Precedence': 'auto',

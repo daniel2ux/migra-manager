@@ -34,3 +34,10 @@ export interface EmailRecipientSelection {
   label: string;
   email?: string; // presente se type === 'contact' ou 'external'
 }
+
+/** Payload de anexo enviado ao endpoint /api/email/send (conteúdo em base64). */
+export interface EmailAttachmentPayload {
+  filename: string;
+  content: string;
+  contentType?: string;
+}

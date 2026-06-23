@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendSmtpMail } from '@/lib/email/smtp';
+import { validateEmailAttachments } from '@/lib/email/attachments';
 import { assertRecipientsAllowed } from '@/lib/email/recipient-policy';
 import { requireAuthenticatedCaller } from '@/lib/api/caller-auth';
 import { checkRateLimit, getClientIp } from '@/lib/security/rate-limit';
 import { z } from 'zod';
+
+const EmailAttachmentSchema = z.object({
+  filename: z.string().min(1, 'Nome do anexo é obrigatório.'),
+  content: z.string().min(1, 'Conteúdo do anexo é obrigatório.'),
+  contentType: z.string().optional(),
+});
 
 const EmailRequestSchema = z.object({
   callerToken: z.string().min(1, 'Token de autenticação é obrigatório.'),
@@ -13,6 +20,7 @@ const EmailRequestSchema = z.object({
   subject: z.string().min(1, 'Assunto é obrigatório.'),
   html: z.string().min(1, 'Conteúdo HTML é obrigatório.'),
   text: z.string().optional(),
+  attachments: z.array(EmailAttachmentSchema).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -46,7 +54,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { from, fromName, to, subject, html, text } = validation.data;
+    const { from, fromName, to, subject, html, text, attachments } = validation.data;
 
     const verification = await requireAuthenticatedCaller(body, req);
     if (verification.error || !verification.decoded) {
@@ -81,6 +89,14 @@ export async function POST(req: NextRequest) {
     const senderEmail = from && from.trim() !== '' ? from : undefined;
     const finalName = fromName || (senderEmail ? senderEmail.split('@')[0] : 'Sistema Migra');
 
+    let parsedAttachments;
+    try {
+      parsedAttachments = validateEmailAttachments(attachments);
+    } catch (attachmentError) {
+      const message = attachmentError instanceof Error ? attachmentError.message : 'Anexo inválido.';
+      return NextResponse.json({ error: message }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
+    }
+
     await sendSmtpMail({
       to: recipients.join(', '),
       subject,
@@ -88,6 +104,7 @@ export async function POST(req: NextRequest) {
       text,
       fromName: finalName,
       replyTo: senderEmail,
+      attachments: parsedAttachments,
     });
 
     return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
