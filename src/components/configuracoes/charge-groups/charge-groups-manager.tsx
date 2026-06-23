@@ -47,7 +47,7 @@ import {
   isChargeGroupNameDuplicateError,
   throwChargeGroupNameConflict,
 } from "@/lib/migration/charge-group-sync";
-import { masterObjectsQueryForProject } from "@/lib/migration/master-objects-query";
+import { masterObjectsQueryForProject, collectionQueryForProject } from "@/lib/migration/master-objects-query";
 
 export function ChargeGroupsManager({
   empresa,
@@ -108,7 +108,12 @@ export function ChargeGroupsManager({
   async function load(): Promise<ChargeGroup[]> {
     if (!db) return [];
     try {
-      const groupsSnap = await getDocs(query(collection(db, "chargeGroups"), orderBy("name")));
+      const groupsQuery = projectId
+        ? collectionQueryForProject(db, "chargeGroups", projectId, orderBy("name"))
+        : null;
+      const groupsSnap = groupsQuery
+        ? await getDocs(groupsQuery)
+        : { docs: [] as Awaited<ReturnType<typeof getDocs>>["docs"] };
       const loadedGroups = groupsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ChargeGroup, "id">) }));
 
       let loadedObjects: MasterObject[] = [];
@@ -128,7 +133,7 @@ export function ChargeGroupsManager({
   }
 
   async function handleSaveGroup(data: Omit<ChargeGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">) {
-    if (!db) return;
+    if (!db || !projectId) return;
 
     const excludeId = groupDialog.initial?.id;
     if (findChargeGroupNameConflict(groups, data.name, excludeId)) {
@@ -175,6 +180,7 @@ export function ChargeGroupsManager({
 
       const createdRef = await addDoc(collection(db, "chargeGroups"), {
         ...data,
+        projectId,
         objectIds: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -183,6 +189,7 @@ export function ChargeGroupsManager({
       const newGroup: ChargeGroup = {
         id: createdRef.id,
         ...data,
+        projectId,
         objectIds: [],
         createdBy: user?.uid ?? "",
       };

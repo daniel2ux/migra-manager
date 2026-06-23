@@ -6,6 +6,7 @@ export interface ChargeGroup {
   description: string;
   displayOrder: number;
   objectIds: string[];
+  projectId?: string;
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
   createdBy?: string;

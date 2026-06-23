@@ -39,7 +39,7 @@ import {
   suggestMasterCatalogExportFilename,
 } from '@/lib/migration/master-catalog-export';
 import { projectAllowsMasterObjectRegistration } from '@/lib/migration/company-sync';
-import { masterObjectsQueryForProject, masterObjectsLegacyUnscopedQuery, mergeMasterCatalogRows, filterMasterCatalogForProject } from '@/lib/migration/master-objects-query';
+import { masterObjectsQueryForProject, masterObjectsLegacyUnscopedQuery, mergeMasterCatalogRows, filterMasterCatalogForProject, collectionQueryForProject } from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { computeSuggestedNextChargeOrder } from '@/lib/migration/master-catalog-charge-reflow';
 import {
@@ -636,10 +636,15 @@ export function useObjectsPage() {
   }, [editingObject, displayChargeOrderById, extractChargeOrderDisplay]);
 
   const refetchChargeGroups = useCallback(async () => {
-    if (!db) return;
-    const snap = await getDocs(query(collection(db, 'chargeGroups'), orderBy('name')));
+    if (!db || !selectedProjectId || selectedProjectId === 'all') {
+      setChargeGroups([]);
+      return;
+    }
+    const groupsQuery = collectionQueryForProject(db, 'chargeGroups', selectedProjectId, orderBy('name'));
+    if (!groupsQuery) return;
+    const snap = await getDocs(groupsQuery);
     setChargeGroups(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ChargeGroup, 'id'>) })));
-  }, [db]);
+  }, [db, selectedProjectId]);
 
   const chargeGroupCreateSuggestions = useMemo(
     () => ({
@@ -653,8 +658,8 @@ export function useObjectsPage() {
     async (
       data: Omit<ChargeGroup, 'id' | 'objectIds' | 'createdAt' | 'updatedAt' | 'createdBy'>,
     ): Promise<string> => {
-      if (!db || !auth.user) {
-        throw new Error('Sessão ou banco indisponível.');
+      if (!db || !auth.user || !selectedProjectId || selectedProjectId === 'all') {
+        throw new Error('Selecione um projeto para criar grupos de carga.');
       }
       if (findChargeGroupNameConflict(chargeGroups, data.name)) {
         throwChargeGroupNameConflict(data.name);
@@ -662,6 +667,7 @@ export function useObjectsPage() {
       try {
         const createdRef = await addDoc(collection(db, 'chargeGroups'), {
           ...data,
+          projectId: selectedProjectId,
           objectIds: [],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -677,7 +683,7 @@ export function useObjectsPage() {
         throw err;
       }
     },
-    [db, auth.user, chargeGroups, refetchChargeGroups, toast],
+    [db, auth.user, chargeGroups, refetchChargeGroups, toast, selectedProjectId],
   );
 
   const crud = useObjectsCRUD({
@@ -704,11 +710,16 @@ export function useObjectsPage() {
   useDialogEffects(anyDialogOpen, selectedCardId, isPrecedenceOpen, setIsPrecedenceOpen);
 
   useEffect(() => {
-    if (!db) return;
-    getDocs(query(collection(db, 'activityGroups'), orderBy('name')))
+    if (!db || !selectedProjectId || selectedProjectId === 'all') {
+      setActivityGroups([]);
+      return;
+    }
+    const groupsQuery = collectionQueryForProject(db, 'activityGroups', selectedProjectId, orderBy('name'));
+    if (!groupsQuery) return;
+    getDocs(groupsQuery)
       .then(snap => setActivityGroups(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ActivityGroup, 'id'>) }))));
     void refetchChargeGroups();
-  }, [db, refetchChargeGroups]);
+  }, [db, selectedProjectId, refetchChargeGroups]);
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleClearFilters = () => {

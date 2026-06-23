@@ -50,7 +50,8 @@ function buildWhereConstraints(f: Filters, projectId: string, mockMap: Record<st
   if (f.object.trim()) c.push(where("object", "==", f.object.trim()));
   if (f.mock.trim()) {
     const nameToId = Object.entries(mockMap).find(([, name]) => name.toLowerCase() === f.mock.trim().toLowerCase())?.[0];
-    c.push(where("mock", "==", nameToId ?? f.mock.trim()));
+    const mockFilter = nameToId ?? f.mock.trim();
+    c.push(where("mockId", "==", mockFilter));
   }
   if (f.dateFrom) { const d = new Date(f.dateFrom); d.setHours(0, 0, 0, 0); c.push(where("importedAt", ">=", Timestamp.fromDate(d))); }
   if (f.dateTo) { const d = new Date(f.dateTo); d.setHours(23, 59, 59, 999); c.push(where("importedAt", "<=", Timestamp.fromDate(d))); }

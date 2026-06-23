@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         const parse = getParser(safeName);
 
         const recordsDeleted = skipDelete ? 0 : await deleteBatch('migration_logs', [
-          { field: 'mock', op: '==', value: mockId },
+          { field: 'mock_id', op: '==', value: mockId },
           { field: 'object', op: '==', value: objectName },
         ]);
 
@@ -114,6 +114,7 @@ export async function POST(req: NextRequest) {
             pendingRows.push({
               ...entry,
               mock: mockId,
+              mock_id: mockId,
               filename: safeName,
               project_id: projectId,
               imported_at: new Date().toISOString(),
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest) {
         await admin.from('audit_logs').insert({
           action: 'IMPORT_MIGRATION_LOGS',
           user_id: auth.decoded!.uid,
+          project_id: projectId,
           details: {
             objectName, mockId, projectId, sourceFileName: safeName,
             recordsWritten, recordsDeleted, errorsCount,

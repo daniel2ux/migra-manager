@@ -171,9 +171,9 @@ async function loadMockRelatedCounts(
 
     const [totalObjects, totalLogs, objectCounts, logCounts] = await Promise.all([
       countTotalForMocks(admin, 'migration_objects', projectId, mockIds, 'mock_id'),
-      countTotalForMocks(admin, 'migration_logs', projectId, mockIds, 'mock'),
+      countTotalForMocks(admin, 'migration_logs', projectId, mockIds, 'mock_id'),
       countByMockIdsForSample(admin, 'migration_objects', projectId, mockIds, 'mock_id'),
-      countByMockIdsForSample(admin, 'migration_logs', projectId, mockIds, 'mock'),
+      countByMockIdsForSample(admin, 'migration_logs', projectId, mockIds, 'mock_id'),
     ]);
 
     return { objectCounts, logCounts, totalObjects, totalLogs };
@@ -193,7 +193,7 @@ async function deleteLogsForMocks(
       .from('migration_logs')
       .delete({ count: 'exact' })
       .eq('project_id', projectId)
-      .in('mock', chunk);
+      .in('mock_id', chunk);
     if (error) throw error;
     deleted += count ?? 0;
   }

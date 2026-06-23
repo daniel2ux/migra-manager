@@ -45,7 +45,7 @@ export async function exportMockData(
   const { data: logs } = await admin
     .from('migration_logs')
     .select('*')
-    .eq('mock', mockId)
+    .eq('mock_id', mockId)
     .eq('project_id', projectId);
 
   data.migrationLogs = (logs ?? []).map((row) => ({

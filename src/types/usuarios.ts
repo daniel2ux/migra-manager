@@ -18,6 +18,7 @@ export interface UserProfile {
   notes?: string;
   projectIds?: string[];
   projectOrder?: string[];
+  primaryProjectId?: string;
   isMaster?: boolean;
   accessProfileId?: string | null;
   migradorName?: string;

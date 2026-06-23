@@ -45,6 +45,7 @@ export interface UserProfile {
   role?: 'master' | 'admin' | 'user';
   isMaster?: boolean;
   projectIds?: string[];
+  primaryProjectId?: string;
   position?: string;
   isDisabled?: boolean;
   mustChangePassword?: boolean;
@@ -129,6 +130,7 @@ export interface MigrationLog {
   id: string;
   object: string;
   mock: string;
+  mockId?: string;
   filename: string;
   seq: number;
   status: MigrationLogStatus;

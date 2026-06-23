@@ -11,6 +11,7 @@ const TO_SNAKE: Record<string, string> = {
   emailSignatures: 'email_signatures',
   projectIds: 'project_ids',
   projectOrder: 'project_order',
+  primaryProjectId: 'primary_project_id',
   companyId: 'company_id',
   memberUids: 'member_uids',
   memberProfiles: 'member_profiles',

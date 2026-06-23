@@ -39,7 +39,7 @@ import {
   reconcileActivityGroupsObjectIds,
   resolveActivityGroupMemberIds,
 } from "@/lib/migration/activity-group-sync";
-import { masterObjectsQueryForProject } from "@/lib/migration/master-objects-query";
+import { masterObjectsQueryForProject, collectionQueryForProject } from "@/lib/migration/master-objects-query";
 
 export function ActivityGroupsManager({
   empresa,
@@ -102,7 +102,12 @@ export function ActivityGroupsManager({
   async function load(): Promise<ActivityGroup[]> {
     if (!db) return [];
     try {
-      const groupsSnap = await getDocs(query(collection(db, "activityGroups"), orderBy("name")));
+      const groupsQuery = projectId
+        ? collectionQueryForProject(db, "activityGroups", projectId, orderBy("name"))
+        : null;
+      const groupsSnap = groupsQuery
+        ? await getDocs(groupsQuery)
+        : { docs: [] as Awaited<ReturnType<typeof getDocs>>["docs"] };
       const loadedGroups = groupsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ActivityGroup, "id">) }));
 
       let loadedObjects: MasterObject[] = [];
@@ -122,7 +127,7 @@ export function ActivityGroupsManager({
   }
 
   async function handleSaveGroup(data: Omit<ActivityGroup, "id" | "objectIds" | "createdAt" | "updatedAt" | "createdBy">) {
-    if (!db) return;
+    if (!db || !projectId) return;
     if (groupDialog.initial) {
       const groupId = groupDialog.initial.id;
       await updateDoc(doc(db, "activityGroups", groupId), {
@@ -137,6 +142,7 @@ export function ActivityGroupsManager({
 
     const createdRef = await addDoc(collection(db, "activityGroups"), {
       ...data,
+      projectId,
       objectIds: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -145,6 +151,7 @@ export function ActivityGroupsManager({
     const newGroup: ActivityGroup = {
       id: createdRef.id,
       ...data,
+      projectId,
       objectIds: [],
       createdBy: user?.uid ?? "",
     };

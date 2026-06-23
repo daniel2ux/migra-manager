@@ -81,6 +81,7 @@ export type Database = {
           id: string
           name: string
           object_ids: string[]
+          project_id: string
           updated_at: string
         }
         Insert: {
@@ -92,6 +93,7 @@ export type Database = {
           id?: string
           name: string
           object_ids?: string[]
+          project_id: string
           updated_at?: string
         }
         Update: {
@@ -103,6 +105,7 @@ export type Database = {
           id?: string
           name?: string
           object_ids?: string[]
+          project_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -116,6 +119,7 @@ export type Database = {
           id: string
           name: string
           object_ids: string[]
+          project_id: string
           updated_at: string
         }
         Insert: {
@@ -126,6 +130,7 @@ export type Database = {
           id?: string
           name: string
           object_ids?: string[]
+          project_id: string
           updated_at?: string
         }
         Update: {
@@ -136,6 +141,7 @@ export type Database = {
           id?: string
           name?: string
           object_ids?: string[]
+          project_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -170,6 +176,7 @@ export type Database = {
           created_at: string
           details: Json | null
           id: string
+          project_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -177,6 +184,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          project_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -184,6 +192,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          project_id?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -194,7 +203,7 @@ export type Database = {
           id: string
           object_id: string | null
           object_name: string | null
-          project_id: string | null
+          project_id: string
           text: string
           user_id: string
           user_name: string
@@ -204,7 +213,7 @@ export type Database = {
           id?: string
           object_id?: string | null
           object_name?: string | null
-          project_id?: string | null
+          project_id: string
           text: string
           user_id: string
           user_name: string
@@ -274,6 +283,7 @@ export type Database = {
           group_ids: string[]
           id: string
           name: string
+          project_id: string
           updated_at: string
           updated_by_uid: string | null
         }
@@ -284,6 +294,7 @@ export type Database = {
           group_ids?: string[]
           id?: string
           name: string
+          project_id: string
           updated_at?: string
           updated_by_uid?: string | null
         }
@@ -306,6 +317,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          project_id: string
           updated_at: string
           updated_by_uid: string | null
         }
@@ -315,6 +327,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          project_id: string
           updated_at?: string
           updated_by_uid?: string | null
         }
@@ -336,6 +349,7 @@ export type Database = {
           file_name_patterns: string[]
           id: string
           object_name: string
+          project_id: string
         }
         Insert: {
           created_at?: string
@@ -343,6 +357,7 @@ export type Database = {
           file_name_patterns?: string[]
           id?: string
           object_name: string
+          project_id: string
         }
         Update: {
           created_at?: string
@@ -367,6 +382,7 @@ export type Database = {
           name: string
           owner_id: string | null
           parallel_order: string | null
+          project_id: string
           status: Database["public"]["Enums"]["master_object_status"] | null
           type: Database["public"]["Enums"]["master_object_type"] | null
           updated_at: string
@@ -384,6 +400,7 @@ export type Database = {
           name: string
           owner_id?: string | null
           parallel_order?: string | null
+          project_id: string
           status?: Database["public"]["Enums"]["master_object_status"] | null
           type?: Database["public"]["Enums"]["master_object_type"] | null
           updated_at?: string
@@ -418,9 +435,10 @@ export type Database = {
           info_key: string | null
           message: string
           mock: string
+          mock_id: string
           object: string
           old_key: string | null
-          project_id: string | null
+          project_id: string
           seq: number
           source_file_name: string | null
           started_at: string
@@ -437,9 +455,10 @@ export type Database = {
           info_key?: string | null
           message?: string
           mock: string
+          mock_id: string
           object: string
           old_key?: string | null
-          project_id?: string | null
+          project_id: string
           seq?: number
           source_file_name?: string | null
           started_at?: string
@@ -691,6 +710,7 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           position: string | null
+          primary_project_id: string | null
           project_ids: string[]
           project_order: string[]
           role: Database["public"]["Enums"]["user_role"]

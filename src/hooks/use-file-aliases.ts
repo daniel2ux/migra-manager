@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { collection, addDoc, deleteDoc, doc, getDocs, onSnapshot, updateDoc } from "@/supabase/compat-db-shim";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { collection, addDoc, deleteDoc, doc, getDocs, onSnapshot, updateDoc, query, where } from "@/supabase/compat-db-shim";
 import { useDb, useUser } from "@/supabase/provider";
+import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import type { FileAlias } from "@/types/file-alias";
 
 function _validate(db: unknown): asserts db {
@@ -22,26 +23,37 @@ function mapSnapshotDocs(
         : Array.isArray(data.file_name_patterns)
           ? (data.file_name_patterns as string[])
           : [],
+      projectId: String(data.projectId ?? data.project_id ?? "") || undefined,
     };
   });
 }
 
-export function useFileAliases() {
+export function useFileAliases(explicitProjectId?: string | null) {
   const db = useDb();
   const { user } = useUser();
+  const { projectId: activeProjectId } = useActiveProjectId();
+  const projectId = explicitProjectId ?? activeProjectId;
   const [aliases, setAliases] = useState<FileAlias[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const scopedQuery = useMemo(() => {
+    if (!db || !user || !projectId || projectId === "all") return null;
+    return query(collection(db, "fileAliases"), where("projectId", "==", projectId));
+  }, [db, user, projectId]);
+
   const reloadAliases = useCallback(async () => {
-    if (!db || !user) return;
-    const snap = await getDocs(collection(db, "fileAliases"));
+    if (!scopedQuery) {
+      setAliases([]);
+      return;
+    }
+    const snap = await getDocs(scopedQuery);
     setAliases(mapSnapshotDocs(snap.docs));
     setError(null);
-  }, [db, user]);
+  }, [scopedQuery]);
 
   useEffect(() => {
-    if (!db || !user) {
+    if (!scopedQuery) {
       setAliases([]);
       setLoading(false);
       return;
@@ -49,7 +61,7 @@ export function useFileAliases() {
 
     setLoading(true);
     const unsub = onSnapshot(
-      collection(db, "fileAliases"),
+      scopedQuery,
       (snap) => {
         setAliases(mapSnapshotDocs(snap.docs));
         setError(null);
@@ -61,13 +73,17 @@ export function useFileAliases() {
       },
     );
     return () => unsub();
-  }, [db, user]);
+  }, [scopedQuery]);
 
   const addAlias = useCallback(
     async (alias: Omit<FileAlias, "id">) => {
       _validate(db);
+      if (!projectId || projectId === "all") {
+        throw new Error("Selecione um projeto para cadastrar aliases de arquivo.");
+      }
       const payload: Record<string, unknown> = {
         ...alias,
+        projectId,
         createdAt: new Date().toISOString(),
       };
       if (user?.uid) payload.createdBy = user.uid;
@@ -75,7 +91,7 @@ export function useFileAliases() {
       await addDoc(collection(db, "fileAliases"), payload);
       await reloadAliases();
     },
-    [db, user, reloadAliases],
+    [db, user, projectId, reloadAliases],
   );
 
   const updateAlias = useCallback(
@@ -99,5 +115,5 @@ export function useFileAliases() {
     [db, reloadAliases],
   );
 
-  return { aliases, loading, error, addAlias, updateAlias, deleteAlias, reloadAliases };
+  return { aliases, loading, error, addAlias, updateAlias, deleteAlias, reloadAliases, projectId };
 }

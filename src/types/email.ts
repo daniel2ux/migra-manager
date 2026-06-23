@@ -7,6 +7,7 @@ export interface EmailContact {
   name: string;
   email: string;
   groupIds: string[]; // IDs dos agrupadores vinculados
+  projectId?: string;
   createdAt: string;
   updatedAt: string;
   createdByUid: string;
@@ -17,6 +18,7 @@ export interface EmailGroup {
   id: string;
   name: string;
   description?: string;
+  projectId?: string;
   createdAt: string;
   updatedAt: string;
   createdByUid: string;

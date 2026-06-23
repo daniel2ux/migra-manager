@@ -46,4 +46,19 @@ export function filterMasterCatalogForProject(
   if (!projectId || projectId === "all") return rows;
   return rows.filter((row) => String(row.projectId ?? "").trim() === projectId);
 }
-
+
+/** Query de coleção raiz filtrada por `projectId`. */
+export function collectionQueryForProject(
+  db: CompatDb,
+  collectionName: string,
+  projectId: string | null | undefined,
+  ...extraConstraints: Parameters<typeof query>[1][]
+) {
+  if (!projectId || projectId === "all") return null;
+  return query(
+    collection(db, collectionName),
+    where("projectId", "==", projectId),
+    ...extraConstraints,
+  );
+}
+

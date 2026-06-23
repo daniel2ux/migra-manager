@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { data: logRows } = await admin
       .from('migration_logs')
       .select('id')
-      .eq('mock', mockId)
+      .eq('mock_id', mockId)
       .eq('project_id', projectId);
 
     let deletedCount = 0;

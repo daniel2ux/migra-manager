@@ -26,6 +26,7 @@ import type { MasterObject } from "@/types/master-object";
 import type { ActivityGroup } from "@/types/activity-group";
 import { idsForDbIn } from "@/lib/constants";
 import { filterActiveMocks } from "@/lib/mock-utils";
+import { masterObjectsQueryForProject, collectionQueryForProject } from "@/lib/migration/master-objects-query";
 
 export function useDashboardQueries(selectedProjectId: string, selectedMockId: string) {
     const db = useDb();
@@ -190,17 +191,34 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
 
     const { data: allComments } = useCollection<Comment>(allCommentsQuery);
 
-    // 7. Master Objects & Activity Groups
-    const masterObjectsQuery = useMemoDb(
-        () => (db && authReady ? collection(db, "masterObjects") : null),
-        [db, authReady],
-    );
+    // 7. Master Objects & Activity Groups (escopo do projeto selecionado)
+    const masterObjectsQuery = useMemoDb(() => {
+        if (!db || !authReady) return null;
+        if (selectedProjectId !== "all") {
+            return masterObjectsQueryForProject(db, selectedProjectId);
+        }
+        if (!isAdmin) {
+            const projectIds = idsForDbIn(accessibleProjectIds);
+            if (!projectIds) return null;
+            return query(collection(db, "masterObjects"), where("projectId", "in", projectIds));
+        }
+        return collection(db, "masterObjects");
+    }, [db, authReady, selectedProjectId, isAdmin, accessibleProjectIds]);
+
     const { data: masterObjects } = useCollection<MasterObject>(masterObjectsQuery);
 
-    const activityGroupsQuery = useMemoDb(
-        () => (db && authReady ? collection(db, "activityGroups") : null),
-        [db, authReady],
-    );
+    const activityGroupsQuery = useMemoDb(() => {
+        if (!db || !authReady) return null;
+        if (selectedProjectId !== "all") {
+            return collectionQueryForProject(db, "activityGroups", selectedProjectId);
+        }
+        if (!isAdmin) {
+            const projectIds = idsForDbIn(accessibleProjectIds);
+            if (!projectIds) return null;
+            return query(collection(db, "activityGroups"), where("projectId", "in", projectIds));
+        }
+        return collection(db, "activityGroups");
+    }, [db, authReady, selectedProjectId, isAdmin, accessibleProjectIds]);
     const { data: activityGroups } = useCollection<ActivityGroup>(activityGroupsQuery);
 
     return {

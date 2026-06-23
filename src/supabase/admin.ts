@@ -36,6 +36,7 @@ function toAuditLogInsert(payload: Record<string, unknown>) {
   return {
     action: String(action ?? 'UNKNOWN'),
     user_id: (callerUid as string) ?? null,
+    project_id: (payload.projectId as string) ?? (payload.project_id as string) ?? null,
     created_at: (timestamp as string) ?? new Date().toISOString(),
     details: {
       ...details,
