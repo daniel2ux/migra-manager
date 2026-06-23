@@ -66,7 +66,10 @@ export default function LogsPage() {
 
   const userDocRef = useMemoDb(() => (user ? doc(db!, "users", user.uid) : null), [db, user]);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
-  const isAdminOrMaster = userProfile?.role === "admin" || userProfile?.role === "master" || userProfile?.role === "user";
+  const isAdminOrMaster =
+    userProfile?.isMaster === true ||
+    userProfile?.role?.toLowerCase() === "admin" ||
+    userProfile?.role?.toLowerCase() === "master";
 
   const [pageCursors, setPageCursors] = useState<Record<number, QueryDocumentSnapshot | null>>({ 1: null });
   const [draft, setDraft] = useState<Filters>(EMPTY);

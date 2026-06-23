@@ -38,7 +38,7 @@ type MockRowIdentity = Pick<MigrationObject, "masterObjectId" | "name"> & {
 };
 
 /** Indica se o mestre já possui linha ativa na mock (por id ou nome). */
-export function isMasterLinkedToActiveMockRow(
+function isMasterLinkedToActiveMockRow(
   master: Pick<MasterObject, "id" | "name">,
   mockObject: MockRowIdentity,
 ): boolean {

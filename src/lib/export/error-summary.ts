@@ -6,6 +6,7 @@ import { formatImportedAtField } from "@/lib/export/error-excel-sheets";
 export interface ErrorObj {
   name: string;
   mockId: string;
+  projectId: string;
   migrador: string;
   dataMigr: string;
   hrExecMig: string;
@@ -39,9 +40,11 @@ async function fetchErrorExportDataInternal(db: any, objects: ErrorObj[]): Promi
   const itemRows: ErrorItemRow[] = [];
 
   for (const obj of objects) {
+    if (!obj.projectId || !obj.mockId) continue;
     const q = query(
       collection(db, "migrationLogs"),
-      where("mock", "==", obj.mockId),
+      where("projectId", "==", obj.projectId),
+      where("mockId", "==", obj.mockId),
       where("object", "==", obj.name),
       limit(500),
     );
@@ -83,9 +86,6 @@ async function fetchErrorExportDataInternal(db: any, objects: ErrorObj[]): Promi
   return { summaries, itemRows };
 }
 
-/**
- * Sumário + linhas de detalhe (cada registro importado) para planilha com abas por tipo de erro.
- */
 export async function fetchErrorExportData(
   db: any,
   objects: ErrorObj[],

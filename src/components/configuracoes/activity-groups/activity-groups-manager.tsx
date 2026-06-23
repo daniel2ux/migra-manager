@@ -10,7 +10,6 @@ import {
   writeBatch,
   serverTimestamp,
   orderBy,
-  query,
 } from "@/supabase/compat-db-shim";
 import { useDb, useUser } from "@/supabase/provider";
 import { Button } from "@/components/ui/button";

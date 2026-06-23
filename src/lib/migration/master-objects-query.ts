@@ -13,31 +13,7 @@ export function masterObjectsQueryForProject(
   );
 }
 
-/** Objetos mestre legados ainda sem `project_id` (pré-migração por empresa/projeto). */
-export function masterObjectsLegacyUnscopedQuery(db: CompatDb) {
-  return query(collection(db, "masterObjects"), where("projectId", "==", null));
-}
-
-/** Une catálogo do projeto com legados sem duplicar por id. */
-export function mergeMasterCatalogRows(
-  projectRows: MasterObject[] | null | undefined,
-  legacyRows: MasterObject[] | null | undefined,
-): MasterObject[] {
-  const primary = projectRows ?? [];
-  const extra = legacyRows ?? [];
-  if (!extra.length) return primary;
-  const seen = new Set(primary.map((row) => row.id));
-  const merged = [...primary];
-  for (const row of extra) {
-    if (!seen.has(row.id)) {
-      seen.add(row.id);
-      merged.push(row);
-    }
-  }
-  return merged;
-}
-
-/** Restringe o catálogo ao `projectId` informado (ignora legados sem projeto). */
+/** Restringe o catálogo ao `projectId` informado. */
 export function filterMasterCatalogForProject(
   rows: MasterObject[] | null | undefined,
   projectId: string | null | undefined,

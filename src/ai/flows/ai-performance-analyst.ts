@@ -18,16 +18,12 @@ const AIPerformanceAnalystInputSchema = z.object({
   objects: z.array(PerformanceObjectSchema).describe('Lista de estatísticas por objeto'),
 });
 
-type AIPerformanceAnalystInput = z.infer<typeof AIPerformanceAnalystInputSchema>;
-
 const AIPerformanceAnalystOutputSchema = z.object({
   summary: z.string().describe('Resumo executivo da análise de performance'),
   bottlenecks: z.array(z.string()).describe('Lista de gargalos identificados'),
   improvements: z.array(z.string()).describe('Lista de melhorias significativas'),
   recommendations: z.array(z.string()).describe('Recomendações técnicas acionáveis'),
 });
-
-type AIPerformanceAnalystOutput = z.infer<typeof AIPerformanceAnalystOutputSchema>;
 
 const aiPerformanceAnalystPrompt = ai.definePrompt({
   name: 'aiPerformanceAnalystPrompt',

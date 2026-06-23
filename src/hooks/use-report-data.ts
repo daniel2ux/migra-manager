@@ -13,6 +13,7 @@ import { useActiveProjectId } from "@/hooks/use-active-project-id";
 import { useSessionStorageState } from "@/hooks/use-session-storage-state";
 import { SESSION_KEYS, idsForDbIn, SUPERADMIN_UID } from "@/lib/constants";
 import { filterActiveMocks } from "@/lib/mock-utils";
+import { masterObjectsQueryForProject } from "@/lib/migration/master-objects-query";
 
 interface UseReportFiltersReturn {
   selectedProjectId: string;
@@ -159,13 +160,16 @@ interface UseMasterCatalogReturn {
   masterCatalog: any[] | null;
 }
 
-export function useMasterCatalog(): UseMasterCatalogReturn {
+export function useMasterCatalog(selectedProjectId?: string | null): UseMasterCatalogReturn {
   const db = useDb();
 
   const masterCatalogQuery = useMemoDb(() => {
     if (!db) return null;
+    if (selectedProjectId && selectedProjectId !== "all") {
+      return masterObjectsQueryForProject(db, selectedProjectId);
+    }
     return collection(db, "masterObjects");
-  }, [db]);
+  }, [db, selectedProjectId]);
 
   const { data: masterCatalog } = useCollection<any>(masterCatalogQuery);
 

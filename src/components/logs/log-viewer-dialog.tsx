@@ -130,7 +130,7 @@ export function LogViewerDialog({
     const q = query(
       collection(db, "migrationLogs"),
       where("projectId", "==", projectId),
-      where("mock", "==", mockId),
+      where("mockId", "==", mockId),
       where("object", "==", objectName),
       orderBy("seq", "asc"),
       limit(FETCH_LIMIT),

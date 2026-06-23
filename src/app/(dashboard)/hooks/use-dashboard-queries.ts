@@ -183,13 +183,19 @@ export function useDashboardQueries(selectedProjectId: string, selectedMockId: s
             if (projectIds) constraints.push(where("projectId", "in", projectIds));
             else return null;
         }
-        if (selectedMockId !== "all") {
-            constraints.push(where("mockId", "==", selectedMockId));
-        }
         return query(collectionGroup(db, "comments"), ...constraints, limit(500));
     }, [db, authReady, isAdmin, accessibleProjectIds, isProfileLoading, userProfile, selectedProjectId, selectedMockId]);
 
-    const { data: allComments } = useCollection<Comment>(allCommentsQuery);
+    const { data: allCommentsRaw } = useCollection<Comment>(allCommentsQuery);
+
+    const allComments = useMemo(() => {
+        if (!allCommentsRaw) return undefined;
+        if (selectedMockId === "all" || !objects?.length) return allCommentsRaw;
+        const objectIds = new Set(objects.map((obj) => obj.id));
+        return allCommentsRaw.filter(
+            (comment) => comment.objectId && objectIds.has(comment.objectId),
+        );
+    }, [allCommentsRaw, objects, selectedMockId]);
 
     // 7. Master Objects & Activity Groups (escopo do projeto selecionado)
     const masterObjectsQuery = useMemoDb(() => {

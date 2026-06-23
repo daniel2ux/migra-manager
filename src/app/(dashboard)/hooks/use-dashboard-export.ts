@@ -72,6 +72,7 @@ export function useDashboardExport({
       .map(o => ({
         name: o.name,
         mockId: (o.mockId ?? effectiveMockId) || '',
+        projectId: o.projectId || '',
         migrador: migradorName || '—',
         dataMigr: formatStatDate(o.chargeStartTime ?? undefined),
         hrExecMig: formatStatTime(o.chargeStartTime ?? undefined),

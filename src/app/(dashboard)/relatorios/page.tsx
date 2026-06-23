@@ -32,7 +32,7 @@ function RelatoriosContent() {
     const { projects, isLoading: isProjectsLoading, accessibleProjectIds } = useProjects(isAdmin, isProfileLoading);
     const { projectMocks } = useRunningMock(selectedProjectId, selectedMockId);
     const { mockData } = useMockData(selectedProjectId, selectedMockId);
-    const { masterCatalog } = useMasterCatalog();
+    const { masterCatalog } = useMasterCatalog(selectedProjectId);
     const { objects, isLoading: isObjectsLoading } = useMigrationObjects(
         selectedProjectId,
         selectedMockId,

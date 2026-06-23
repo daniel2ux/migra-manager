@@ -39,7 +39,7 @@ import {
   suggestMasterCatalogExportFilename,
 } from '@/lib/migration/master-catalog-export';
 import { projectAllowsMasterObjectRegistration } from '@/lib/migration/company-sync';
-import { masterObjectsQueryForProject, masterObjectsLegacyUnscopedQuery, mergeMasterCatalogRows, filterMasterCatalogForProject, collectionQueryForProject } from '@/lib/migration/master-objects-query';
+import { masterObjectsQueryForProject, filterMasterCatalogForProject, collectionQueryForProject } from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { computeSuggestedNextChargeOrder } from '@/lib/migration/master-catalog-charge-reflow';
 import {
@@ -106,30 +106,14 @@ function useObjectsQueries(
   const objectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading) return null;
     if (scoped) return masterObjectsQueryForProject(db, scoped);
+    if (!isAdmin) {
+      return null;
+    }
     return collection(db, 'masterObjects');
-  }, [db, user, isProfileLoading, scoped]);
-
-  const legacyObjectsQuery = useMemoDb(() => {
-    if (!db || !user || isProfileLoading || !scoped || !isAdmin) return null;
-    return masterObjectsLegacyUnscopedQuery(db);
   }, [db, user, isProfileLoading, scoped, isAdmin]);
 
-  const { data: projectObjects, isLoading: isProjectObjectsLoading, refetch: refetchProjectObjects } =
+  const { data: objects, isLoading, refetch: refetchMasterCatalog } =
     useCollection<MasterObject>(objectsQuery);
-  const { data: legacyObjects, isLoading: isLegacyObjectsLoading, refetch: refetchLegacyObjects } =
-    useCollection<MasterObject>(legacyObjectsQuery);
-
-  const objects = useMemo(
-    () => mergeMasterCatalogRows(projectObjects, legacyObjects),
-    [projectObjects, legacyObjects],
-  );
-
-  const refetchMasterCatalog = useCallback(() => {
-    refetchProjectObjects();
-    if (scoped && isAdmin) refetchLegacyObjects();
-  }, [refetchProjectObjects, refetchLegacyObjects, scoped, isAdmin]);
-
-  const isLoading = isProjectObjectsLoading || (Boolean(scoped && isAdmin) && isLegacyObjectsLoading);
 
   const projectsQuery = useMemoDb(() => {
     if (!db || !user || isProfileLoading || !hasUserProfile) return null;
