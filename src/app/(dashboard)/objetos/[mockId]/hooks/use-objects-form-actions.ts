@@ -555,7 +555,7 @@ export function useObjectsFormActions({
       text: trimmed,
       authorId: user.uid,
       authorName: userProfile?.name || 'Especialista',
-      authorRole: userProfile?.role || 'user',
+      authorRole: userProfile?.role || 'membro',
       status: _quickCommentStatus,
       projectId,
       mockId,

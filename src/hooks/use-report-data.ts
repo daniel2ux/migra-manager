@@ -7,6 +7,7 @@ import {
   query,
   where,
   doc,
+  type QueryConstraint,
 } from "@/supabase/compat-db-shim";
 import { useDb, useUser, useCollection, useMemoDb, useDoc } from "@/supabase";
 import { useActiveProjectId } from "@/hooks/use-active-project-id";
@@ -14,6 +15,8 @@ import { useSessionStorageState } from "@/hooks/use-session-storage-state";
 import { SESSION_KEYS, idsForDbIn, SUPERADMIN_UID } from "@/lib/constants";
 import { filterActiveMocks } from "@/lib/mock-utils";
 import { masterObjectsQueryForProject } from "@/lib/migration/master-objects-query";
+import type { Mock, MigrationObject, Project, UserProfile } from "@/types/migration";
+import type { MasterObject } from "@/types/master-object";
 
 interface UseReportFiltersReturn {
   selectedProjectId: string;
@@ -45,7 +48,7 @@ export function useReportFilters(): UseReportFiltersReturn {
 }
 
 interface UseUserProfileReturn {
-  userProfile: any;
+  userProfile: UserProfile | null;
   isLoading: boolean;
   isAdmin: boolean;
 }
@@ -59,7 +62,7 @@ export function useUserProfile(): UseUserProfileReturn {
     [db, user],
   );
 
-  const { data: userProfile, isLoading } = useDoc<any>(userDocRef);
+  const { data: userProfile, isLoading } = useDoc<UserProfile>(userDocRef);
 
   const isAdmin = !isLoading && (
     userProfile?.role === "admin" ||
@@ -70,7 +73,7 @@ export function useUserProfile(): UseUserProfileReturn {
 }
 
 interface UseProjectsReturn {
-  projects: any[] | null;
+  projects: Project[] | null;
   isLoading: boolean;
   accessibleProjectIds: string[];
 }
@@ -89,7 +92,7 @@ export function useProjects(isAdmin: boolean, isLoadingProfile: boolean): UsePro
       );
   }, [db, user, isAdmin, isLoadingProfile]);
 
-  const { data: projects, isLoading } = useCollection<any>(projectsQuery);
+  const { data: projects, isLoading } = useCollection<Project>(projectsQuery);
 
   const accessibleProjectIds = useMemo(
     () => projects?.map((p) => p.id) || [],
@@ -100,7 +103,7 @@ export function useProjects(isAdmin: boolean, isLoadingProfile: boolean): UsePro
 }
 
 interface UseRunningMockReturn {
-  projectMocks: any[] | null;
+  projectMocks: Mock[] | null;
 }
 
 export function useRunningMock(
@@ -115,7 +118,7 @@ export function useRunningMock(
     return collection(db, "projects", selectedProjectId, "mocks");
   }, [db, selectedProjectId]);
 
-  const { data: projectMocksRaw } = useCollection<any>(projectMocksQuery);
+  const { data: projectMocksRaw } = useCollection<Mock>(projectMocksQuery);
 
   const projectMocks = useMemo(() => filterActiveMocks(projectMocksRaw), [projectMocksRaw]);
 
@@ -136,7 +139,7 @@ export function useRunningMock(
 }
 
 interface UseMockDataReturn {
-  mockData: any | null;
+  mockData: Mock | null;
 }
 
 export function useMockData(
@@ -151,13 +154,13 @@ export function useMockData(
     return doc(db, "projects", selectedProjectId, "mocks", selectedMockId);
   }, [db, selectedProjectId, selectedMockId]);
 
-  const { data: mockData } = useDoc<any>(mockDocRef);
+  const { data: mockData } = useDoc<Mock>(mockDocRef);
 
   return { mockData };
 }
 
 interface UseMasterCatalogReturn {
-  masterCatalog: any[] | null;
+  masterCatalog: MasterObject[] | null;
 }
 
 export function useMasterCatalog(selectedProjectId?: string | null): UseMasterCatalogReturn {
@@ -171,13 +174,13 @@ export function useMasterCatalog(selectedProjectId?: string | null): UseMasterCa
     return collection(db, "masterObjects");
   }, [db, selectedProjectId]);
 
-  const { data: masterCatalog } = useCollection<any>(masterCatalogQuery);
+  const { data: masterCatalog } = useCollection<MasterObject>(masterCatalogQuery);
 
   return { masterCatalog };
 }
 
 interface UseMigrationObjectsReturn {
-  objects: any[] | null;
+  objects: MigrationObject[] | null;
   isLoading: boolean;
 }
 
@@ -205,7 +208,7 @@ export function useMigrationObjects(
       );
     }
 
-    const constraints: any[] = [];
+    const constraints: QueryConstraint[] = [];
     if (selectedProjectId !== "all") {
       constraints.push(where("projectId", "==", selectedProjectId));
     } else if (!isAdmin) {
@@ -227,7 +230,7 @@ export function useMigrationObjects(
     selectedMockId,
   ]);
 
-  const { data: objects, isLoading } = useCollection<any>(objectsQuery);
+  const { data: objects, isLoading } = useCollection<MigrationObject>(objectsQuery);
 
   return { objects, isLoading };
 }

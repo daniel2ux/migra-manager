@@ -64,10 +64,6 @@ interface Props {
     mockName: string;
     signatures: EmailSignature[];
     fromEmail?: string;
-    /**
-     * @deprecated Usar recipientSelections no lugar de toSuggestions
-     */
-    toSuggestions?: string[];
     /** Seleções de destinatários (contatos e/ou agrupadores) */
     recipientSelections?: EmailRecipientSelection[];
     /** Callback quando as seleções mudam */
@@ -166,7 +162,7 @@ function buildErrorHtmlTable(rows: ErrorEmailRow[]) {
     return `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Calibri,sans-serif;font-size:10pt;"><thead><tr>${headerCells}</tr></thead><tbody>${dataRows}</tbody></table>`;
 }
 
-export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, fromEmail, toSuggestions: _toSuggestions = [], recipientSelections: externalRecipientSelections, onRecipientSelectionsChange, errorRows = [] }: Props) {
+export function EmailComposeDialog({ open, onClose, rows, mockName, signatures, fromEmail, recipientSelections: externalRecipientSelections, onRecipientSelectionsChange, errorRows = [] }: Props) {
     const { toast } = useToast();
     const db = useDb();
     const { user: authUser } = useUser();

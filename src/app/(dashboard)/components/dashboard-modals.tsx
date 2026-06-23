@@ -118,7 +118,6 @@ interface DashboardModalsProps {
     statMockName: string;
     userProfile: UserProfile | null;
     user: User | null;
-    emailSuggestions: string[];
     statErrorRows: ErrorEmailRow[];
 
     // Precedence
@@ -258,7 +257,6 @@ export function DashboardModals(props: DashboardModalsProps) {
                     mockName={props.statMockName}
                     signatures={props.userProfile?.emailSignatures ?? []}
                     fromEmail={props.userProfile?.fromEmail ?? props.userProfile?.email ?? props.user?.email ?? undefined}
-                    toSuggestions={props.emailSuggestions}
                     errorRows={props.statErrorRows}
                 />
             )}

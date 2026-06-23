@@ -328,7 +328,7 @@ export default function ProjetosPageContent() {
                     const currentProjectIds = u.projectIds || [];
                     if (!currentProjectIds.includes(projectId)) {
                         let newProjectIds: string[];
-                        if (u.role === "user") {
+                        if (u.role === "membro") {
                             currentProjectIds.forEach(oldPid => {
                                 if (oldPid !== projectId) {
                                     memberOps.push(

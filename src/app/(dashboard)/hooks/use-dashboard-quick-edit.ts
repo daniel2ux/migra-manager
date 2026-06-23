@@ -172,7 +172,7 @@ function useCommentDialog(
     if (!text || !commentTargetObject || !user || !db) return;
     addDocumentNonBlocking(collection(db, 'projects', commentTargetObject.projectId || '', 'mocks', commentTargetObject.mockId || '', 'migrationObjects', commentTargetObject.id, 'comments'), {
       text, authorId: user.uid,
-      authorName: userProfile?.name || 'Especialista', authorRole: userProfile?.role || 'user',
+      authorName: userProfile?.name || 'Especialista', authorRole: userProfile?.role || 'membro',
       projectId: commentTargetObject.projectId, mockId: commentTargetObject.mockId,
       objectId: commentTargetObject.id, objectName: commentTargetObject.name,
       createdAt: serverTimestamp(),

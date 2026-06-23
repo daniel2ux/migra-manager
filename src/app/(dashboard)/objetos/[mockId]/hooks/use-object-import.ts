@@ -113,7 +113,7 @@ async function processImportRow(
     const commentsColRef = collection(ctx.db, "projects", ctx.projectId, "mocks", ctx.mockId, "migrationObjects", targetObjectId, "comments");
     addDocumentNonBlocking(commentsColRef, {
       text: parsed.comment, authorId: ctx.user.uid,
-      authorName: ctx.userProfile?.name || "Importação", authorRole: ctx.userProfile?.role || "user",
+      authorName: ctx.userProfile?.name || "Importação", authorRole: ctx.userProfile?.role || "membro",
       status: parsed.logStatus, projectId: ctx.projectId, mockId: ctx.mockId, objectId: targetObjectId, createdAt: serverTimestamp(),
     });
     setDocumentNonBlocking(doc(ctx.db, 'projects', ctx.projectId, 'mocks', ctx.mockId, 'migrationObjects', targetObjectId), { hasTechLogs: true, updatedAt: serverTimestamp() }, { merge: true });

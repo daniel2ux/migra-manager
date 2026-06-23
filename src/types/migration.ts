@@ -1,5 +1,6 @@
 
 import type { Timestamp } from "@/supabase/compat-db-shim";
+import type { UserRole } from "@/types/usuarios";
 
 export interface MemberProfile {
   uid: string;
@@ -42,7 +43,7 @@ export interface UserProfile {
   uid: string;
   name: string;
   email: string;
-  role?: 'master' | 'admin' | 'user';
+  role?: UserRole;
   isMaster?: boolean;
   projectIds?: string[];
   primaryProjectId?: string;

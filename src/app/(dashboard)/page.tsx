@@ -242,7 +242,7 @@ function DashboardContent() {
                 text,
                 authorId: activeQueries.user.uid,
                 authorName: activeQueries.userProfile?.name || "Especialista",
-                authorRole: activeQueries.userProfile?.role || "user",
+                authorRole: activeQueries.userProfile?.role || "membro",
                 projectId: commentTargetObject.projectId,
                 mockId: commentTargetObject.mockId,
                 objectId: commentTargetObject.id,
@@ -597,7 +597,6 @@ function DashboardContent() {
                     statTableRef={statTableRef}
                     userProfile={activeQueries.userProfile}
                     user={activeQueries.user}
-                    emailSuggestions={activeQueries.allUsers?.map(u => u.email).filter(Boolean) as string[] || []}
                     formatStatDate={formatStatDate}
                     formatStatTime={formatStatTime}
                     getStatEmpresa={exportData.getStatEmpresa}
