@@ -20,7 +20,7 @@ export function useEmailGroups() {
     return collection(db as CompatDb, "emailGroups");
   }, [db, user]);
 
-  const { data: groups, isLoading, error } = useCollection<EmailGroup>(groupsQuery);
+  const { data: groups, isLoading, error, refetch } = useCollection<EmailGroup>(groupsQuery);
   const sortedGroups = useMemo(() => groups ? [...groups].sort((a, b) => a.name.localeCompare(b.name)) : [], [groups]);
 
   const upsertGroup = async (groupData: Partial<EmailGroup> & { name: string }) => {
@@ -30,15 +30,17 @@ export function useEmailGroups() {
       name: groupData.name.trim(),
       description: groupData.description?.trim() ?? "",
     }, !groupData.id), { merge: true });
+    refetch();
     return groupRef.id;
   };
 
   const deleteGroup = async (groupId: string) => {
     if (!db) return;
     await deleteDoc(doc(db as CompatDb, "emailGroups", groupId));
+    refetch();
   };
 
-  return { groups: sortedGroups ?? [], isLoading, error, upsertGroup, deleteGroup };
+  return { groups: sortedGroups ?? [], isLoading, error, upsertGroup, deleteGroup, refetch };
 }
 
 /**
@@ -50,7 +52,7 @@ export function useEmailContacts() {
 
   const contactsCollectionRef = useMemoDb(() => db ? collection(db as CompatDb, "emailContacts") : null, [db]);
   const contactsQuery = useMemoDb(() => user ? contactsCollectionRef : null, [contactsCollectionRef, user]);
-  const { data: contacts, isLoading, error } = useCollection<EmailContact>(contactsQuery);
+  const { data: contacts, isLoading, error, refetch } = useCollection<EmailContact>(contactsQuery);
   const sortedContacts = useMemo(() => contacts ? [...contacts].sort((a, b) => a.name.localeCompare(b.name)) : [], [contacts]);
 
   const upsertContact = async (contactData: Partial<EmailContact> & { name: string; email: string; groupIds?: string[] }) => {
@@ -61,12 +63,14 @@ export function useEmailContacts() {
       email: contactData.email.trim().toLowerCase(),
       groupIds: contactData.groupIds ?? [],
     }, !contactData.id), { merge: true });
+    refetch();
     return contactRef.id;
   };
 
   const deleteContact = async (contactId: string) => {
     if (!db) return;
     await deleteDoc(doc(db as CompatDb, "emailContacts", contactId));
+    refetch();
   };
 
   const getContactsByGroup = async (groupId: string): Promise<EmailContact[]> => {
@@ -76,7 +80,7 @@ export function useEmailContacts() {
     return snap.docs.map(d => ({ ...d.data(), id: d.id } as EmailContact));
   };
 
-  return { contacts: sortedContacts ?? [], isLoading, error, upsertContact, deleteContact, getContactsByGroup };
+  return { contacts: sortedContacts ?? [], isLoading, error, upsertContact, deleteContact, getContactsByGroup, refetch };
 }
 
 /**
