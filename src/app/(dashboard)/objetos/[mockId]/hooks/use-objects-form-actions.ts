@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { doc, serverTimestamp, collection, setDoc, type CompatDb } from '@/supabase/compat-db-shim';
+import { doc, serverTimestamp, collection, setDoc, updateDoc, type CompatDb } from '@/supabase/compat-db-shim';
 import type { User } from '@/supabase/auth-shim';
 import {
   setDocumentNonBlocking,
@@ -11,7 +11,13 @@ import {
   parseDurationString,
 } from '@/lib/migration/format-utils';
 import { parseSequence, formatSequence, compareSequences } from '@/lib/migration/sequence-utils';
-import { isActiveCatalogMaster } from '@/lib/dashboard/object-filters';
+import {
+  countMastersBlockedByInactiveMockRows,
+  filterMastersAvailableForMock,
+  findInactiveMockRowForMaster,
+  isActiveCatalogMaster,
+} from '@/lib/dashboard/object-filters';
+import { filterMasterCatalogForProject } from '@/lib/migration/master-objects-query';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/types/migration';
 import type { MasterObject, MigrationObject } from '../types';
@@ -125,6 +131,7 @@ interface UseObjectsFormActionsDeps {
   userProfile: UserProfile | null | undefined;
   toast: ToastFn;
   refetchObjects?: () => void;
+  refetchMasterObjects?: () => void;
   addPendingObjects?: (items: MigrationObject[]) => void;
 }
 
@@ -135,7 +142,7 @@ interface UseObjectsFormActionsDeps {
 export function useObjectsFormActions({
   db, user, projectId, mockId, isAdmin, isAdminOrMaster, isEffectiveLocked,
   objects, masterObjects, isMasterObjectsLoading, userProfile, toast,
-  refetchObjects, addPendingObjects,
+  refetchObjects, refetchMasterObjects, addPendingObjects,
 }: UseObjectsFormActionsDeps) {
   const canManageObjects = isAdminOrMaster ?? isAdmin;
   const [open, setOpen] = useState(false);
@@ -180,26 +187,20 @@ export function useObjectsFormActions({
     });
   }, [formData.targetRecordsCount, formData.errorRecordsCount]);
 
-  const mockObjectKeys = useMemo(() => {
-    const ids = new Set<string>();
-    const names = new Set<string>();
-    for (const obj of objects ?? []) {
-      if (obj.masterObjectId) ids.add(obj.masterObjectId);
-      const name = (obj.name || '').trim().toUpperCase();
-      if (name) names.add(name);
-    }
-    return { ids, names };
-  }, [objects]);
+  const projectMasterObjects = useMemo(
+    () => filterMasterCatalogForProject(masterObjects ?? [], projectId),
+    [masterObjects, projectId],
+  );
 
   const availableMasterObjects = useMemo(() => {
-    if (!masterObjects?.length) return [];
-    return masterObjects.filter(
-      (mo) =>
-        isActiveCatalogMaster(mo) &&
-        !mockObjectKeys.ids.has(mo.id) &&
-        !mockObjectKeys.names.has((mo.name || '').trim().toUpperCase()),
-    );
-  }, [masterObjects, mockObjectKeys]);
+    if (!projectMasterObjects.length) return [];
+    return filterMastersAvailableForMock(projectMasterObjects, objects ?? []);
+  }, [projectMasterObjects, objects]);
+
+  const mastersBlockedByInactiveRows = useMemo(() => {
+    if (!projectMasterObjects.length) return 0;
+    return countMastersBlockedByInactiveMockRows(projectMasterObjects, objects ?? []);
+  }, [projectMasterObjects, objects]);
 
   const filteredMasterObjects = useMemo(() => {
     const term = searchMasterTerm.trim().toLowerCase();
@@ -219,18 +220,21 @@ export function useObjectsFormActions({
     if (masterObjects.length === 0) {
       return 'Nenhum objeto no catálogo mestre. Cadastre objetos em Gestão de objetos.';
     }
-    const activeCount = masterObjects.filter(isActiveCatalogMaster).length;
+    const activeCount = projectMasterObjects.filter(isActiveCatalogMaster).length;
     if (activeCount === 0) {
       return 'Nenhum objeto ATIVO no catálogo. Ative objetos em Gestão de objetos.';
     }
     if (availableMasterObjects.length === 0) {
+      if (mastersBlockedByInactiveRows > 0) {
+        return 'Há objetos inativos nesta mock com os mesmos nomes. Reative-os na grade ou remova-os para adicionar novamente.';
+      }
       return 'Todos os objetos ativos do catálogo já estão nesta mock.';
     }
     if (searchMasterTerm.trim()) {
       return 'Nenhum objeto corresponde à pesquisa.';
     }
     return 'Nenhum objeto disponível para cadastro.';
-  }, [isMasterObjectsLoading, masterObjects, availableMasterObjects.length, searchMasterTerm]);
+  }, [isMasterObjectsLoading, masterObjects, projectMasterObjects, availableMasterObjects.length, mastersBlockedByInactiveRows, searchMasterTerm]);
 
   // ── Dialog de criação/edição completa ──────────────────────────────────────
 
@@ -264,6 +268,7 @@ export function useObjectsFormActions({
       setSelectedMasterIds([]);
       setSearchMasterTerm('');
       setFormData(EMPTY_FORM);
+      refetchMasterObjects?.();
     }
     setOpen(true);
   };
@@ -411,17 +416,48 @@ export function useObjectsFormActions({
       const creations = mastersToAdd.map((master) => ({
         objectId: crypto.randomUUID(),
         master,
+        inactiveRow: findInactiveMockRowForMaster(master, objects ?? []),
       }));
 
-      const pendingItems = creations.map(({ objectId, master }) =>
-        buildMigrationObjectFromMaster(master, objectId, projectId, mockId, user.uid),
-      );
+      const pendingItems = creations.map(({ objectId, master, inactiveRow }) => {
+        if (inactiveRow) {
+          return {
+            ...buildMigrationObjectFromMaster(master, inactiveRow.id, projectId, mockId, user.uid),
+            isActive: true,
+          };
+        }
+        return buildMigrationObjectFromMaster(master, objectId, projectId, mockId, user.uid);
+      });
       addPendingObjects?.(pendingItems);
 
       await Promise.all(
-        creations.map(async ({ objectId, master }) => {
-          const objectRef = doc(db, 'projects', projectId, 'mocks', mockId, 'migrationObjects', objectId);
-          const row = buildMigrationObjectFromMaster(master, objectId, projectId, mockId, user.uid);
+        creations.map(async ({ objectId, master, inactiveRow }) => {
+          const row = buildMigrationObjectFromMaster(
+            master,
+            inactiveRow?.id ?? objectId,
+            projectId,
+            mockId,
+            user.uid,
+          );
+          const objectRef = doc(
+            db,
+            'projects',
+            projectId,
+            'mocks',
+            mockId,
+            'migrationObjects',
+            inactiveRow?.id ?? objectId,
+          );
+
+          if (inactiveRow) {
+            await updateDoc(objectRef, {
+              ...row,
+              isActive: true,
+              updatedAt: serverTimestamp(),
+            });
+            return;
+          }
+
           await setDoc(objectRef, {
             ...row,
             loadHistory: [],
@@ -429,7 +465,12 @@ export function useObjectsFormActions({
           }, { merge: true });
         }),
       );
-      toast({ description: `${mastersToAdd.length} objeto(s) adicionado(s).` });
+      const reactivatedCount = creations.filter((item) => item.inactiveRow).length;
+      const addedCount = creations.length - reactivatedCount;
+      const parts: string[] = [];
+      if (addedCount > 0) parts.push(`${addedCount} objeto(s) adicionado(s)`);
+      if (reactivatedCount > 0) parts.push(`${reactivatedCount} objeto(s) reativado(s)`);
+      toast({ description: `${parts.join(' · ')}.` });
       setSelectedMasterIds([]);
       setSearchMasterTerm('');
       setOpen(false);

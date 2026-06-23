@@ -111,6 +111,7 @@ function ObjetosContent() {
     userProfile: page.userProfile,
     toast: page.toast,
     refetchObjects: page.refetchObjects,
+    refetchMasterObjects: page.refetchMasterObjects,
     addPendingObjects: page.addPendingObjects,
     });
 

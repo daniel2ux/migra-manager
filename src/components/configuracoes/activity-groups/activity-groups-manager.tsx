@@ -39,14 +39,17 @@ import {
   reconcileActivityGroupsObjectIds,
   resolveActivityGroupMemberIds,
 } from "@/lib/migration/activity-group-sync";
+import { masterObjectsQueryForProject } from "@/lib/migration/master-objects-query";
 
 export function ActivityGroupsManager({
   empresa,
   projectName,
+  projectId,
   searchTerm = "",
 }: {
   empresa?: string;
   projectName?: string;
+  projectId?: string | null;
   searchTerm?: string;
 } = {}) {
   const db = useDb();
@@ -93,18 +96,22 @@ export function ActivityGroupsManager({
 
   useEffect(() => {
     load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- load quando db fica disponível (load não memoizado)
-  }, [db]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load quando db ou projeto mudam
+  }, [db, projectId]);
 
   async function load(): Promise<ActivityGroup[]> {
     if (!db) return [];
     try {
-      const [groupsSnap, objectsSnap] = await Promise.all([
-        getDocs(query(collection(db, "activityGroups"), orderBy("name"))),
-        getDocs(collection(db, "masterObjects")),
-      ]);
+      const groupsSnap = await getDocs(query(collection(db, "activityGroups"), orderBy("name")));
       const loadedGroups = groupsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ActivityGroup, "id">) }));
-      const loadedObjects = objectsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MasterObject, "id">) }));
+
+      let loadedObjects: MasterObject[] = [];
+      const projectCatalogQuery = projectId ? masterObjectsQueryForProject(db, projectId) : null;
+      if (projectCatalogQuery) {
+        const objectsSnap = await getDocs(projectCatalogQuery);
+        loadedObjects = objectsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MasterObject, "id">) }));
+      }
+
       const reconciledGroups = await reconcileActivityGroupsObjectIds(db, loadedGroups, loadedObjects);
       setGroups(reconciledGroups);
       setAllObjects(loadedObjects);

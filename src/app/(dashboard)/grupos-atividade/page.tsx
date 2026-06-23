@@ -180,6 +180,7 @@ export default function GruposAtividadePage() {
             <ActivityGroupsManager
               empresa={getProjectCompanyName(projectData) ?? undefined}
               projectName={projectData?.name}
+              projectId={projectId}
               searchTerm={searchTerm}
             />
           </Suspense>

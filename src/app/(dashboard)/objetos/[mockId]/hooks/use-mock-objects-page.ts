@@ -25,10 +25,9 @@ import {
 } from '@/lib/dashboard/object-filters';
 import {
   masterObjectsQueryForProject,
-  masterObjectsLegacyUnscopedQuery,
-  mergeMasterCatalogRows,
 } from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
+import { SUPERADMIN_UID } from '@/lib/constants';
 import { isEffectiveLocked as isMockEffectiveLocked, isMockInactive, isMigrationObjectActive } from '@/lib/mock-utils';
 import {
   buildGestaoDisplayOrderIndex,
@@ -63,26 +62,33 @@ export function useMockObjectsPage() {
     [db, user],
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
-  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'master';
-  const isAdminOrMaster = isAdmin;
+  const isAdminOrMaster = useMemo(() => {
+    if (!userProfile) return false;
+    const role = (userProfile.role || '').toLowerCase();
+    return (
+      role === 'admin' ||
+      role === 'master' ||
+      userProfile.isMaster === true ||
+      user?.uid === SUPERADMIN_UID
+    );
+  }, [userProfile, user?.uid]);
+  const isAdmin = isAdminOrMaster;
 
   const masterObjectsQuery = useMemoDb(
     () => (db && projectId ? masterObjectsQueryForProject(db, projectId) : null),
     [db, projectId],
   );
-  const legacyMasterObjectsQuery = useMemoDb(
-    () => (db && projectId && isAdmin ? masterObjectsLegacyUnscopedQuery(db) : null),
-    [db, projectId, isAdmin],
-  );
-  const { data: projectMasterObjects, isLoading: isProjectMasterLoading } =
+  const { data: projectMasterObjects, isLoading: isProjectMasterLoading, refetch: refetchProjectMasterObjects } =
     useCollection<MasterObject>(masterObjectsQuery);
-  const { data: legacyMasterObjects, isLoading: isLegacyMasterLoading } =
-    useCollection<MasterObject>(legacyMasterObjectsQuery);
   const masterObjects = useMemo(
-    () => mergeMasterCatalogRows(projectMasterObjects, legacyMasterObjects) as MasterObject[],
-    [projectMasterObjects, legacyMasterObjects],
+    () => (projectMasterObjects ?? []) as MasterObject[],
+    [projectMasterObjects],
   );
-  const isMasterObjectsLoading = isProjectMasterLoading || (Boolean(projectId && isAdmin) && isLegacyMasterLoading);
+  const isMasterObjectsLoading = isProjectMasterLoading;
+
+  const refetchMasterObjects = useCallback(() => {
+    refetchProjectMasterObjects();
+  }, [refetchProjectMasterObjects]);
 
   const directMockRef = useMemoDb(() => {
     if (!db || !projectId || !routeMockId) return null;
@@ -409,6 +415,7 @@ export function useMockObjectsPage() {
     isAdminOrMaster,
     masterObjects,
     isMasterObjectsLoading,
+    refetchMasterObjects,
     mockData,
     objects,
     mergedObjects,

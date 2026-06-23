@@ -39,7 +39,7 @@ import {
   suggestMasterCatalogExportFilename,
 } from '@/lib/migration/master-catalog-export';
 import { projectAllowsMasterObjectRegistration } from '@/lib/migration/company-sync';
-import { masterObjectsQueryForProject, masterObjectsLegacyUnscopedQuery, mergeMasterCatalogRows } from '@/lib/migration/master-objects-query';
+import { masterObjectsQueryForProject, masterObjectsLegacyUnscopedQuery, mergeMasterCatalogRows, filterMasterCatalogForProject } from '@/lib/migration/master-objects-query';
 import { getProjectCompanyName } from '@/lib/migration/project-company';
 import { computeSuggestedNextChargeOrder } from '@/lib/migration/master-catalog-charge-reflow';
 import {
@@ -446,8 +446,11 @@ export function useObjectsPage() {
     reorderPreview,
   ]);
 
-  /** Catálogo completo do projeto para pickers (dependências, paralelos, cadastro). */
-  const catalogPickerRows = useMemo(() => queries.objects ?? [], [queries.objects]);
+  /** Catálogo do projeto para pickers (dependências, paralelos, cadastro). */
+  const catalogPickerRows = useMemo(
+    () => filterMasterCatalogForProject(queries.objects ?? [], selectedProjectId),
+    [queries.objects, selectedProjectId],
+  );
 
   const precedenceMap = useMemo(
     () => buildPrecedenceMap((queries.objects || []) as MasterObject[]),

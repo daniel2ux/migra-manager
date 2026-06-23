@@ -185,6 +185,7 @@ export default function GruposObjetosPage() {
             <ChargeGroupsManager
               empresa={getProjectCompanyName(projectData) ?? undefined}
               projectName={projectData?.name}
+              projectId={projectId}
               searchTerm={searchTerm}
             />
           </Suspense>
