@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import {
   Trash2,
   Layers,
-  Hash,
+  PackageOpen,
   Pencil,
   Loader2,
 } from "lucide-react";
@@ -454,7 +454,7 @@ export function ActivityGroupsManager({
                                     }}
                                     aria-label={`Gerenciar objetos do grupo ${g.name}`}
                                   >
-                                    <Hash className="h-3 w-3" aria-hidden />
+                                    <PackageOpen className="h-3 w-3" aria-hidden />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" variant="fiori">
