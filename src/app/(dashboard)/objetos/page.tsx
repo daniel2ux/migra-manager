@@ -29,6 +29,7 @@ import {
   ForceLockDialog,
 } from './components/lazy-dialogs';
 import { ObjetosCardsGrid } from './components/objetos-cards-grid';
+import { ObjectsCatalogFilters } from './components/objects-catalog-filters';
 import type { MasterObject } from '@/types/master-object';
 import { ObjectsTable } from './components/objects-table';
 import { useObjectsPage } from './hooks/use-objects-page';
@@ -62,6 +63,7 @@ function ObjetosMasterPageContent() {
     isForceLockOpen, setIsForceLockOpen, forceLockTarget, forceLockBlockerName,
     activityGroups,
     chargeGroups, configuredChargeGroupById,
+    typeFilter, loadTypeFilter, chargeGroupFilter, activityGroupFilter,
     chargeGroupCreateSuggestions, handleCreateChargeGroup,
     isPrecedenceOpen, setIsPrecedenceOpen, precedenceObject, setPrecedenceObject, precedenceMode,
     // Derived
@@ -70,7 +72,7 @@ function ObjetosMasterPageContent() {
     canRegisterObjects, objectCatalogBlockedReason,
     displayChargeOrderById, editingChargeOrderDisplay,
     // Handlers
-    handleClearFilters, handleOpenDependencies, handleSaveDependencySelect, handleOpenParallelSelect, handleSaveParallelSelect,
+    handleClearFilters, handleApplyCatalogFilters, handleOpenDependencies, handleSaveDependencySelect, handleOpenParallelSelect, handleSaveParallelSelect,
     handleOpenSelectNext, handleSelectNextConfirm, handleOpenPrecedence,
     handleDragOver, handleDragLeave, handleDrop,
     suggestNextParallelOrder,
@@ -178,7 +180,7 @@ function ObjetosMasterPageContent() {
                       aria-label={isSearchOpen ? "Fechar busca" : "Pesquisar objetos"}
                     >
                       <Search className="w-4 h-4" />
-                      {hasActiveFilters && !isSearchOpen && (
+                      {searchTerm && !isSearchOpen && (
                         <span className="fiori-toolbar-dot" />
                       )}
                     </Button>
@@ -187,6 +189,19 @@ function ObjetosMasterPageContent() {
                     {isSearchOpen ? "Fechar busca" : "Pesquisar objetos"}
                   </TooltipContent>
                 </Tooltip>
+
+                <ObjectsCatalogFilters
+                  values={{
+                    typeFilter,
+                    loadTypeFilter,
+                    chargeGroupFilter,
+                    activityGroupFilter,
+                  }}
+                  onChange={handleApplyCatalogFilters}
+                  onClearAll={handleClearFilters}
+                  activityGroups={activityGroups}
+                  chargeGroups={chargeGroups}
+                />
 
                 {inactiveObjectCount > 0 && (
                   <Tooltip>

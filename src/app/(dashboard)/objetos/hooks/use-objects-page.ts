@@ -25,7 +25,10 @@ import { buildPrecedenceMap } from '@/lib/migration/dependency-utils';
 import type { MasterObject } from '@/types/master-object';
 import type { ActivityGroup } from '@/types/activity-group';
 import type { ChargeGroup } from '@/types/charge-group';
+import { isObjectParallelLoad } from '@/lib/migration/sequence-utils';
+import { DEFAULT_MASTER_OBJECT_TYPE } from '@/lib/migration/master-object-type';
 import {
+  findChargeGroupIdForObject,
   buildConfiguredChargeGroupByObjectId,
   getConfiguredChargeGroupForObject,
 } from '@/lib/migration/charge-group-sync';
@@ -170,7 +173,11 @@ function filterMastersByDisplayFilters(
   rows: MasterObject[],
   searchTerm: string,
   statusFilter: string,
+  typeFilter: string,
+  loadTypeFilter: string,
+  chargeGroupFilter: string,
   activityGroupFilter: string,
+  chargeGroups: Pick<ChargeGroup, 'id' | 'objectIds'>[],
   configuredChargeGroupById: ReadonlyMap<string, string>,
   showInactive: boolean,
 ): MasterObject[] {
@@ -184,8 +191,31 @@ function filterMastersByDisplayFilters(
       return false;
     }
     if (statusFilter !== 'ALL' && obj.status !== statusFilter) return false;
-    if (activityGroupFilter !== 'ALL' && !(obj.activityGroupIds ?? []).includes(activityGroupFilter))
-      return false;
+    if (typeFilter !== 'ALL') {
+      const objType = obj.type ?? DEFAULT_MASTER_OBJECT_TYPE;
+      if (objType !== typeFilter) return false;
+    }
+    if (loadTypeFilter !== 'ALL') {
+      const isParallel = isObjectParallelLoad(obj);
+      if (loadTypeFilter === 'PARALLEL' && !isParallel) return false;
+      if (loadTypeFilter === 'SEQUENTIAL' && isParallel) return false;
+    }
+    if (chargeGroupFilter !== 'ALL') {
+      const groupId = findChargeGroupIdForObject(obj.id, chargeGroups);
+      if (chargeGroupFilter === 'NONE') {
+        if (groupId) return false;
+      } else if (groupId !== chargeGroupFilter) {
+        return false;
+      }
+    }
+    if (activityGroupFilter !== 'ALL') {
+      const ids = obj.activityGroupIds ?? [];
+      if (activityGroupFilter === 'NONE') {
+        if (ids.length > 0) return false;
+      } else if (!ids.includes(activityGroupFilter)) {
+        return false;
+      }
+    }
     return true;
   });
 }
@@ -248,6 +278,9 @@ export function useObjectsPage() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [activityGroups, setActivityGroups] = useState<ActivityGroup[]>([]);
   const [chargeGroups, setChargeGroups] = useState<ChargeGroup[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [loadTypeFilter, setLoadTypeFilter] = useState<'ALL' | 'PARALLEL' | 'SEQUENTIAL'>('ALL');
+  const [chargeGroupFilter, setChargeGroupFilter] = useState<string>('ALL');
   const [activityGroupFilter, setActivityGroupFilter] = useState<string>('ALL');
   const [showInactive, setShowInactive] = useLocalStorageState<boolean>(
     STORAGE_KEYS.OBJECTS_SHOW_INACTIVE,
@@ -489,7 +522,11 @@ export function useObjectsPage() {
       sequenceContextRows,
       '',
       statusFilter,
+      typeFilter,
+      loadTypeFilter,
+      chargeGroupFilter,
       activityGroupFilter,
+      chargeGroups,
       configuredChargeGroupById,
       showInactive,
     );
@@ -498,7 +535,11 @@ export function useObjectsPage() {
     sequenceContextRows,
     sortMode,
     statusFilter,
+    typeFilter,
+    loadTypeFilter,
+    chargeGroupFilter,
     activityGroupFilter,
+    chargeGroups,
     configuredChargeGroupById,
     reorderPreview,
     showInactive,
@@ -598,11 +639,17 @@ export function useObjectsPage() {
     onReorderMoved: selectRepositionedCard,
   });
 
+  const hasActiveCatalogFilters =
+    typeFilter !== 'ALL' ||
+    loadTypeFilter !== 'ALL' ||
+    chargeGroupFilter !== 'ALL' ||
+    activityGroupFilter !== 'ALL';
+
   const hasActiveFilters =
-    searchTerm !== '' || statusFilter !== 'ALL' || activityGroupFilter !== 'ALL';
+    searchTerm !== '' || statusFilter !== 'ALL' || hasActiveCatalogFilters;
 
   const hasNonSearchDisplayFilters =
-    statusFilter !== 'ALL' || activityGroupFilter !== 'ALL';
+    statusFilter !== 'ALL' || hasActiveCatalogFilters;
 
   const displayChargeOrderById = useMemo(() => {
     if (sortMode !== 'EXECUTION' || hasNonSearchDisplayFilters) return undefined;
@@ -707,7 +754,24 @@ export function useObjectsPage() {
 
   // ── Handlers ────────────────────────────────────────────────────────────
   const handleClearFilters = () => {
-    setSearchTerm(''); setStatusFilter('ALL'); setActivityGroupFilter('ALL');
+    setSearchTerm('');
+    setStatusFilter('ALL');
+    setTypeFilter('ALL');
+    setLoadTypeFilter('ALL');
+    setChargeGroupFilter('ALL');
+    setActivityGroupFilter('ALL');
+  };
+
+  const handleApplyCatalogFilters = (values: {
+    typeFilter: string;
+    loadTypeFilter: 'ALL' | 'PARALLEL' | 'SEQUENTIAL';
+    chargeGroupFilter: string;
+    activityGroupFilter: string;
+  }) => {
+    setTypeFilter(values.typeFilter);
+    setLoadTypeFilter(values.loadTypeFilter);
+    setChargeGroupFilter(values.chargeGroupFilter);
+    setActivityGroupFilter(values.activityGroupFilter);
   };
 
   const handleOpenDependencies = (obj: MasterObject) => {
@@ -800,7 +864,8 @@ export function useObjectsPage() {
     searchTerm, setSearchTerm, sortMode, statusFilter, setStatusFilter,
     isSearchOpen, setIsSearchOpen, viewMode, setViewMode, selectedCardId, setSelectedCardId,
     showInactive, setShowInactive, inactiveObjectCount,
-    activityGroups, activityGroupFilter, setActivityGroupFilter, chargeGroups, configuredChargeGroupById, hasActiveFilters,
+    activityGroups, chargeGroups, configuredChargeGroupById, hasActiveFilters,
+    typeFilter, loadTypeFilter, chargeGroupFilter, activityGroupFilter,
     chargeGroupCreateSuggestions, handleCreateChargeGroup,
     isDependenciesOpen, setIsDependenciesOpen, dependencySearchTerm, setDependencySearchTerm,
     dependencySelectedIds, setDependencySelectedIds, dependencyTargetObject,
@@ -809,7 +874,7 @@ export function useObjectsPage() {
     quickFormData, setQuickFormData, editFormData, setEditFormData,
     ...mockSync, ...importHook,
     handleExportJson,
-    handleClearFilters, handleOpenDependencies, handleSaveDependencySelect,
+    handleClearFilters, handleApplyCatalogFilters, handleOpenDependencies, handleSaveDependencySelect,
     handleOpenPrecedence, suggestNextOrder, suggestNextParallelOrder,
     releaseLock,
   };

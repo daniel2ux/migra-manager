@@ -899,6 +899,36 @@ body:has(.fiori-page-header--tall) .fiori-subtoolbar--below-page-header {
   background: #0064d9;
 }
 
+.fiori-filter-popover-title .fiori-filter-popover-clear {
+  width: auto;
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+}
+
+.fiori-filter-chip-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.fiori-filter-popover--catalog {
+  max-height: min(calc(100dvh - 6rem), 32rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.fiori-filter-popover .fiori-filter-field-dropdown {
+  z-index: 230 !important;
+  border-radius: 0.25rem !important;
+  border: 1px solid var(--fiori-border-light) !important;
+  background: #fff !important;
+  box-shadow: 0 0.25rem 1rem rgba(85, 107, 130, 0.2) !important;
+  font-family: var(--font-72);
+  padding: 0 !important;
+}
+
+.fiori-filter-popover .fiori-filter-field-dropdown.fiori-dropdown-menu--table-rows {
+  min-width: var(--radix-dropdown-menu-trigger-width);
+}
+
 /* Popover compacto de formulário (ex.: edição inline em cards) */
 .fiori-form-popover.fiori-filter-popover {
   width: min(calc(100vw - 2rem), 20rem);
