@@ -2,13 +2,14 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2, Zap, Eye, EyeOff, AlertCircle, Info, ShieldCheck, Database, GitBranch, FileSearch } from 'lucide-react';
+import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, Info, ShieldCheck, Database, GitBranch, FileSearch, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useDb } from '@/supabase';
 import { isSupabaseEnvComplete } from '@/supabase/env';
 import { signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, Auth } from '@/supabase/auth-shim';
 import { doc, getDoc, type CompatDb } from '@/supabase/compat-db-shim';
 import { consumeLoginFlash, stripNavigationQueryParams } from '@/lib/auth/app-session';
+import { closeBrowserWindowOrLeaveAsync } from '@/lib/browser/close-browser-window';
 import { FioriIconButtonHint } from '@/components/ui/fiori-icon-button-hint';
 
 function LoginForm() {
@@ -120,36 +121,54 @@ function LoginForm() {
     }
   };
 
+  const handleCloseWindow = () => {
+    closeBrowserWindowOrLeaveAsync(() => {
+      toast({
+        title: 'Não foi possível fechar a aba',
+        description: 'Feche esta aba manualmente no navegador (Ctrl+W).',
+      });
+    });
+  };
+
   return (
     <>
-      <aside className="fiori-login-brand">
-        <div className="fiori-login-brand-content">
-          <div className="fiori-login-brand-head">
-            <div className="fiori-login-brand-icon">
-              <Zap className="w-7 h-7" aria-hidden />
+      <aside className="fiori-login-brand fiori-login-brand--with-art">
+        <div className="fiori-login-brand-inner">
+          <div className="fiori-login-brand-content">
+            <div className="fiori-login-brand-mark">
+              <div className="fiori-login-brand-lockup">
+                <h1 className="fiori-login-brand-title">Migra</h1>
+                <p className="fiori-login-brand-subtitle">Gestão técnica de migração</p>
+              </div>
             </div>
-            <div className="fiori-login-brand-lockup">
-              <h1 className="fiori-login-brand-title">Migra</h1>
-              <p className="fiori-login-brand-subtitle">Gestão técnica de migração</p>
-            </div>
+
+            <div className="fiori-login-brand-divider" aria-hidden />
+
+            <p className="fiori-login-brand-tagline">
+              Plataforma corporativa para planejamento, execução e validação de migrações IS-U.
+            </p>
+
+            <ul className="fiori-login-brand-features">
+              <li>
+                <span className="fiori-login-brand-feature-icon-wrap">
+                  <Database className="fiori-login-brand-feature-icon" aria-hidden />
+                </span>
+                <span>Objetos e mapeamentos centralizados</span>
+              </li>
+              <li>
+                <span className="fiori-login-brand-feature-icon-wrap">
+                  <GitBranch className="fiori-login-brand-feature-icon" aria-hidden />
+                </span>
+                <span>Controle de execuções e dependências</span>
+              </li>
+              <li>
+                <span className="fiori-login-brand-feature-icon-wrap">
+                  <FileSearch className="fiori-login-brand-feature-icon" aria-hidden />
+                </span>
+                <span>Auditoria e rastreabilidade completa</span>
+              </li>
+            </ul>
           </div>
-          <p className="fiori-login-brand-tagline">
-            Plataforma corporativa para planejamento, execução e validação de migrações IS-U.
-          </p>
-          <ul className="fiori-login-brand-features">
-            <li>
-              <Database className="fiori-login-brand-feature-icon" aria-hidden />
-              <span>Objetos e mapeamentos centralizados</span>
-            </li>
-            <li>
-              <GitBranch className="fiori-login-brand-feature-icon" aria-hidden />
-              <span>Controle de execuções e dependências</span>
-            </li>
-            <li>
-              <FileSearch className="fiori-login-brand-feature-icon" aria-hidden />
-              <span>Auditoria e rastreabilidade completa</span>
-            </li>
-          </ul>
         </div>
       </aside>
 
@@ -220,20 +239,31 @@ function LoginForm() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="fiori-login-submit"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
-                  Entrando…
-                </>
-              ) : (
-                'Entrar'
-              )}
-            </button>
+            <div className="fiori-login-actions fiori-login-actions--end">
+              <button
+                type="button"
+                onClick={handleCloseWindow}
+                disabled={loading}
+                className="fiori-login-btn-outline"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden />
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="fiori-login-submit"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                    Entrando…
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </button>
+            </div>
           </form>
 
           <div className="fiori-login-footer">
