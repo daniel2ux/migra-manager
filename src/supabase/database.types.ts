@@ -880,7 +880,16 @@ export type Database = {
     }
     Enums: {
       master_object_status: "ATIVO" | "INATIVO" | "LEGACY"
-      master_object_type: "MASTER" | "TRANSACTIONAL" | "TECHNICAL" | "SCRIPT"
+      master_object_type:
+        | "MASTER"
+        | "COMMERCIAL_MASTER"
+        | "TECHNICAL_OBJECT"
+        | "EQUIPMENT_READING"
+        | "BILLING"
+        | "CUSTOMER_SERVICE"
+        | "TRANSACTIONAL"
+        | "TECHNICAL"
+        | "SCRIPT"
       migration_log_status: "ERROR" | "WARN" | "INFO" | "OK"
       migration_object_status:
         | "PENDENTE"
@@ -1018,7 +1027,17 @@ export const Constants = {
   public: {
     Enums: {
       master_object_status: ["ATIVO", "INATIVO", "LEGACY"],
-      master_object_type: ["MASTER", "TRANSACTIONAL", "TECHNICAL", "SCRIPT"],
+      master_object_type: [
+        "MASTER",
+        "COMMERCIAL_MASTER",
+        "TECHNICAL_OBJECT",
+        "EQUIPMENT_READING",
+        "BILLING",
+        "CUSTOMER_SERVICE",
+        "TRANSACTIONAL",
+        "TECHNICAL",
+        "SCRIPT",
+      ],
       migration_log_status: ["ERROR", "WARN", "INFO", "OK"],
       migration_object_status: [
         "PENDENTE",

@@ -14,13 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ActivityGroupChipTooltip } from "@/components/shared/activity-group-chip-tooltip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FioriFieldSelect } from "@/components/ui/fiori-field-select";
 import { Database, Box, Hash, Split, CheckCircle2, Network, Info, Layers, PlusCircle, Shapes } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isValidSequence } from "@/lib/migration/sequence-utils";
@@ -309,31 +303,13 @@ export function EditObjectDialog({
                     <Shapes className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />
                     Tipo do objeto
                   </label>
-                  <Select
+                  <FioriFieldSelect
                     value={formDraft.type || DEFAULT_MASTER_OBJECT_TYPE}
                     onValueChange={(value) => patchForm({ type: value })}
+                    options={MASTER_OBJECT_TYPE_OPTIONS}
                     disabled={fieldsLocked}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "fiori-select-trigger shadow-none",
-                        fieldsLocked && "readable-disabled",
-                      )}
-                    >
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent className="fiori-select-content">
-                      {MASTER_OBJECT_TYPE_OPTIONS.map((option) => (
-                        <SelectItem
-                          key={option.value}
-                          value={option.value}
-                          className="fiori-select-item"
-                        >
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Selecione o tipo"
+                  />
                 </div>
 
                 <div className="sm:col-span-12 space-y-1.5">
@@ -341,17 +317,15 @@ export function EditObjectDialog({
                     <CheckCircle2 className="w-3.5 h-3.5 text-[var(--fiori-brand)]" />
                     Status
                   </label>
-                  <Select
+                  <FioriFieldSelect
                     value={formDraft.status || "ATIVO"}
                     onValueChange={(value) => patchForm({ status: value })}
+                    options={STATUS_OPTIONS}
                     disabled={fieldsLocked}
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "fiori-select-trigger fiori-select-trigger--status shadow-none",
-                        fieldsLocked && "readable-disabled",
-                      )}
-                    >
+                    placeholder="Selecione o status"
+                    triggerClassName="fiori-select-trigger--status"
+                    contentClassName="fiori-select-content--status"
+                    triggerPrefix={
                       <span
                         className={cn(
                           "fiori-select-status-dot",
@@ -359,23 +333,14 @@ export function EditObjectDialog({
                         )}
                         aria-hidden
                       />
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                    <SelectContent className="fiori-select-content fiori-select-content--status">
-                      {STATUS_OPTIONS.map((option) => (
-                        <SelectItem
-                          key={option.value}
-                          value={option.value}
-                          className={cn(
-                            "fiori-select-item fiori-select-item--status",
-                            STATUS_ITEM_CLASS[option.value],
-                          )}
-                        >
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    }
+                    itemClassName={(option) =>
+                      cn(
+                        "fiori-select-item--status",
+                        STATUS_ITEM_CLASS[option.value],
+                      )
+                    }
+                  />
                 </div>
 
                 {activityGroups.length > 0 && (

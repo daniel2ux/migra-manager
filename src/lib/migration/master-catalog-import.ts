@@ -5,6 +5,7 @@ import {
   type MasterCatalogExportRow,
 } from '@/lib/migration/master-catalog-export';
 import { normalizeMasterCatalogName } from '@/lib/migration/master-catalog';
+import { isMasterObjectType } from '@/lib/migration/master-object-type';
 
 export type CatalogImportLogType = 'info' | 'success' | 'warning' | 'error';
 
@@ -40,7 +41,7 @@ function parseExportRow(value: unknown): MasterCatalogExportRow | null {
   };
 
   if (typeof value.description === 'string') row.description = value.description;
-  if (value.type === 'MASTER' || value.type === 'TRANSACTIONAL' || value.type === 'TECHNICAL' || value.type === 'SCRIPT') {
+  if (typeof value.type === 'string' && isMasterObjectType(value.type)) {
     row.type = value.type;
   }
   if (value.status === 'ATIVO' || value.status === 'INATIVO' || value.status === 'LEGACY') {

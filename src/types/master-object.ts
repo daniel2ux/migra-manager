@@ -4,7 +4,16 @@ export interface MasterObject {
     id: string;
     name: string;
     description?: string;
-    type?: "MASTER" | "TRANSACTIONAL" | "TECHNICAL" | "SCRIPT";
+    type?:
+        | "MASTER"
+        | "COMMERCIAL_MASTER"
+        | "TECHNICAL_OBJECT"
+        | "EQUIPMENT_READING"
+        | "BILLING"
+        | "CUSTOMER_SERVICE"
+        | "TRANSACTIONAL"
+        | "TECHNICAL"
+        | "SCRIPT";
     status?: "ATIVO" | "INATIVO" | "LEGACY";
     chargeGroup?: string;
     chargeOrder?: string | number;

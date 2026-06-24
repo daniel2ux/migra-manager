@@ -6,6 +6,7 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { dashboardDialogFocusProps } from "@/lib/dashboard/scroll-preservation"
+import { FioriDialogLayerContext } from "@/components/ui/fiori-dialog-layer-context"
 
 function isFioriFormDialog(className?: string, variant?: "default" | "fiori") {
   if (variant === "fiori") return true
@@ -116,6 +117,7 @@ const DialogContent = React.forwardRef<
         <DialogOverlay motion={!instantOpen} className={overlayClassName} />
       )
     )}
+    <FioriDialogLayerContext.Provider value>
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
@@ -147,6 +149,7 @@ const DialogContent = React.forwardRef<
         </DialogPrimitive.Close>
       )}
     </DialogPrimitive.Content>
+    </FioriDialogLayerContext.Provider>
   </DialogPortal>
   )
 })

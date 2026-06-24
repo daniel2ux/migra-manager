@@ -5,6 +5,7 @@ import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { FioriDialogLayerContext } from "@/components/ui/fiori-dialog-layer-context"
 
 const Select = SelectPrimitive.Root
 
@@ -87,9 +88,12 @@ SelectScrollDownButton.displayName =
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position, onCloseAutoFocus, ...props }, ref) => {
+>(({ className, children, position, sideOffset, onCloseAutoFocus, ...props }, ref) => {
   const fioriContent = isFioriSelectContent(className)
-  const resolvedPosition = position ?? (fioriContent ? "item-aligned" : "popper")
+  const insideDialog = React.useContext(FioriDialogLayerContext)
+  const resolvedPosition =
+    position ?? (fioriContent ? (insideDialog ? "popper" : "item-aligned") : "popper")
+  const resolvedSideOffset = sideOffset ?? (fioriContent && insideDialog ? 4 : undefined)
 
   return (
   <SelectPrimitive.Portal>
@@ -108,6 +112,7 @@ const SelectContent = React.forwardRef<
         className
       )}
       position={resolvedPosition}
+      sideOffset={resolvedSideOffset}
       onCloseAutoFocus={
         fioriContent
           ? (event) => {
