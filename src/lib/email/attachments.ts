@@ -20,7 +20,7 @@ function formatBytes(bytes: number): string {
   return `${bytes} B`;
 }
 
-export function sanitizeAttachmentFilename(raw: string): string {
+function sanitizeAttachmentFilename(raw: string): string {
   const base = raw.split(/[/\\]/).pop()?.trim() ?? 'anexo';
   const cleaned = base.replace(/[\x00-\x1f<>:"|?*]/g, '_').replace(/^\.+/, '');
   const name = cleaned.slice(0, 200) || 'anexo';

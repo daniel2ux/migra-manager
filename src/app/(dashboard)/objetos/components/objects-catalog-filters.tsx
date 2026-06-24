@@ -44,16 +44,7 @@ export interface CatalogFilterValues {
   activityGroupFilter: string;
 }
 
-export function defaultCatalogFilterValues(): CatalogFilterValues {
-  return {
-    typeFilter: "ALL",
-    loadTypeFilter: "ALL",
-    chargeGroupFilter: "ALL",
-    activityGroupFilter: "ALL",
-  };
-}
-
-export function countActiveCatalogFilters(values: CatalogFilterValues): number {
+function countActiveCatalogFilters(values: CatalogFilterValues): number {
   return (
     (values.typeFilter !== "ALL" ? 1 : 0) +
     (values.loadTypeFilter !== "ALL" ? 1 : 0) +
