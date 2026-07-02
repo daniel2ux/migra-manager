@@ -2,7 +2,7 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, Info, ShieldCheck, Database, GitBranch, FileSearch, X } from 'lucide-react';
+import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle, Info, ShieldCheck, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useDb } from '@/supabase';
 import { isSupabaseEnvComplete } from '@/supabase/env';
@@ -11,6 +11,7 @@ import { doc, getDoc, type CompatDb } from '@/supabase/compat-db-shim';
 import { consumeLoginFlash, stripNavigationQueryParams } from '@/lib/auth/app-session';
 import { closeBrowserWindowOrLeaveAsync } from '@/lib/browser/close-browser-window';
 import { FioriIconButtonHint } from '@/components/ui/fiori-icon-button-hint';
+import { LoginPanelBackground } from '@/components/login/login-panel-background';
 
 function LoginForm() {
   const router = useRouter();
@@ -131,55 +132,23 @@ function LoginForm() {
   };
 
   return (
-    <>
-      <aside className="fiori-login-brand fiori-login-brand--with-art">
-        <div className="fiori-login-brand-inner">
-          <div className="fiori-login-brand-content">
-            <div className="fiori-login-brand-mark">
-              <div className="fiori-login-brand-lockup">
-                <h1 className="fiori-login-brand-title">Migra</h1>
-                <p className="fiori-login-brand-subtitle">Gestão técnica de migração</p>
-              </div>
+    <div className="fiori-login-panel fiori-login-panel--brand">
+      <LoginPanelBackground variant="brand" />
+      <div className="fiori-login-panel-stack">
+          <div className="fiori-login-panel-brand">
+            <div className="fiori-login-brand-lockup">
+              <h1 className="fiori-login-brand-title">Migra</h1>
+              <p className="fiori-login-brand-subtitle">Gestão técnica de migração</p>
+            </div>
+          </div>
+
+          <div className="fiori-login-card">
+            <div className="fiori-login-header">
+              <h2 className="fiori-login-title">Entrar na plataforma</h2>
+              <p className="fiori-field-hint fiori-login-header-hint">Use suas credenciais de acesso</p>
             </div>
 
-            <div className="fiori-login-brand-divider" aria-hidden />
-
-            <p className="fiori-login-brand-tagline">
-              Plataforma corporativa para planejamento, execução e validação de migrações IS-U.
-            </p>
-
-            <ul className="fiori-login-brand-features">
-              <li>
-                <span className="fiori-login-brand-feature-icon-wrap">
-                  <Database className="fiori-login-brand-feature-icon" aria-hidden />
-                </span>
-                <span>Objetos e mapeamentos centralizados</span>
-              </li>
-              <li>
-                <span className="fiori-login-brand-feature-icon-wrap">
-                  <GitBranch className="fiori-login-brand-feature-icon" aria-hidden />
-                </span>
-                <span>Controle de execuções e dependências</span>
-              </li>
-              <li>
-                <span className="fiori-login-brand-feature-icon-wrap">
-                  <FileSearch className="fiori-login-brand-feature-icon" aria-hidden />
-                </span>
-                <span>Auditoria e rastreabilidade completa</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </aside>
-
-      <div className="fiori-login-panel">
-        <div className="fiori-login-card">
-          <div className="fiori-login-header">
-            <h2 className="fiori-login-title">Entrar na plataforma</h2>
-            <p className="fiori-field-hint fiori-login-header-hint">Use suas credenciais de acesso</p>
-          </div>
-
-          <form onSubmit={handleLogin} className="fiori-login-form" noValidate>
+            <form onSubmit={handleLogin} className="fiori-login-form" noValidate>
             <div className="fiori-login-field">
               <label htmlFor="login-email" className="fiori-login-label">E-mail</label>
               <div className="fiori-login-input-shell">
@@ -270,21 +239,15 @@ function LoginForm() {
             <ShieldCheck className="fiori-login-footer-icon" aria-hidden />
             <p>Acesso restrito a usuários autorizados</p>
           </div>
+          </div>
         </div>
       </div>
-    </>
   );
 }
 
 export function LoginPageClient() {
   return (
-    <div className="fiori-login-page">
-      <div className="fiori-login-page-bg" aria-hidden>
-        <div className="fiori-login-page-bg-grid" />
-        <div className="fiori-login-page-bg-glow fiori-login-page-bg-glow--top" />
-        <div className="fiori-login-page-bg-glow fiori-login-page-bg-glow--bottom" />
-      </div>
-
+    <div className="fiori-login-page fiori-login-page--brand">
       <div className="fiori-login-layout">
         <Suspense fallback={null}>
           <LoginForm />
